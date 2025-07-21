@@ -7,158 +7,151 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Input, InputField } from "@/components/ui/input";
 import { Button, ButtonText } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicator,
-  SelectDragIndicatorWrapper,
-  SelectItem,
-} from "@/components/ui/select";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { useRouter } from "expo-router";
-
-// 카테고리 데이터
-const categories = [
-  { id: "scrap", name: "고철", icon: "construct" },
-  { id: "machinery", name: "중고기계", icon: "settings" },
-  { id: "special", name: "특수금속", icon: "diamond" },
-  { id: "demolition", name: "철거물", icon: "hammer" },
-];
-
-// 거래 종류
-const transactionTypes = [
-  { id: "normal", name: "일반 경매", duration: "72시간" },
-  { id: "urgent", name: "긴급 경매", duration: "12시간" },
-];
+import { useRouter, useLocalSearchParams } from "expo-router";
 
 export const AuctionCreate = () => {
-  const [step, setStep] = useState(1);
+  const router = useRouter();
+  const { type } = useLocalSearchParams();
+
   const [formData, setFormData] = useState({
     title: "",
-    category: "",
-    transactionType: "normal",
+    metalType: (type as string) || "",
     weight: "",
-    weightKnown: true,
+    purity: "",
+    startPrice: "",
     description: "",
     location: "",
-    address: "",
-    floor: "",
-    hasElevator: false,
+    duration: "72",
   });
 
-  const router = useRouter();
-
-  const handleNext = () => {
-    if (step === 1 && (!formData.title || !formData.category)) {
-      Alert.alert("입력 오류", "제목과 카테고리를 입력해주세요.");
+  const handleCreate = () => {
+    if (
+      !formData.title ||
+      !formData.metalType ||
+      !formData.weight ||
+      !formData.startPrice
+    ) {
+      Alert.alert("입력 오류", "필수 항목을 모두 입력해주세요.");
       return;
     }
-    if (step < 3) {
-      setStep(step + 1);
-    } else {
-      // 경매 등록 완료
-      Alert.alert("등록 완료", "경매가 성공적으로 등록되었습니다.", [
-        { text: "확인", onPress: () => router.back() },
-      ]);
-    }
+
+    Alert.alert("등록 완료", "경매가 성공적으로 등록되었습니다.", [
+      { text: "확인", onPress: () => router.back() },
+    ]);
   };
 
   const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    } else {
-      router.back();
-    }
+    router.back();
+  };
+
+  const auctionTypes = [
+    { id: "scrap", name: "고철", icon: "construct" },
+    { id: "machinery", name: "중고기계", icon: "settings" },
+    { id: "materials", name: "중고자재", icon: "cube" },
+    { id: "demolition", name: "철거", icon: "hammer" },
+  ];
+
+  const getTypeName = (typeId: string) => {
+    const type = auctionTypes.find((t) => t.id === typeId);
+    return type ? type.name : "기타";
   };
 
   return (
-    <SafeAreaView className="h-full w-full">
-      <LinearGradient
-        colors={["#1A1A1A", "#2D2D2D", "#404040"]}
-        style={{ flex: 1 }}
-      >
-        {/* Header */}
-        <Box className="pt-16 px-5 pb-5">
-          <HStack className="items-center justify-between">
-            <Pressable onPress={handleBack}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </Pressable>
-            <Text
-              className="text-xl font-black text-white"
-              style={{ letterSpacing: 1 }}
-            >
-              경매 등록
-            </Text>
-            <Box className="w-6" />
-          </HStack>
-
-          {/* Progress Bar */}
-          <Box className="mt-4 mb-2">
-            <HStack className="space-sm">
-              {[1, 2, 3].map((stepNumber) => (
-                <Box
-                  key={stepNumber}
-                  className="flex-1 h-1 rounded-full"
-                  style={{
-                    backgroundColor:
-                      step >= stepNumber
-                        ? "rgba(255, 255, 255, 0.3)"
-                        : "rgba(255, 255, 255, 0.1)",
-                  }}
-                />
-              ))}
-            </HStack>
-          </Box>
-          <Text
-            className="text-sm text-white/60 uppercase"
-            style={{ letterSpacing: 1 }}
-          >
-            Step {step} of 3
-          </Text>
-        </Box>
-
+    <LinearGradient
+      colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
+      className="flex-1"
+    >
+      <SafeAreaView className="flex-1">
         <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          {/* Step 1: Basic Information */}
-          {step === 1 && (
-            <VStack className="px-5 space-lg">
+          <VStack className="flex-1 p-6" space="xl">
+            {/* Header */}
+            <VStack space="lg">
+              <HStack className="items-center justify-between">
+                <Pressable onPress={handleBack}>
+                  <Box
+                    className="w-10 h-10 rounded-xl items-center justify-center"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.2)",
+                    }}
+                  >
+                    <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
+                  </Box>
+                </Pressable>
+                <Text className="text-white font-bold text-lg tracking-wide">
+                  경매 생성
+                </Text>
+                <Box className="w-10 h-10" />
+              </HStack>
+
               <Box
-                className="rounded-3xl p-6"
+                className="rounded-3xl p-8"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  backgroundColor: "rgba(147, 51, 234, 0.08)",
                   borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.12)",
+                  borderColor: "rgba(147, 51, 234, 0.15)",
+                  shadowColor: "#9333EA",
+                  shadowOffset: { width: 0, height: 20 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 40,
+                  elevation: 20,
+                }}
+              >
+                <VStack space="md">
+                  <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
+                    Create New Auction
+                  </Text>
+                  <Text className="text-white text-2xl font-black tracking-wide">
+                    경매 등록
+                  </Text>
+                  <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
+                    새로운 경매를 등록하세요
+                  </Text>
+                </VStack>
+              </Box>
+            </VStack>
+
+            {/* Basic Information */}
+            <VStack space="lg">
+              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                기본 정보
+              </Text>
+
+              <Box
+                className="rounded-2xl p-6"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255, 255, 255, 0.08)",
                   shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 6 },
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
                   elevation: 8,
                 }}
               >
-                <Text
-                  className="text-lg font-bold text-white mb-4"
-                  style={{ letterSpacing: 0.5 }}
-                >
-                  기본 정보
-                </Text>
-
-                <VStack className="space-md">
+                <VStack space="md">
                   <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      글 제목
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      경매 제목
                     </Text>
-                    <Input className="bg-white/8 border-white/15 rounded-2xl">
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
                       <InputField
                         placeholder="경매 품목 제목을 입력하세요"
                         placeholderTextColor="rgba(255, 255, 255, 0.4)"
@@ -166,262 +159,301 @@ export const AuctionCreate = () => {
                         onChangeText={(text) =>
                           setFormData({ ...formData, title: text })
                         }
-                        className="text-white text-base"
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
                       />
                     </Input>
                   </VStack>
 
                   <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      카테고리
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      경매 종류
                     </Text>
-                    <Select
-                      selectedValue={formData.category}
-                      onValueChange={(value) =>
-                        setFormData({ ...formData, category: value })
-                      }
-                    >
-                      <SelectTrigger className="bg-white/8 border-white/15 rounded-2xl">
-                        <SelectInput
-                          placeholder="카테고리를 선택하세요"
-                          placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                          className="text-white"
-                        />
-                      </SelectTrigger>
-                      <SelectPortal>
-                        <SelectBackdrop />
-                        <SelectContent className="bg-gray-800 border-white/15">
-                          <SelectDragIndicatorWrapper>
-                            <SelectDragIndicator />
-                          </SelectDragIndicatorWrapper>
-                          {categories.map((category) => (
-                            <SelectItem
-                              key={category.id}
-                              label={category.name}
-                              value={category.id}
-                              className="text-white"
-                            />
-                          ))}
-                        </SelectContent>
-                      </SelectPortal>
-                    </Select>
-                  </VStack>
-
-                  <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      거래 종류
-                    </Text>
-                    <VStack className="space-sm">
-                      {transactionTypes.map((type) => (
+                    <HStack className="flex-wrap" space="sm">
+                      {auctionTypes.map((auctionType) => (
                         <Pressable
-                          key={type.id}
+                          key={auctionType.id}
                           onPress={() =>
                             setFormData({
                               ...formData,
-                              transactionType: type.id,
+                              metalType: auctionType.id,
                             })
                           }
-                          className={`p-4 rounded-2xl border ${
-                            formData.transactionType === type.id
-                              ? "bg-white/10 border-white/30"
-                              : "bg-white/5 border-white/15"
-                          }`}
                         >
-                          <HStack className="justify-between items-center">
-                            <VStack>
-                              <Text className="text-white font-medium">
-                                {type.name}
-                              </Text>
-                              <Text className="text-white/60 text-sm">
-                                경매 기간: {type.duration}
-                              </Text>
-                            </VStack>
-                            {formData.transactionType === type.id && (
-                              <Ionicons
-                                name="checkmark-circle"
-                                size={24}
-                                color="#4CAF50"
-                              />
-                            )}
-                          </HStack>
+                          <Box
+                            className="px-4 py-2 rounded-xl"
+                            style={{
+                              backgroundColor:
+                                formData.metalType === auctionType.id
+                                  ? "rgba(147, 51, 234, 0.25)"
+                                  : "rgba(147, 51, 234, 0.12)",
+                              borderWidth: 1,
+                              borderColor:
+                                formData.metalType === auctionType.id
+                                  ? "rgba(147, 51, 234, 0.4)"
+                                  : "rgba(147, 51, 234, 0.25)",
+                              shadowColor: "#9333EA",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.3,
+                              shadowRadius: 4,
+                              elevation: 4,
+                            }}
+                          >
+                            <Text
+                              className={`font-semibold text-sm tracking-wide ${
+                                formData.metalType === auctionType.id
+                                  ? "text-purple-200"
+                                  : "text-purple-300"
+                              }`}
+                            >
+                              {auctionType.name}
+                            </Text>
+                          </Box>
                         </Pressable>
                       ))}
-                    </VStack>
+                    </HStack>
                   </VStack>
                 </VStack>
               </Box>
             </VStack>
-          )}
 
-          {/* Step 2: Details */}
-          {step === 2 && (
-            <VStack className="px-5 space-lg">
+            {/* Item Details */}
+            <VStack space="lg">
+              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                품목 상세
+              </Text>
+
               <Box
-                className="rounded-3xl p-6"
+                className="rounded-2xl p-6"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
                   borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.12)",
+                  borderColor: "rgba(255, 255, 255, 0.08)",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
+                  elevation: 8,
                 }}
               >
-                <Text
-                  className="text-lg font-bold text-white mb-4"
-                  style={{ letterSpacing: 0.5 }}
-                >
-                  상세 정보
-                </Text>
-
-                <VStack className="space-md">
+                <VStack space="md">
                   <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      중량 (kg)
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      중량
                     </Text>
-                    <Input className="bg-white/8 border-white/15 rounded-2xl">
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
                       <InputField
-                        placeholder="예상 중량을 입력하세요"
+                        placeholder="킬로그램 단위로 입력"
                         placeholderTextColor="rgba(255, 255, 255, 0.4)"
                         value={formData.weight}
                         onChangeText={(text) =>
                           setFormData({ ...formData, weight: text })
                         }
-                        className="text-white text-base"
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
                         keyboardType="numeric"
                       />
                     </Input>
                   </VStack>
 
                   <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      상세 설명
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      순도 (%)
                     </Text>
-                    <Input className="bg-white/8 border-white/15 rounded-2xl">
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
                       <InputField
-                        placeholder="품목에 대한 상세한 설명을 입력하세요"
+                        placeholder="순도를 입력하세요 (예: 99)"
+                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                        value={formData.purity}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, purity: text })
+                        }
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </Input>
+                  </VStack>
+
+                  <VStack>
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      시작가
+                    </Text>
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <InputField
+                        placeholder="시작가를 입력하세요"
+                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                        value={formData.startPrice}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, startPrice: text })
+                        }
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
+                        keyboardType="numeric"
+                      />
+                    </Input>
+                  </VStack>
+                </VStack>
+              </Box>
+            </VStack>
+
+            {/* Additional Information */}
+            <VStack space="lg">
+              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                추가 정보
+              </Text>
+
+              <Box
+                className="rounded-2xl p-6"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255, 255, 255, 0.08)",
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 8,
+                  elevation: 8,
+                }}
+              >
+                <VStack space="md">
+                  <VStack>
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      설명
+                    </Text>
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <InputField
+                        placeholder="품목에 대한 상세 설명을 입력하세요"
                         placeholderTextColor="rgba(255, 255, 255, 0.4)"
                         value={formData.description}
                         onChangeText={(text) =>
                           setFormData({ ...formData, description: text })
                         }
-                        className="text-white text-base"
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
                         multiline
-                        numberOfLines={4}
+                        numberOfLines={3}
+                      />
+                    </Input>
+                  </VStack>
+
+                  <VStack>
+                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                      위치
+                    </Text>
+                    <Input
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                      }}
+                    >
+                      <InputField
+                        placeholder="품목 위치를 입력하세요"
+                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                        value={formData.location}
+                        onChangeText={(text) =>
+                          setFormData({ ...formData, location: text })
+                        }
+                        style={{
+                          color: "white",
+                          fontSize: 16,
+                          borderRadius: 16,
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                        }}
                       />
                     </Input>
                   </VStack>
                 </VStack>
               </Box>
             </VStack>
-          )}
 
-          {/* Step 3: Location */}
-          {step === 3 && (
-            <VStack className="px-5 space-lg">
-              <Box
-                className="rounded-3xl p-6"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.12)",
-                }}
-              >
-                <Text
-                  className="text-lg font-bold text-white mb-4"
-                  style={{ letterSpacing: 0.5 }}
-                >
-                  위치 정보
-                </Text>
-
-                <VStack className="space-md">
-                  <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      주소
-                    </Text>
-                    <Input className="bg-white/8 border-white/15 rounded-2xl">
-                      <InputField
-                        placeholder="상세 주소를 입력하세요"
-                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                        value={formData.address}
-                        onChangeText={(text) =>
-                          setFormData({ ...formData, address: text })
-                        }
-                        className="text-white text-base"
-                      />
-                    </Input>
-                  </VStack>
-
-                  <VStack>
-                    <Text
-                      className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      층수
-                    </Text>
-                    <Input className="bg-white/8 border-white/15 rounded-2xl">
-                      <InputField
-                        placeholder="예: 3층, 지하 1층"
-                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                        value={formData.floor}
-                        onChangeText={(text) =>
-                          setFormData({ ...formData, floor: text })
-                        }
-                        className="text-white text-base"
-                      />
-                    </Input>
-                  </VStack>
-                </VStack>
-              </Box>
-            </VStack>
-          )}
-
-          {/* Navigation Buttons */}
-          <VStack className="px-5 pb-20 space-md">
-            <Button
-              className="w-full"
-              onPress={handleNext}
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                borderColor: "rgba(255, 255, 255, 0.2)",
-                borderRadius: 16,
-                borderWidth: 1,
-              }}
-            >
-              <ButtonText className="font-medium text-white">
-                {step === 3 ? "경매 등록 완료" : "다음"}
-              </ButtonText>
-            </Button>
-
-            {step > 1 && (
+            {/* Create Button */}
+            <VStack space="md">
               <Button
-                variant="outline"
-                className="w-full"
-                onPress={handleBack}
+                className="rounded-2xl"
+                onPress={handleCreate}
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderColor: "rgba(255, 255, 255, 0.15)",
-                  borderRadius: 16,
+                  backgroundColor: "rgba(34, 197, 94, 0.15)",
+                  borderColor: "rgba(34, 197, 94, 0.3)",
+                  borderRadius: 18,
+                  borderWidth: 1.5,
+                  shadowColor: "#22C55E",
+                  shadowOffset: { width: 0, height: 6 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 12,
+                  elevation: 12,
+                  minHeight: 56,
                 }}
               >
-                <ButtonText className="font-medium text-white">이전</ButtonText>
+                <ButtonText className="font-bold text-green-300 tracking-wide text-base">
+                  경매 등록
+                </ButtonText>
               </Button>
-            )}
+            </VStack>
           </VStack>
         </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };

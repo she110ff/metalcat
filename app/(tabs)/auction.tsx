@@ -1,2 +1,2 @@
-import { AuctionCreate } from "@/screens/auction-create";
-export default AuctionCreate;
+import { AuctionList } from "@/screens/auction-list";
+export default AuctionList;

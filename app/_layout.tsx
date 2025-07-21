@@ -70,6 +70,8 @@ function RootLayoutNav() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auction-detail/[id]" />
+          <Stack.Screen name="auction-create" />
         </Stack>
       </ThemeProvider>
     </GluestackUIProvider>
