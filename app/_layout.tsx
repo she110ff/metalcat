@@ -8,6 +8,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { LogBox } from "react-native";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { useColorScheme } from "@/components/useColorScheme";
 import "../global.css";
@@ -24,6 +25,16 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+// Configure LogBox to ignore specific warnings
+LogBox.ignoreLogs([
+  "Warning: React does not recognize the `textTransform` prop",
+  "Warning: React does not recognize the `alignItems` prop",
+  "Warning: React does not recognize the `justifyContent` prop",
+  "Warning: React does not recognize the `borderRadius` prop",
+  "Image: asset with ID",
+  "Require cycle:",
+]);
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -56,13 +67,12 @@ function RootLayoutNav() {
     <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="signin" />
-          <Stack.Screen name="signup" />
-          <Stack.Screen name="forgot-password" />
-          <Stack.Screen name="create-password" />
-          <Stack.Screen name="news-feed" />
-          <Stack.Screen name="dashboard" />
-          <Stack.Screen name="profile" />
+          <Stack.Screen name="auth/signin" />
+          <Stack.Screen name="auth/signup" />
+          <Stack.Screen name="auth/forgot-password" />
+          <Stack.Screen name="auth/create-password" />
+          <Stack.Screen name="news-feed/news-and-feed" />
+          <Stack.Screen name="dashboard/dashboard-layout" />
         </Stack>
       </ThemeProvider>
     </GluestackUIProvider>

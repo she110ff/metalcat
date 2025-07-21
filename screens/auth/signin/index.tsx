@@ -120,17 +120,17 @@ const LoginWithLeftBackground = () => {
             router.back();
           }}
         >
-          <Icon
-            as={ArrowLeftIcon}
-            className="md:hidden text-background-800"
-            size="xl"
-          />
+          <Icon as={ArrowLeftIcon} className="md:hidden text-white" size="xl" />
         </Pressable>
         <VStack>
-          <Heading className="md:text-center" size="3xl">
-            Log in
+          <Heading
+            className="md:text-center text-white"
+            size="3xl"
+            style={{ letterSpacing: 1 }}
+          >
+            로그인
           </Heading>
-          <Text>Login to start using gluestack</Text>
+          <Text className="text-white/60">MetalCat에 오신 것을 환영합니다</Text>
         </VStack>
       </VStack>
       <VStack className="w-full">
@@ -140,7 +140,9 @@ const LoginWithLeftBackground = () => {
             className="w-full"
           >
             <FormControlLabel>
-              <FormControlLabelText>Email</FormControlLabelText>
+              <FormControlLabelText className="text-white/80 text-sm font-semibold uppercase tracking-wider">
+                이메일
+              </FormControlLabelText>
             </FormControlLabel>
             <Controller
               defaultValue=""
@@ -157,14 +159,25 @@ const LoginWithLeftBackground = () => {
                 },
               }}
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input>
+                <Input
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    borderColor: "rgba(255, 255, 255, 0.15)",
+                    borderRadius: 16,
+                  }}
+                >
                   <InputField
-                    placeholder="Enter email"
+                    placeholder="이메일을 입력하세요"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     onSubmitEditing={handleKeyPress}
                     returnKeyType="done"
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 16,
+                    }}
                   />
                 </Input>
               )}
@@ -183,7 +196,9 @@ const LoginWithLeftBackground = () => {
             className="w-full"
           >
             <FormControlLabel>
-              <FormControlLabelText>Password</FormControlLabelText>
+              <FormControlLabelText className="text-white/80 text-sm font-semibold uppercase tracking-wider">
+                비밀번호
+              </FormControlLabelText>
             </FormControlLabel>
             <Controller
               defaultValue=""
@@ -200,18 +215,32 @@ const LoginWithLeftBackground = () => {
                 },
               }}
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input>
+                <Input
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.08)",
+                    borderColor: "rgba(255, 255, 255, 0.15)",
+                    borderRadius: 16,
+                  }}
+                >
                   <InputField
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
+                    placeholder="비밀번호를 입력하세요"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
                     onSubmitEditing={handleKeyPress}
                     returnKeyType="done"
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 16,
+                    }}
                   />
                   <InputSlot onPress={handleState} className="pr-3">
-                    <InputIcon as={showPassword ? EyeIcon : EyeOffIcon} />
+                    <InputIcon
+                      as={showPassword ? EyeIcon : EyeOffIcon}
+                      style={{ color: "rgba(255, 255, 255, 0.6)" }}
+                    />
                   </InputSlot>
                 </Input>
               )}
@@ -240,41 +269,59 @@ const LoginWithLeftBackground = () => {
                   <CheckboxIndicator>
                     <CheckboxIcon as={CheckIcon} />
                   </CheckboxIndicator>
-                  <CheckboxLabel>Remember me</CheckboxLabel>
+                  <CheckboxLabel className="text-white/80">
+                    로그인 상태 유지
+                  </CheckboxLabel>
                 </Checkbox>
               )}
             />
             <Link href="/auth/forgot-password">
-              <LinkText className="font-medium text-sm text-primary-700 group-hover/link:text-primary-600">
-                Forgot Password?
+              <LinkText className="font-medium text-sm text-white/60 group-hover/link:text-white/80">
+                비밀번호를 잊으셨나요?
               </LinkText>
             </Link>
           </HStack>
         </VStack>
         <VStack className="w-full my-7 " space="lg">
-          <Button className="w-full" onPress={handleSubmit(onSubmit)}>
-            <ButtonText className="font-medium">Log in</ButtonText>
+          <Button
+            className="w-full"
+            onPress={handleSubmit(onSubmit)}
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+              borderColor: "rgba(255, 255, 255, 0.2)",
+              borderRadius: 16,
+              borderWidth: 1,
+            }}
+          >
+            <ButtonText className="font-medium text-white">로그인</ButtonText>
           </Button>
           <Button
             variant="outline"
             action="secondary"
             className="w-full gap-1"
             onPress={() => {}}
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderColor: "rgba(255, 255, 255, 0.15)",
+              borderRadius: 16,
+            }}
           >
-            <ButtonText className="font-medium">
-              Continue with Google
+            <ButtonText className="font-medium text-white">
+              Google로 계속하기
             </ButtonText>
             <ButtonIcon as={GoogleIcon} />
           </Button>
         </VStack>
         <HStack className="self-center" space="sm">
-          <Text size="md">Don't have an account?</Text>
+          <Text size="md" className="text-white/60">
+            계정이 없으신가요?
+          </Text>
           <Link href="/auth/signup">
             <LinkText
-              className="font-medium text-primary-700 group-hover/link:text-primary-600  group-hover/pressed:text-primary-700"
+              className="font-medium text-white/80 group-hover/link:text-white group-hover/pressed:text-white/60"
               size="md"
             >
-              Sign up
+              회원가입
             </LinkText>
           </Link>
         </HStack>
