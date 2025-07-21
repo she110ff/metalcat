@@ -7,6 +7,17 @@ import { Text } from "@/components/ui/text";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { Pressable } from "@/components/ui/pressable";
+import {
+  Select,
+  SelectTrigger,
+  SelectInput,
+  SelectPortal,
+  SelectBackdrop,
+  SelectContent,
+  SelectDragIndicator,
+  SelectDragIndicatorWrapper,
+  SelectItem,
+} from "@/components/ui/select";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -70,123 +81,106 @@ export const Calculator = () => {
     setResult(null);
   };
 
-  const MetalButton = ({
-    metal,
-    isSelected,
-    onPress,
-  }: {
-    metal: string;
-    isSelected: boolean;
-    onPress: () => void;
-  }) => (
-    <Pressable onPress={onPress} className="flex-1">
-      <Box
-        className={`rounded-md p-3 items-center border ${
-          isSelected
-            ? "bg-white/10 border-white/30"
-            : "bg-white/5 border-white/15"
-        }`}
-      >
-        <Text
-          className={`text-sm ${
-            isSelected
-              ? "font-semibold text-white"
-              : "font-medium text-white/80"
-          }`}
-        >
-          {metal}
-        </Text>
-      </Box>
-    </Pressable>
-  );
-
   return (
-    <SafeAreaView className="h-full w-full">
-      <LinearGradient
-        colors={["#1A1A1A", "#2D2D2D", "#404040"]}
-        style={{ flex: 1 }}
-      >
+    <LinearGradient
+      colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
+      className="flex-1"
+    >
+      <SafeAreaView className="flex-1">
         {/* Header */}
-        <Box className="pt-16 px-5 pb-5">
-          <HStack className="items-center justify-between">
-            <Pressable onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-            </Pressable>
-            <Text
-              className="text-xl font-black text-white"
-              style={{ letterSpacing: 1 }}
-            >
-              가격 계산기
-            </Text>
-            <Box className="w-6" />
-          </HStack>
-        </Box>
+        <VStack className="p-6" space="lg">
+          <Box
+            className="rounded-3xl p-8"
+            style={{
+              backgroundColor: "rgba(100, 200, 255, 0.08)",
+              borderWidth: 1,
+              borderColor: "rgba(100, 200, 255, 0.15)",
+              shadowColor: "#64C8FF",
+              shadowOffset: { width: 0, height: 20 },
+              shadowOpacity: 0.3,
+              shadowRadius: 40,
+              elevation: 20,
+            }}
+          >
+            <VStack space="md">
+              <Text className="text-cyan-300 text-lg font-black tracking-wide">
+                Metal Exchange Calculator
+              </Text>
+              <Text className="text-cyan-200/80 text-xs font-medium tracking-wider uppercase">
+                시세 정보 최종 업데이트: 2025.01.21 15:30
+              </Text>
+            </VStack>
+          </Box>
+        </VStack>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          <VStack className="px-5 space-lg">
+          <VStack className="px-6 pb-6" space="xl">
             {/* Metal Selection */}
             <Box
               className="rounded-3xl p-6"
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.12)",
+                borderColor: "rgba(255, 255, 255, 0.08)",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.4,
+                shadowRadius: 24,
+                elevation: 12,
               }}
             >
-              <Text
-                className="text-lg font-bold text-white mb-4"
-                style={{ letterSpacing: 0.5 }}
-              >
-                금속 종류 선택
+              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4">
+                금속 종류
               </Text>
 
               <VStack className="space-sm">
-                <HStack className="space-sm">
-                  <MetalButton
-                    metal="구리"
-                    isSelected={selectedMetal === "구리"}
-                    onPress={() => setSelectedMetal("구리")}
-                  />
-                  <MetalButton
-                    metal="알루미늄"
-                    isSelected={selectedMetal === "알루미늄"}
-                    onPress={() => setSelectedMetal("알루미늄")}
-                  />
-                  <MetalButton
-                    metal="아연"
-                    isSelected={selectedMetal === "아연"}
-                    onPress={() => setSelectedMetal("아연")}
-                  />
-                </HStack>
-                <HStack className="space-sm">
-                  <MetalButton
-                    metal="납"
-                    isSelected={selectedMetal === "납"}
-                    onPress={() => setSelectedMetal("납")}
-                  />
-                  <MetalButton
-                    metal="금"
-                    isSelected={selectedMetal === "금"}
-                    onPress={() => setSelectedMetal("금")}
-                  />
-                  <MetalButton
-                    metal="은"
-                    isSelected={selectedMetal === "은"}
-                    onPress={() => setSelectedMetal("은")}
-                  />
-                </HStack>
-                <HStack className="space-sm">
-                  <MetalButton
-                    metal="백금"
-                    isSelected={selectedMetal === "백금"}
-                    onPress={() => setSelectedMetal("백금")}
-                  />
-                  <Box className="flex-1" />
-                  <Box className="flex-1" />
-                </HStack>
+                <Select
+                  selectedValue={selectedMetal}
+                  onValueChange={(value) => setSelectedMetal(value)}
+                >
+                  <SelectTrigger
+                    className="rounded-2xl"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                    }}
+                  >
+                    <SelectInput
+                      placeholder="금속을 선택하세요"
+                      placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                      className="text-white text-base"
+                    />
+                  </SelectTrigger>
+                  <SelectPortal>
+                    <SelectBackdrop />
+                    <SelectContent
+                      className="rounded-2xl"
+                      style={{
+                        backgroundColor: "rgba(26, 26, 26, 0.95)",
+                        borderWidth: 1,
+                        borderColor: "rgba(255, 255, 255, 0.1)",
+                      }}
+                    >
+                      <SelectDragIndicatorWrapper>
+                        <SelectDragIndicator />
+                      </SelectDragIndicatorWrapper>
+                      {Object.keys(metalPrices).map((metal) => (
+                        <SelectItem
+                          key={metal}
+                          label={metal}
+                          value={metal}
+                          className="py-3"
+                        >
+                          <Text className="text-white text-base">{metal}</Text>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </SelectPortal>
+                </Select>
               </VStack>
             </Box>
 
@@ -194,27 +188,34 @@ export const Calculator = () => {
             <Box
               className="rounded-3xl p-6"
               style={{
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.12)",
+                borderColor: "rgba(255, 255, 255, 0.08)",
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 12 },
+                shadowOpacity: 0.4,
+                shadowRadius: 24,
+                elevation: 12,
               }}
             >
-              <Text
-                className="text-lg font-bold text-white mb-4"
-                style={{ letterSpacing: 0.5 }}
-              >
+              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4">
                 계산 정보
               </Text>
 
-              <VStack className="space-md">
-                <VStack>
-                  <Text
-                    className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                    style={{ letterSpacing: 1 }}
-                  >
+              <VStack className="space-lg">
+                <VStack className="space-sm">
+                  <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
                     중량
                   </Text>
-                  <Input className="bg-white/8 border-white/15 rounded-2xl">
+                  <Input
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      borderRadius: 16,
+                      overflow: "hidden",
+                    }}
+                  >
                     <InputField
                       placeholder={
                         selectedMetal === "금" ||
@@ -226,62 +227,94 @@ export const Calculator = () => {
                       placeholderTextColor="rgba(255, 255, 255, 0.4)"
                       value={weight}
                       onChangeText={setWeight}
-                      className="text-white text-base"
+                      style={{
+                        color: "white",
+                        fontSize: 16,
+                        borderRadius: 16,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                      }}
                       keyboardType="numeric"
                     />
                   </Input>
                 </VStack>
 
-                <VStack>
-                  <Text
-                    className="text-sm font-semibold text-white/80 mb-2 uppercase"
-                    style={{ letterSpacing: 1 }}
-                  >
+                <VStack className="space-sm mt-2">
+                  <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
                     순도 (%)
                   </Text>
-                  <Input className="bg-white/8 border-white/15 rounded-2xl">
+                  <Input
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      borderRadius: 16,
+                      overflow: "hidden",
+                    }}
+                  >
                     <InputField
                       placeholder="순도를 입력하세요 (예: 99)"
                       placeholderTextColor="rgba(255, 255, 255, 0.4)"
                       value={purity}
                       onChangeText={setPurity}
-                      className="text-white text-base"
+                      style={{
+                        color: "white",
+                        fontSize: 16,
+                        borderRadius: 16,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
+                      }}
                       keyboardType="numeric"
                     />
                   </Input>
                 </VStack>
 
-                <HStack className="space-md">
-                  <Button
-                    className="flex-1"
-                    onPress={calculate}
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      borderColor: "rgba(255, 255, 255, 0.2)",
-                      borderRadius: 16,
-                      borderWidth: 1,
-                    }}
-                  >
-                    <ButtonText className="font-medium text-white">
-                      계산하기
-                    </ButtonText>
-                  </Button>
+                <VStack className="space-md mt-4">
+                  <HStack>
+                    <Button
+                      className="flex-1"
+                      onPress={calculate}
+                      style={{
+                        backgroundColor: "rgba(34, 197, 94, 0.15)",
+                        borderColor: "rgba(34, 197, 94, 0.3)",
+                        borderRadius: 18,
+                        borderWidth: 1.5,
+                        shadowColor: "#22C55E",
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.4,
+                        shadowRadius: 12,
+                        elevation: 12,
+                        minHeight: 56,
+                        marginRight: 16,
+                      }}
+                    >
+                      <ButtonText className="font-bold text-green-300 tracking-wide text-base">
+                        계산하기
+                      </ButtonText>
+                    </Button>
 
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onPress={reset}
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      borderColor: "rgba(255, 255, 255, 0.15)",
-                      borderRadius: 16,
-                    }}
-                  >
-                    <ButtonText className="font-medium text-white">
-                      초기화
-                    </ButtonText>
-                  </Button>
-                </HStack>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onPress={reset}
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.03)",
+                        borderColor: "rgba(255, 255, 255, 0.12)",
+                        borderRadius: 16,
+                        shadowColor: "#000",
+                        shadowOffset: { width: 0, height: 3 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 6,
+                        elevation: 6,
+                        minHeight: 56,
+                      }}
+                    >
+                      <ButtonText className="font-semibold text-white/70 tracking-wide text-sm">
+                        초기화
+                      </ButtonText>
+                    </Button>
+                  </HStack>
+                </VStack>
               </VStack>
             </Box>
 
@@ -290,19 +323,21 @@ export const Calculator = () => {
               <Box
                 className="rounded-3xl p-6"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
+                  backgroundColor: "rgba(147, 51, 234, 0.08)",
                   borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.12)",
+                  borderColor: "rgba(147, 51, 234, 0.15)",
+                  shadowColor: "#9333EA",
+                  shadowOffset: { width: 0, height: 12 },
+                  shadowOpacity: 0.4,
+                  shadowRadius: 24,
+                  elevation: 12,
                 }}
               >
-                <Text
-                  className="text-lg font-bold text-white mb-4"
-                  style={{ letterSpacing: 0.5 }}
-                >
+                <Text className="text-purple-300 text-xl font-black tracking-[2px] uppercase mb-4">
                   계산 결과
                 </Text>
 
-                <VStack className="space-md">
+                <VStack className="space-sm">
                   <HStack className="justify-between items-center">
                     <Text className="text-white/80">금속 종류:</Text>
                     <Text className="text-white font-semibold">
@@ -350,44 +385,9 @@ export const Calculator = () => {
                 </VStack>
               </Box>
             )}
-
-            {/* Price Info */}
-            <Box
-              className="rounded-3xl p-6"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.05)",
-                borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.12)",
-              }}
-            >
-              <Text
-                className="text-lg font-bold text-white mb-4"
-                style={{ letterSpacing: 0.5 }}
-              >
-                현재 시세 정보
-              </Text>
-
-              <VStack className="space-sm">
-                {Object.entries(metalPrices).map(([metal, info]) => (
-                  <HStack
-                    key={metal}
-                    className="justify-between items-center py-2"
-                  >
-                    <Text className="text-white/80">{metal}</Text>
-                    <Text className="text-white font-semibold">
-                      ${info.price} {info.unit}
-                    </Text>
-                  </HStack>
-                ))}
-              </VStack>
-
-              <Text className="text-xs text-white/60 mt-4 text-center">
-                * 시세는 실시간으로 변동될 수 있습니다
-              </Text>
-            </Box>
           </VStack>
         </ScrollView>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
