@@ -122,7 +122,10 @@ export const Calculator = () => {
           </HStack>
         </Box>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 }}
+        >
           <VStack className="px-5 space-lg">
             {/* Metal Selection */}
             <Box

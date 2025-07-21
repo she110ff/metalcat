@@ -183,7 +183,10 @@ const Sidebar = () => {
     // router.push("/profile/profile");
   };
   return (
-    <ScrollView className=" h-full" contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView
+      className=" h-full"
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 110 }}
+    >
       <VStack
         className="h-full flex-1 w-[280px] py-4 pr-4 pl-8 items-center border-r border-border-300"
         space="xl"
@@ -452,7 +455,7 @@ const MainContent = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingBottom: isWeb ? 0 : 160,
+          paddingBottom: isWeb ? 0 : 110,
           flexGrow: 1,
         }}
       >

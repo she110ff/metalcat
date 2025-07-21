@@ -123,7 +123,10 @@ export const AuctionCreate = () => {
           </Text>
         </Box>
 
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 }}
+        >
           {/* Step 1: Basic Information */}
           {step === 1 && (
             <VStack className="px-5 space-lg">

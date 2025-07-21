@@ -16,7 +16,11 @@ export default function Premium() {
       className="flex-1"
     >
       <SafeAreaView className="flex-1">
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 110 }}
+        >
           <VStack className="flex-1 p-6" space="xl">
             {/* Header Section */}
             <Box
