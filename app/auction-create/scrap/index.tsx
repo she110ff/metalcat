@@ -392,10 +392,10 @@ export default function ScrapAuctionCreate() {
                   {/* 사진 추가 버튼 */}
                   {photos.length < 5 && (
                     <Pressable
-                      onPress={handleTakePhoto}
+                      onPress={handleLoadPhoto}
                       className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-400 items-center justify-center"
                     >
-                      <Ionicons name="camera" size={24} color="#6B7280" />
+                      <Ionicons name="images" size={24} color="#6B7280" />
                     </Pressable>
                   )}
                 </HStack>
@@ -410,35 +410,19 @@ export default function ScrapAuctionCreate() {
               </VStack>
 
               {/* 사진 등록 버튼 */}
-              <HStack space="md">
-                <Button
-                  variant="outline"
-                  onPress={handleTakePhoto}
-                  className="flex-1"
+              <Button
+                variant="outline"
+                onPress={handleTakePhoto}
+                className="w-full"
+              >
+                <Ionicons name="camera" size={20} color="#9333EA" />
+                <ButtonText
+                  className="ml-2"
+                  style={{ fontFamily: "NanumGothic" }}
                 >
-                  <Ionicons name="camera" size={20} color="#9333EA" />
-                  <ButtonText
-                    className="ml-2"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    사진 찍기
-                  </ButtonText>
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onPress={handleLoadPhoto}
-                  className="flex-1"
-                >
-                  <Ionicons name="images" size={20} color="#9333EA" />
-                  <ButtonText
-                    className="ml-2"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    사진 불러오기
-                  </ButtonText>
-                </Button>
-              </HStack>
+                  사진 찍기
+                </ButtonText>
+              </Button>
             </VStack>
           </VStack>
         </ScrollView>
