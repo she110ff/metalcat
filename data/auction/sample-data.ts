@@ -299,19 +299,85 @@ export const sampleAddresses: AddressInfo[] = [
 export const samplePhotos: PhotoInfo[] = [
   {
     id: "1",
-    uri: "https://example.com/photo1.jpg",
+    uri: "https://picsum.photos/800/600?random=1",
     isRepresentative: true,
     type: "full",
   },
   {
     id: "2",
-    uri: "https://example.com/photo2.jpg",
+    uri: "https://picsum.photos/800/600?random=2",
     isRepresentative: false,
     type: "closeup",
   },
   {
     id: "3",
-    uri: "https://example.com/photo3.jpg",
+    uri: "https://picsum.photos/800/600?random=3",
+    isRepresentative: false,
+    type: "detail",
+  },
+];
+
+// 구리 스크랩용 이미지
+export const copperPhotos: PhotoInfo[] = [
+  {
+    id: "copper_1",
+    uri: "https://picsum.photos/800/600?random=4",
+    isRepresentative: true,
+    type: "full",
+  },
+  {
+    id: "copper_2",
+    uri: "https://picsum.photos/800/600?random=5",
+    isRepresentative: false,
+    type: "closeup",
+  },
+  {
+    id: "copper_3",
+    uri: "https://picsum.photos/800/600?random=6",
+    isRepresentative: false,
+    type: "detail",
+  },
+  {
+    id: "copper_4",
+    uri: "https://picsum.photos/800/600?random=7",
+    isRepresentative: false,
+    type: "detail",
+  },
+];
+
+// 스테인리스 스크랩용 이미지
+export const stainlessPhotos: PhotoInfo[] = [
+  {
+    id: "stainless_1",
+    uri: "https://picsum.photos/800/600?random=8",
+    isRepresentative: true,
+    type: "full",
+  },
+  {
+    id: "stainless_2",
+    uri: "https://picsum.photos/800/600?random=9",
+    isRepresentative: false,
+    type: "closeup",
+  },
+];
+
+// 황동 스크랩용 이미지
+export const brassPhotos: PhotoInfo[] = [
+  {
+    id: "brass_1",
+    uri: "https://picsum.photos/800/600?random=10",
+    isRepresentative: true,
+    type: "full",
+  },
+  {
+    id: "brass_2",
+    uri: "https://picsum.photos/800/600?random=11",
+    isRepresentative: false,
+    type: "closeup",
+  },
+  {
+    id: "brass_3",
+    uri: "https://picsum.photos/800/600?random=12",
     isRepresentative: false,
     type: "detail",
   },
@@ -520,7 +586,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       loading: "buyer",
       sacksNeeded: true,
     } as ScrapSalesEnvironment,
-    photos: samplePhotos,
+    photos: copperPhotos,
     address: sampleAddresses[1], // 판교
     description: "고순도 구리 스크랩입니다. 압축되어 있어 운반이 편리합니다.",
     currentBid: 12500000,
@@ -553,7 +619,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       loading: "seller",
       sacksNeeded: false,
     } as ScrapSalesEnvironment,
-    photos: samplePhotos,
+    photos: stainlessPhotos,
     address: sampleAddresses[2], // 부산
     description: "고품질 스테인리스 스틸 스크랩입니다. 긴급 처분합니다.",
     currentBid: 8960000,
@@ -586,7 +652,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       loading: "buyer",
       sacksNeeded: true,
     } as ScrapSalesEnvironment,
-    photos: samplePhotos,
+    photos: brassPhotos,
     address: sampleAddresses[0], // 서울
     description: "고품질 황동 스크랩입니다. 깨끗하게 분리되어 있습니다.",
     currentBid: 4750000,
@@ -619,7 +685,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       loading: "seller",
       sacksNeeded: false,
     } as ScrapSalesEnvironment,
-    photos: samplePhotos,
+    photos: samplePhotos, // 기본 이미지 사용
     address: sampleAddresses[4], // 대구
     description:
       "고품질 철 스크랩입니다. 건축 자재에서 분리된 깨끗한 철입니다.",
@@ -674,7 +740,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       loading: "buyer",
       sacksNeeded: true,
     } as ScrapSalesEnvironment,
-    photos: samplePhotos,
+    photos: [], // 이미지 없음 (무효 경매)
     address: sampleAddresses[5], // 인천
     description: "고품질 아연 스크랩입니다. 긴급 처분이 필요한 상품입니다.",
     currentBid: 0,

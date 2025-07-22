@@ -1,5 +1,12 @@
 import React, { useState } from "react";
-import { ScrollView, ActivityIndicator, Alert } from "react-native";
+import {
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Dimensions,
+  Image,
+} from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -17,6 +24,8 @@ import { BlurView } from "expo-blur";
 import { useAuction, useCreateBid, useBids } from "@/hooks/useAuctions";
 import { formatPrice, getRemainingTime, getAuctionStatusColor } from "@/data";
 
+const { width: screenWidth } = Dimensions.get("window");
+
 interface BidHistory {
   id: string;
   bidder: string;
@@ -28,6 +37,7 @@ export const AuctionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [bidAmount, setBidAmount] = useState("");
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   // TanStack Query로 경매 상세 데이터 조회
   const { data: auction, isLoading, error } = useAuction(id as string);
@@ -163,49 +173,121 @@ export const AuctionDetail = () => {
     router.back();
   };
 
+  // 이미지 로딩 상태 관리
+  const handleImageLoad = (imageId: string) => {
+    setLoadedImages((prev) => new Set([...prev, imageId]));
+  };
+
+  const handleImageError = (imageId: string) => {
+    setLoadedImages((prev) => new Set([...prev, imageId]));
+  };
+
+  // 이미지 슬라이드 렌더링 함수
+  const renderImageItem = ({ item }: { item: any }) => {
+    const isLoaded = loadedImages.has(item.id);
+
+    return (
+      <Box style={{ width: screenWidth, height: 256 }}>
+        <Image
+          source={{ uri: item.uri }}
+          style={{
+            width: screenWidth,
+            height: 256,
+            resizeMode: "cover",
+          }}
+          onLoadEnd={() => handleImageLoad(item.id)}
+          onError={() => handleImageError(item.id)}
+        />
+        {!isLoaded && (
+          <Box
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: "rgba(0, 0, 0, 0.3)",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  // 이미지 인디케이터 렌더링 함수
+  const renderImageIndicator = () => {
+    const photos = auction?.photos || [];
+    if (photos.length <= 1) return null;
+
+    return (
+      <HStack
+        className="absolute bottom-4 left-0 right-0 justify-center"
+        space="sm"
+      >
+        {photos.map((_, index) => (
+          <Box
+            key={index}
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor:
+                index === 0
+                  ? "rgba(255, 255, 255, 0.9)"
+                  : "rgba(255, 255, 255, 0.3)",
+            }}
+          />
+        ))}
+      </HStack>
+    );
+  };
+
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
       className="flex-1"
     >
       <SafeAreaView className="flex-1">
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 110 }}
-        >
-          {/* 로딩 상태 */}
-          {isLoading && (
-            <Box className="items-center justify-center p-8">
-              <ActivityIndicator size="large" color="#9333EA" />
-              <Text
-                className="text-gray-400 text-base mt-4"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                경매 정보를 불러오는 중...
-              </Text>
-            </Box>
-          )}
+        {/* 로딩 상태 */}
+        {isLoading && (
+          <Box className="items-center justify-center p-8 flex-1">
+            <ActivityIndicator size="large" color="#9333EA" />
+            <Text
+              className="text-gray-400 text-base mt-4"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              경매 정보를 불러오는 중...
+            </Text>
+          </Box>
+        )}
 
-          {/* 에러 상태 */}
-          {error && (
-            <Box className="items-center justify-center p-8">
-              <Text
-                className="text-red-500 text-base text-center"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                경매 정보를 불러오는데 실패했습니다.
-                {"\n"}다시 시도해주세요.
-              </Text>
-            </Box>
-          )}
+        {/* 에러 상태 */}
+        {error && (
+          <Box className="items-center justify-center p-8 flex-1">
+            <Text
+              className="text-red-500 text-base text-center"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              경매 정보를 불러오는데 실패했습니다.
+              {"\n"}다시 시도해주세요.
+            </Text>
+          </Box>
+        )}
 
-          {/* 경매 상세 정보 */}
-          {!isLoading && !error && (
-            <VStack className="flex-1 p-6" space="xl">
+        {/* 경매 상세 정보 */}
+        {!isLoading && !error && (
+          <ScrollView
+            className="flex-1"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 110 }}
+            nestedScrollEnabled={true}
+          >
+            <VStack space="xl">
               {/* Header */}
               <VStack space="lg">
-                <HStack className="items-center justify-between">
+                <HStack className="items-center justify-between p-6">
                   <Pressable onPress={handleBack}>
                     <Box
                       className="w-10 h-10 rounded-xl items-center justify-center"
@@ -224,8 +306,47 @@ export const AuctionDetail = () => {
                   <Box className="w-10 h-10" />
                 </HStack>
 
+                {/* 이미지 슬라이드 */}
+                {auction?.photos && auction.photos.length > 0 ? (
+                  <Box style={{ width: screenWidth, height: 256 }}>
+                    <FlatList
+                      data={auction.photos}
+                      renderItem={renderImageItem}
+                      keyExtractor={(item) => item.id}
+                      horizontal
+                      pagingEnabled
+                      showsHorizontalScrollIndicator={false}
+                      style={{ flex: 1 }}
+                      nestedScrollEnabled={true}
+                    />
+                    {renderImageIndicator()}
+                  </Box>
+                ) : (
+                  // 기본 이미지 (이미지가 없는 경우)
+                  <Box
+                    style={{
+                      width: screenWidth,
+                      height: 256,
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.1)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Ionicons
+                      name="images-outline"
+                      size={64}
+                      color="rgba(255, 255, 255, 0.3)"
+                    />
+                    <Text className="text-white/40 text-sm mt-2">
+                      이미지 없음
+                    </Text>
+                  </Box>
+                )}
+
                 <Box
-                  className="rounded-3xl p-8"
+                  className="rounded-3xl p-8 mx-6"
                   style={{
                     backgroundColor: "rgba(147, 51, 234, 0.08)",
                     borderWidth: 1,
@@ -251,8 +372,96 @@ export const AuctionDetail = () => {
                 </Box>
               </VStack>
 
+              {/* 경매 상세 정보 */}
+              <VStack space="lg" className="px-6">
+                <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                  상세 정보
+                </Text>
+
+                <Box
+                  className="rounded-2xl p-6"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 255, 255, 0.08)",
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.4,
+                    shadowRadius: 8,
+                    elevation: 8,
+                  }}
+                >
+                  <VStack space="md">
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        상품 설명
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.description}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        판매자
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.seller}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        위치
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.location}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        거래 종류
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.transactionType === "urgent"
+                          ? "긴급 경매"
+                          : "일반 경매"}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        시작가
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.startPrice}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        시작 시간
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.startDate}
+                      </Text>
+                    </VStack>
+
+                    <VStack space="sm">
+                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                        종료 시간
+                      </Text>
+                      <Text className="text-white font-semibold text-base">
+                        {auctionDetail.endDate}
+                      </Text>
+                    </VStack>
+                  </VStack>
+                </Box>
+              </VStack>
+
               {/* Current Bid Status */}
-              <VStack space="lg">
+              <VStack space="lg" className="px-6">
                 <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
                   현재 입찰 현황
                 </Text>
@@ -380,7 +589,7 @@ export const AuctionDetail = () => {
 
               {/* Bid Input */}
               {auctionDetail.status === "active" && (
-                <VStack space="lg">
+                <VStack space="lg" className="px-6">
                   <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
                     입찰하기
                   </Text>
@@ -475,7 +684,7 @@ export const AuctionDetail = () => {
 
               {/* 종료된 경매 안내 */}
               {auctionDetail.status === "ended" && (
-                <VStack space="lg">
+                <VStack space="lg" className="px-6">
                   <Text className="text-red-300 text-xl font-black tracking-[2px] uppercase">
                     경매 종료
                   </Text>
@@ -512,139 +721,57 @@ export const AuctionDetail = () => {
                 </VStack>
               )}
 
-              {/* Auction Details */}
-              <VStack space="lg">
-                <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                  경매 정보
-                </Text>
-
-                <Box
-                  className="rounded-2xl p-6"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  }}
-                >
-                  <VStack space="md">
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">판매자:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.seller}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">위치:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.location}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">거래종류:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.transactionType === "urgent"
-                          ? "긴급 경매"
-                          : "일반 경매"}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">중량:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.weight}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">시작가:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.startPrice}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">시작일:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.startDate}
-                      </Text>
-                    </HStack>
-
-                    <HStack className="justify-between items-center">
-                      <Text className="text-white/80">종료일:</Text>
-                      <Text className="text-white font-semibold">
-                        {auctionDetail.endDate}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </Box>
-              </VStack>
-
               {/* Bid History */}
-              <VStack space="lg">
-                <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                  입찰 기록
-                </Text>
+              {bidHistory.length > 0 && (
+                <VStack space="lg" className="px-6">
+                  <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                    입찰 기록
+                  </Text>
 
-                {bidsLoading ? (
-                  <Box className="items-center justify-center p-8">
-                    <ActivityIndicator size="small" color="#9333EA" />
-                    <Text className="text-gray-400 text-sm mt-2">
-                      입찰 기록을 불러오는 중...
-                    </Text>
-                  </Box>
-                ) : bidHistory.length > 0 ? (
-                  <VStack space="md">
-                    {bidHistory.map((bid) => (
-                      <Box
-                        key={bid.id}
-                        className="rounded-2xl p-4"
-                        style={{
-                          backgroundColor: "rgba(255, 255, 255, 0.04)",
-                          borderWidth: 1,
-                          borderColor: "rgba(255, 255, 255, 0.08)",
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 2 },
-                          shadowOpacity: 0.2,
-                          shadowRadius: 4,
-                          elevation: 4,
-                        }}
-                      >
-                        <HStack className="items-center justify-between">
+                  <Box
+                    className="rounded-2xl p-6"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 8,
+                      elevation: 8,
+                    }}
+                  >
+                    <VStack space="md">
+                      {bidHistory.map((bid) => (
+                        <HStack
+                          key={bid.id}
+                          className="items-center justify-between p-3 rounded-xl"
+                          style={{
+                            backgroundColor: "rgba(255, 255, 255, 0.02)",
+                            borderWidth: 1,
+                            borderColor: "rgba(255, 255, 255, 0.05)",
+                          }}
+                        >
                           <VStack>
-                            <Text className="text-white font-semibold text-base tracking-wide">
+                            <Text className="text-white font-semibold text-base">
                               {bid.bidder}
                             </Text>
-                            <Text className="text-white/50 text-xs tracking-[1px]">
+                            <Text className="text-white/60 text-xs">
                               {bid.time}
                             </Text>
                           </VStack>
-
-                          <Text className="text-white font-bold text-lg tracking-wide">
+                          <Text className="text-yellow-300 font-bold text-lg">
                             {bid.amount}
                           </Text>
                         </HStack>
-                      </Box>
-                    ))}
-                  </VStack>
-                ) : (
-                  <Box className="items-center justify-center p-8">
-                    <Text className="text-gray-400 text-base text-center">
-                      아직 입찰 기록이 없습니다.
-                      {"\n"}첫 번째 입찰자가 되어보세요!
-                    </Text>
+                      ))}
+                    </VStack>
                   </Box>
-                )}
-              </VStack>
+                </VStack>
+              )}
             </VStack>
-          )}
-        </ScrollView>
+          </ScrollView>
+        )}
       </SafeAreaView>
     </LinearGradient>
   );
