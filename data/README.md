@@ -7,15 +7,22 @@
 ```
 data/
 ├── index.ts              # 메인 export 파일
+├── README.md             # 문서화
 ├── types/                # TypeScript 타입 정의
 │   ├── index.ts
-│   └── metal-price.ts
+│   ├── metal-price.ts
+│   └── auction.ts
 ├── dashboard/            # 대시보드 관련 데이터
 │   ├── index.ts
 │   └── metal-prices.ts
+├── auction/              # 경매 관련 데이터
+│   ├── index.ts
+│   ├── product-types.ts
+│   └── sample-data.ts
 └── utils/               # 유틸리티 함수
     ├── index.ts
-    └── metal-price-utils.ts
+    ├── metal-price-utils.ts
+    └── auction-utils.ts
 ```
 
 ## 사용법
@@ -23,7 +30,33 @@ data/
 ### 모든 데이터 import
 
 ```typescript
-import { MetalPriceCardProps, lmePricesData, groupMetalData } from "@/data";
+import {
+  MetalPriceCardProps,
+  lmePricesData,
+  groupMetalData,
+  AuctionItem,
+  MachineryAuctionItem,
+  ScrapAuctionItem,
+  MaterialAuctionItem,
+  DemolitionAuctionItem,
+  productTypes,
+  sampleAuctionItems,
+  getAuctionStatusColor,
+  getAuctionCategoryText,
+  formatPricePerUnit,
+  getTopBid,
+  sampleAuctionsByCategory,
+  isMachineryAuction,
+  isScrapAuction,
+  isMaterialAuction,
+  isDemolitionAuction,
+  getMachineryProductName,
+  getScrapSpecialNotes,
+  getMaterialType,
+  getMaterialDimensions,
+  getDemolitionBuildingPurpose,
+  getDemolitionArea,
+} from "@/data";
 ```
 
 ### 특정 모듈만 import
@@ -31,7 +64,24 @@ import { MetalPriceCardProps, lmePricesData, groupMetalData } from "@/data";
 ```typescript
 import { MetalPriceCardProps } from "@/data/types";
 import { lmePricesData } from "@/data/dashboard";
-import { groupMetalData } from "@/data/utils";
+import {
+  productTypes,
+  sampleAuctionsByCategory,
+  machinerySalesEnvironmentOptions,
+  materialSalesEnvironmentOptions,
+  demolitionSalesEnvironmentOptions,
+  demolitionSpecificOptions,
+} from "@/data/auction";
+import {
+  groupMetalData,
+  getAuctionCategoryText,
+  isMachineryAuction,
+  isMaterialAuction,
+  isDemolitionAuction,
+  getMaterialType,
+  getDemolitionBuildingPurpose,
+  getDemolitionArea,
+} from "@/data/utils";
 ```
 
 ## 새로운 데이터 추가
