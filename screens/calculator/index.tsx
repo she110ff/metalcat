@@ -124,7 +124,10 @@ export const Calculator = () => {
                 elevation: 12,
               }}
             >
-              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4">
+              <Text
+                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
+                style={{ fontFamily: "NanumGothic" }}
+              >
                 금속 종류
               </Text>
 
@@ -190,13 +193,19 @@ export const Calculator = () => {
                 elevation: 12,
               }}
             >
-              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4">
+              <Text
+                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
+                style={{ fontFamily: "NanumGothic" }}
+              >
                 계산 정보
               </Text>
 
               <VStack className="space-lg">
                 <VStack className="space-sm">
-                  <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                  <Text
+                    className="text-white/80 text-sm font-semibold uppercase tracking-[1px]"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
                     중량
                   </Text>
                   <Input
@@ -232,7 +241,10 @@ export const Calculator = () => {
                 </VStack>
 
                 <VStack className="space-sm mt-2">
-                  <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                  <Text
+                    className="text-white/80 text-sm font-semibold uppercase tracking-[1px]"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
                     순도 (%)
                   </Text>
                   <Input

@@ -172,7 +172,10 @@ export const AuctionList = () => {
 
             {/* Auction List */}
             <VStack space="lg" className="mt-10">
-              <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+              <Text
+                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase"
+                style={{ fontFamily: "NanumGothic" }}
+              >
                 진행중인 경매
               </Text>
 
@@ -198,10 +201,16 @@ export const AuctionList = () => {
                       <VStack space="md">
                         <HStack className="items-center justify-between">
                           <VStack className="flex-1">
-                            <Text className="text-white font-bold text-lg mb-1 tracking-wide">
+                            <Text
+                              className="text-white font-bold text-lg mb-1 tracking-wide"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {item.title}
                             </Text>
-                            <Text className="text-white/50 text-xs uppercase tracking-[1px]">
+                            <Text
+                              className="text-white/50 text-xs uppercase tracking-[1px]"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {item.metalType} • {item.weight}
                             </Text>
                           </VStack>
@@ -211,7 +220,10 @@ export const AuctionList = () => {
                               backgroundColor: getStatusColor(item.status),
                             }}
                           >
-                            <Text className="text-white font-semibold text-xs tracking-wide">
+                            <Text
+                              className="text-white font-semibold text-xs tracking-wide"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {getStatusText(item.status)}
                             </Text>
                           </Box>
@@ -219,19 +231,31 @@ export const AuctionList = () => {
 
                         <HStack className="items-center justify-between">
                           <VStack>
-                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                            <Text
+                              className="text-white/60 text-xs uppercase tracking-[1px]"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               현재 입찰가
                             </Text>
-                            <Text className="text-white font-bold text-base tracking-wide">
+                            <Text
+                              className="text-white font-bold text-base tracking-wide"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {item.currentBid}
                             </Text>
                           </VStack>
 
                           <VStack className="items-end">
-                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                            <Text
+                              className="text-white/60 text-xs uppercase tracking-[1px]"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               남은 시간
                             </Text>
-                            <Text className="text-white font-semibold text-sm tracking-wide">
+                            <Text
+                              className="text-white font-semibold text-sm tracking-wide"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {item.endTime}
                             </Text>
                           </VStack>
@@ -244,7 +268,10 @@ export const AuctionList = () => {
                               size={16}
                               color="rgba(255, 255, 255, 0.6)"
                             />
-                            <Text className="text-white/60 text-xs ml-1">
+                            <Text
+                              className="text-white/60 text-xs ml-1"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               {item.bidders}명 참여
                             </Text>
                           </HStack>
@@ -255,7 +282,10 @@ export const AuctionList = () => {
                               size={16}
                               color="rgba(255, 255, 255, 0.6)"
                             />
-                            <Text className="text-white/60 text-xs ml-1">
+                            <Text
+                              className="text-white/60 text-xs ml-1"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
                               상세보기
                             </Text>
                           </HStack>

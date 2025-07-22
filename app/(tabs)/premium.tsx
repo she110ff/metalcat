@@ -55,7 +55,10 @@ export default function Premium() {
                   elevation: 8,
                 }}
               >
-                <Text className="text-yellow-400 text-sm font-bold text-center tracking-wide">
+                <Text
+                  className="text-yellow-400 text-sm font-bold text-center tracking-wide"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
                   서비스 목록
                 </Text>
               </Pressable>
@@ -73,7 +76,10 @@ export default function Premium() {
                   elevation: 8,
                 }}
               >
-                <Text className="text-white/70 text-sm font-semibold text-center tracking-wide">
+                <Text
+                  className="text-white/70 text-sm font-semibold text-center tracking-wide"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
                   신청 내역
                 </Text>
               </Pressable>
@@ -98,26 +104,43 @@ export default function Premium() {
                   <Box className="w-8 h-8 rounded-xl bg-yellow-400/20 items-center justify-center">
                     <Ionicons name="star" size={16} color="#FFC107" />
                   </Box>
-                  <Text className="text-yellow-400 text-sm font-bold">
+                  <Text
+                    className="text-yellow-400 text-sm font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
                     인기
                   </Text>
                 </HStack>
 
                 <VStack space="sm">
-                  <Text className="text-white text-xl font-bold">
+                  <Text
+                    className="text-white text-xl font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
                     현장 방문 감정
                   </Text>
-                  <Text className="text-white/60 text-sm">
+                  <Text
+                    className="text-white/60 text-sm"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
                     전문가가 직접 방문하여 특수금속을 정확히 감정합니다
                   </Text>
                 </VStack>
 
                 <VStack space="xs">
                   <HStack className="justify-between items-center">
-                    <Text className="text-green-400 text-2xl font-black">
+                    <Text
+                      className="text-green-400 text-2xl font-black"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
                       150,000원
                     </Text>
-                    <Text className="text-white/50 text-sm">2-3시간</Text>
+                    <Text
+                      className="text-white/50 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      2-3시간
+                    </Text>
                   </HStack>
                 </VStack>
 
@@ -128,7 +151,10 @@ export default function Premium() {
                       size={16}
                       color="#4CAF50"
                     />
-                    <Text className="text-white/80 text-sm">
+                    <Text
+                      className="text-white/80 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
                       전문 감정사 파견
                     </Text>
                   </HStack>
@@ -138,7 +164,10 @@ export default function Premium() {
                       size={16}
                       color="#4CAF50"
                     />
-                    <Text className="text-white/80 text-sm">
+                    <Text
+                      className="text-white/80 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
                       정밀 분석 장비 사용
                     </Text>
                   </HStack>
@@ -148,7 +177,10 @@ export default function Premium() {
                       size={16}
                       color="#4CAF50"
                     />
-                    <Text className="text-white/80 text-sm">
+                    <Text
+                      className="text-white/80 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
                       상세 감정서 제공
                     </Text>
                   </HStack>
@@ -158,7 +190,10 @@ export default function Premium() {
                       size={16}
                       color="#4CAF50"
                     />
-                    <Text className="text-white/80 text-sm">
+                    <Text
+                      className="text-white/80 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
                       시장 기준 견적
                     </Text>
                   </HStack>
