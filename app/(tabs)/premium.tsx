@@ -23,36 +23,25 @@ export default function Premium() {
         >
           <VStack className="flex-1 p-6" space="xl">
             {/* Header Section */}
-            <Box
-              className="rounded-3xl p-8"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.03)",
-                borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.08)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 20 },
-                shadowOpacity: 0.5,
-                shadowRadius: 40,
-                elevation: 20,
-              }}
-            >
-              <VStack className="items-center" space="md">
-                <Box className="w-16 h-16 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 items-center justify-center">
-                  <Ionicons name="star" size={28} color="#1A1A1A" />
-                </Box>
-                <VStack className="items-center" space="sm">
-                  <Text className="text-white text-3xl font-black tracking-wide">
-                    특수금속 서비스
-                  </Text>
-                  <Text className="text-white/60 text-base font-medium tracking-wider uppercase text-center">
-                    전문가 방문 • 정밀 분석 • 최고가 매입
-                  </Text>
-                </VStack>
-              </VStack>
-            </Box>
+            <VStack className="items-center">
+              <Text
+                className="text-white text-2xl font-black uppercase text-center"
+                style={{
+                  fontFamily: "SpaceMono",
+                  textShadowColor: "rgba(255, 255, 255, 0.4)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 4,
+                  letterSpacing: 6,
+                  fontWeight: "900",
+                  color: "#F8FAFC",
+                }}
+              >
+                PREMIUM
+              </Text>
+            </VStack>
 
             {/* Service Type Buttons */}
-            <HStack space="md">
+            <HStack space="md" className="mt-10">
               <Pressable
                 className="flex-1 rounded-2xl p-4"
                 style={{

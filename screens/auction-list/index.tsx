@@ -152,35 +152,26 @@ export const AuctionList = () => {
           <VStack className="flex-1 p-6" space="xl">
             {/* Header */}
             <VStack space="lg">
-              <Box
-                className="rounded-3xl p-8"
-                style={{
-                  backgroundColor: "rgba(147, 51, 234, 0.08)",
-                  borderWidth: 1,
-                  borderColor: "rgba(147, 51, 234, 0.15)",
-                  shadowColor: "#9333EA",
-                  shadowOffset: { width: 0, height: 20 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 40,
-                  elevation: 20,
-                }}
-              >
-                <VStack space="md">
-                  <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
-                    Metal Auction Platform
-                  </Text>
-                  <Text className="text-white text-4xl font-black tracking-wide">
-                    경매 목록
-                  </Text>
-                  <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
-                    실시간 경매 현황
-                  </Text>
-                </VStack>
-              </Box>
+              <VStack className="items-center">
+                <Text
+                  className="text-white text-2xl font-black uppercase text-center"
+                  style={{
+                    fontFamily: "SpaceMono",
+                    textShadowColor: "rgba(255, 255, 255, 0.4)",
+                    textShadowOffset: { width: 0, height: 2 },
+                    textShadowRadius: 4,
+                    letterSpacing: 6,
+                    fontWeight: "900",
+                    color: "#F8FAFC",
+                  }}
+                >
+                  AUCTION
+                </Text>
+              </VStack>
             </VStack>
 
             {/* Auction List */}
-            <VStack space="lg">
+            <VStack space="lg" className="mt-10">
               <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
                 진행중인 경매
               </Text>

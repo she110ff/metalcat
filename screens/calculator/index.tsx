@@ -87,40 +87,32 @@ export const Calculator = () => {
       className="flex-1"
     >
       <SafeAreaView className="flex-1">
-        {/* Header */}
-        <VStack className="p-6" space="lg">
-          <Box
-            className="rounded-3xl p-8"
-            style={{
-              backgroundColor: "rgba(100, 200, 255, 0.08)",
-              borderWidth: 1,
-              borderColor: "rgba(100, 200, 255, 0.15)",
-              shadowColor: "#64C8FF",
-              shadowOffset: { width: 0, height: 20 },
-              shadowOpacity: 0.3,
-              shadowRadius: 40,
-              elevation: 20,
-            }}
-          >
-            <VStack space="md">
-              <Text className="text-cyan-300 text-lg font-black tracking-wide">
-                Metal Exchange Calculator
-              </Text>
-              <Text className="text-cyan-200/80 text-xs font-medium tracking-wider uppercase">
-                시세 정보 최종 업데이트: 2025.01.21 15:30
-              </Text>
-            </VStack>
-          </Box>
-        </VStack>
-
         <ScrollView
+          className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          <VStack className="px-6 pb-6" space="xl">
+          <VStack className="flex-1 p-6" space="xl">
+            {/* Header */}
+            <VStack className="items-center">
+              <Text
+                className="text-white text-2xl font-black uppercase text-center"
+                style={{
+                  fontFamily: "SpaceMono",
+                  textShadowColor: "rgba(255, 255, 255, 0.4)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 4,
+                  letterSpacing: 6,
+                  fontWeight: "900",
+                  color: "#F8FAFC",
+                }}
+              >
+                CALCULATOR
+              </Text>
+            </VStack>
             {/* Metal Selection */}
             <Box
-              className="rounded-3xl p-6"
+              className="rounded-3xl p-6 mt-10"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
