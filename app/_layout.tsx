@@ -21,6 +21,12 @@ LogBox.ignoreLogs([
   "Consider refactoring to remove the need for a cycle",
   "factory",
   "Require cycle:",
+  "Failed to decode downloaded font",
+  "OTS parsing error",
+  "Access to storage is not allowed from this context",
+  "Function components cannot be given refs",
+  "Image: style.resizeMode is deprecated",
+  "Please use props.resizeMode",
 ]);
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { useColorScheme } from "@/components/useColorScheme";

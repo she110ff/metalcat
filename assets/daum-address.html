@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>주소 검색</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: system-ui, -apple-system, sans-serif;
+        background-color: #f5f5f5;
+      }
+      .container {
+        max-width: 100%;
+        margin: 0 auto;
+        background: white;
+        min-height: 100vh;
+      }
+      .header {
+        background: #0f0a1a;
+        color: white;
+        padding: 16px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 18px;
+      }
+      .search-container {
+        padding: 20px;
+      }
+      .search-button {
+        width: 100%;
+        padding: 16px;
+        background: #9333ea;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        margin-bottom: 20px;
+      }
+      .search-button:hover {
+        background: #7c3aed;
+      }
+      .info {
+        background: #f3f4f6;
+        padding: 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #6b7280;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">주소 검색</div>
+      <div class="search-container">
+        <button class="search-button" onclick="openDaumPostcode()">
+          주소 검색하기
+        </button>
+        <div class="info">
+          <strong>사용 방법:</strong><br />
+          1. "주소 검색하기" 버튼을 클릭하세요<br />
+          2. 검색창에서 주소를 입력하세요<br />
+          3. 원하는 주소를 선택하세요<br />
+          4. 선택한 주소가 자동으로 입력됩니다
+        </div>
+      </div>
+    </div>
+
+    <!-- 다음 주소 검색 API -->
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    <script>
+      function openDaumPostcode() {
+        new daum.Postcode({
+          oncomplete: function (data) {
+            // 선택된 주소 정보를 React Native로 전달
+            const addressData = {
+              address: data.address,
+              roadAddress: data.roadAddress,
+              jibunAddress: data.jibunAddress,
+              zonecode: data.zonecode,
+              buildingName: data.buildingName || "",
+              apartment: data.apartment || "",
+              bname: data.bname || "",
+              bname1: data.bname1 || "",
+              bname2: data.bname2 || "",
+              sido: data.sido || "",
+              sigungu: data.sigungu || "",
+              sigunguCode: data.sigunguCode || "",
+              roadnameCode: data.roadnameCode || "",
+              roadname: data.roadname || "",
+              userSelectedType: data.userSelectedType || "",
+              userLanguageType: data.userLanguageType || "",
+            };
+
+            // React Native WebView로 데이터 전달
+            if (window.ReactNativeWebView) {
+              window.ReactNativeWebView.postMessage(
+                JSON.stringify(addressData)
+              );
+            } else {
+              console.log("주소 데이터:", addressData);
+            }
+          },
+          onclose: function (state) {
+            // 팝업이 닫힐 때 처리
+            if (state === "FORCE_CLOSE") {
+              // 사용자가 강제로 닫은 경우
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(
+                  JSON.stringify({
+                    action: "close",
+                    reason: "user_cancelled",
+                  })
+                );
+              }
+            } else if (state === "COMPLETE_CLOSE") {
+              // 정상적으로 완료된 경우
+              if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(
+                  JSON.stringify({
+                    action: "close",
+                    reason: "completed",
+                  })
+                );
+              }
+            }
+          },
+        }).open();
+      }
+
+      // 페이지 로드 완료 시 React Native에 알림
+      window.addEventListener("load", function () {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(
+            JSON.stringify({
+              action: "ready",
+            })
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

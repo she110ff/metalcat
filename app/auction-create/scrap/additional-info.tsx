@@ -19,6 +19,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { scrapSalesEnvironmentOptions } from "@/data";
+import {
+  DaumAddressSearch,
+  DaumAddressResult,
+} from "@/components/DaumAddressSearch";
 
 export default function ScrapAdditionalInfo() {
   const router = useRouter();
@@ -35,15 +39,30 @@ export default function ScrapAdditionalInfo() {
     forkliftAccess: false,
   });
   const [address, setAddress] = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
   const [description, setDescription] = useState("");
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
+  const [selectedAddress, setSelectedAddress] =
+    useState<DaumAddressResult | null>(null);
 
   const handleBack = () => {
     router.back();
   };
 
   const handleAddressSearch = () => {
-    // TODO: 주소 검색 기능 구현
-    Alert.alert("주소 검색", "주소 검색 기능은 추후 구현 예정입니다.");
+    setShowAddressSearch(true);
+  };
+
+  const handleAddressComplete = (result: DaumAddressResult) => {
+    setSelectedAddress(result);
+    // 도로명 주소를 우선 사용, 없으면 기본 주소 사용
+    const mainAddress = result.roadAddress || result.address;
+    setAddress(mainAddress);
+    setShowAddressSearch(false);
+  };
+
+  const handleAddressClose = () => {
+    setShowAddressSearch(false);
   };
 
   const handleSubmit = () => {
@@ -251,6 +270,42 @@ export default function ScrapAdditionalInfo() {
               >
                 현장 주소
               </Text>
+
+              {/* 주소 검색 결과 표시 */}
+              {selectedAddress && (
+                <Box className="p-3 rounded-lg bg-green-900/20 border border-green-500/30">
+                  <VStack space="sm">
+                    <HStack className="items-center">
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color="#10B981"
+                      />
+                      <Text
+                        className="text-green-400 text-sm font-bold ml-2"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        선택된 주소
+                      </Text>
+                    </HStack>
+                    <Text
+                      className="text-white text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      {selectedAddress.roadAddress || selectedAddress.address}
+                    </Text>
+                    {selectedAddress.buildingName && (
+                      <Text
+                        className="text-gray-400 text-xs"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        건물: {selectedAddress.buildingName}
+                      </Text>
+                    )}
+                  </VStack>
+                </Box>
+              )}
+
               <HStack space="md">
                 <Input className="flex-1">
                   <InputField
@@ -275,6 +330,21 @@ export default function ScrapAdditionalInfo() {
                   </ButtonText>
                 </Button>
               </HStack>
+
+              {/* 상세 주소 입력 */}
+              <Input>
+                <InputField
+                  placeholder="상세 주소 (동, 호수 등)"
+                  value={addressDetail}
+                  onChangeText={setAddressDetail}
+                  style={{
+                    color: "#FFFFFF",
+                    fontFamily: "NanumGothic",
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderColor: "rgba(255, 255, 255, 0.08)",
+                  }}
+                />
+              </Input>
             </VStack>
 
             {/* 설명 */}
@@ -322,6 +392,13 @@ export default function ScrapAdditionalInfo() {
           </Button>
         </Box>
       </SafeAreaView>
+
+      {/* 주소 검색 모달 */}
+      <DaumAddressSearch
+        visible={showAddressSearch}
+        onComplete={handleAddressComplete}
+        onClose={handleAddressClose}
+      />
     </LinearGradient>
   );
 }
