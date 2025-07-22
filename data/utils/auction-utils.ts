@@ -92,7 +92,11 @@ export const isDemolitionAuction = (
 };
 
 // 남은 시간 계산 (상세화면용)
-export const getRemainingTime = (endTime: Date): string => {
+export const getRemainingTime = (endTime: Date | undefined): string => {
+  if (!endTime) {
+    return "종료됨";
+  }
+
   const now = new Date();
   const diff = endTime.getTime() - now.getTime();
 

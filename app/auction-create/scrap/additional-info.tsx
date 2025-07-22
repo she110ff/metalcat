@@ -164,6 +164,7 @@ export default function ScrapAdditionalInfo() {
         desiredPrice: parseInt(desiredPrice.replace(/,/g, ""), 10),
         phoneNumberDisclosure: phoneNumberDisclosure,
         userId: "current_user", // 실제로는 로그인된 사용자 ID
+        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후 종료
       };
 
       // TanStack Query를 사용하여 경매 데이터 저장

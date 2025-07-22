@@ -85,6 +85,10 @@ const auctionAPI = {
   ): Promise<AuctionItem> => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    // endTime이 없으면 기본값 설정 (7일 후)
+    const endTime =
+      auctionData.endTime || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
     const newAuction: AuctionItem = {
       id: `auction_${Date.now()}`,
       status: "active",
@@ -92,6 +96,7 @@ const auctionAPI = {
       updatedAt: new Date(),
       viewCount: 0,
       bids: [],
+      endTime,
       ...auctionData,
     } as AuctionItem;
 
