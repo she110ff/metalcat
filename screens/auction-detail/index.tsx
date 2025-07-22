@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, ActivityIndicator } from "react-native";
+import { ScrollView, ActivityIndicator, Alert } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -14,7 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { useAuction } from "@/hooks/useAuctions";
+import { useAuction, useCreateBid, useBids } from "@/hooks/useAuctions";
 import { formatPrice, getRemainingTime, getAuctionStatusColor } from "@/data";
 
 interface BidHistory {
@@ -31,6 +31,28 @@ export const AuctionDetail = () => {
 
   // TanStack Query로 경매 상세 데이터 조회
   const { data: auction, isLoading, error } = useAuction(id as string);
+
+  // 입찰 기록 조회
+  const { data: bids = [], isLoading: bidsLoading } = useBids(id as string);
+
+  // 입찰 생성 뮤테이션
+  const createBidMutation = useCreateBid();
+
+  // 시간 차이 계산 함수
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return `${diffInSeconds}초 전`;
+    } else if (diffInSeconds < 3600) {
+      return `${Math.floor(diffInSeconds / 60)}분 전`;
+    } else if (diffInSeconds < 86400) {
+      return `${Math.floor(diffInSeconds / 3600)}시간 전`;
+    } else {
+      return `${Math.floor(diffInSeconds / 86400)}일 전`;
+    }
+  };
 
   // 로딩 중이거나 에러가 있으면 기본 데이터 사용
   const auctionDetail =
@@ -86,39 +108,54 @@ export const AuctionDetail = () => {
             : "2025.01.21 18:00",
         };
 
-  const bidHistory: BidHistory[] = [
-    {
-      id: "1",
-      bidder: "철강업체A",
-      amount: "₩12,500,000",
-      time: "2분 전",
-    },
-    {
-      id: "2",
-      bidder: "재활용업체B",
-      amount: "₩12,300,000",
-      time: "5분 전",
-    },
-    {
-      id: "3",
-      bidder: "메탈트레이더C",
-      amount: "₩12,100,000",
-      time: "8분 전",
-    },
-    {
-      id: "4",
-      bidder: "철강업체A",
-      amount: "₩12,000,000",
-      time: "12분 전",
-    },
-  ];
+  // 입찰 기록을 UI에 맞게 변환
+  const bidHistory: BidHistory[] = bids.map((bid) => ({
+    id: bid.id,
+    bidder: bid.userName || "익명",
+    amount: `₩${formatPrice(bid.amount)}`,
+    time: getTimeAgo(bid.bidTime),
+  }));
 
-  const handleBid = () => {
-    if (bidAmount) {
-      // 실제로는 API 호출하여 입찰 처리
-      console.log("입찰 금액:", bidAmount);
+  // 현재 최고 입찰가 계산
+  const currentTopBid =
+    bids.length > 0 ? Math.max(...bids.map((bid) => bid.amount)) : 0;
+
+  const handleBid = async () => {
+    if (!bidAmount) {
+      Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
+      return;
+    }
+
+    const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert("입력 오류", "올바른 금액을 입력해주세요.");
+      return;
+    }
+
+    // 현재 최고 입찰가보다 낮은지 확인
+    if (amount <= currentTopBid) {
+      Alert.alert(
+        "입찰 오류",
+        "현재 최고 입찰가보다 높은 금액을 입력해주세요."
+      );
+      return;
+    }
+
+    try {
+      await createBidMutation.mutateAsync({
+        auctionId: id as string,
+        bidData: {
+          userId: "current_user", // 실제로는 로그인된 사용자 ID
+          userName: "현재 사용자", // 실제로는 로그인된 사용자 이름
+          amount: amount,
+          location: "서울특별시", // 실제로는 사용자 위치
+        },
+      });
+
       setBidAmount("");
-      // TODO: TanStack Query mutation으로 입찰 처리
+      Alert.alert("입찰 성공", "입찰이 성공적으로 등록되었습니다.");
+    } catch (error: any) {
+      Alert.alert("입찰 실패", error.message || "입찰 중 오류가 발생했습니다.");
     }
   };
 
@@ -282,76 +319,99 @@ export const AuctionDetail = () => {
               </VStack>
 
               {/* Bid Input */}
-              <VStack space="lg">
-                <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                  입찰하기
-                </Text>
+              {auctionDetail.status === "active" && (
+                <VStack space="lg">
+                  <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+                    입찰하기
+                  </Text>
 
-                <Box
-                  className="rounded-2xl p-6"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  }}
-                >
-                  <VStack space="md">
-                    <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
-                      입찰 금액
-                    </Text>
-                    <Input
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.04)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.08)",
-                        borderRadius: 16,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <InputField
-                        placeholder="입찰 금액을 입력하세요"
-                        placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                        value={bidAmount}
-                        onChangeText={setBidAmount}
+                  <Box
+                    className="rounded-2xl p-6"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 8,
+                      elevation: 8,
+                    }}
+                  >
+                    <VStack space="md">
+                      <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                        입찰 금액
+                      </Text>
+                      <Input
                         style={{
-                          color: "white",
-                          fontSize: 16,
+                          backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.08)",
                           borderRadius: 16,
-                          paddingHorizontal: 16,
-                          paddingVertical: 12,
+                          overflow: "hidden",
                         }}
-                        keyboardType="numeric"
-                      />
-                    </Input>
+                      >
+                        <InputField
+                          placeholder="입찰 금액을 입력하세요"
+                          placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                          value={bidAmount}
+                          onChangeText={setBidAmount}
+                          style={{
+                            color: "white",
+                            fontSize: 16,
+                            borderRadius: 16,
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                          }}
+                          keyboardType="numeric"
+                        />
+                      </Input>
 
-                    <Button
-                      className="rounded-2xl"
-                      onPress={handleBid}
-                      style={{
-                        backgroundColor: "rgba(34, 197, 94, 0.15)",
-                        borderColor: "rgba(34, 197, 94, 0.3)",
-                        borderRadius: 18,
-                        borderWidth: 1.5,
-                        shadowColor: "#22C55E",
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.4,
-                        shadowRadius: 12,
-                        elevation: 12,
-                        minHeight: 56,
-                      }}
-                    >
-                      <ButtonText className="font-bold text-green-300 tracking-wide text-base">
-                        입찰하기
-                      </ButtonText>
-                    </Button>
-                  </VStack>
-                </Box>
-              </VStack>
+                      {currentTopBid > 0 && (
+                        <Text className="text-yellow-300 text-xs font-medium">
+                          최소 입찰가: ₩{formatPrice(currentTopBid + 10000)}
+                        </Text>
+                      )}
+
+                      <Button
+                        className="rounded-2xl"
+                        onPress={handleBid}
+                        disabled={createBidMutation.isPending}
+                        style={{
+                          backgroundColor: createBidMutation.isPending
+                            ? "rgba(107, 114, 128, 0.3)"
+                            : "rgba(34, 197, 94, 0.15)",
+                          borderColor: createBidMutation.isPending
+                            ? "rgba(107, 114, 128, 0.3)"
+                            : "rgba(34, 197, 94, 0.3)",
+                          borderRadius: 18,
+                          borderWidth: 1.5,
+                          shadowColor: createBidMutation.isPending
+                            ? "#6B7280"
+                            : "#22C55E",
+                          shadowOffset: { width: 0, height: 6 },
+                          shadowOpacity: 0.4,
+                          shadowRadius: 12,
+                          elevation: 12,
+                          minHeight: 56,
+                        }}
+                      >
+                        <ButtonText
+                          className={`font-bold tracking-wide text-base ${
+                            createBidMutation.isPending
+                              ? "text-gray-400"
+                              : "text-green-300"
+                          }`}
+                        >
+                          {createBidMutation.isPending
+                            ? "입찰 중..."
+                            : "입찰하기"}
+                        </ButtonText>
+                      </Button>
+                    </VStack>
+                  </Box>
+                </VStack>
+              )}
 
               {/* Auction Details */}
               <VStack space="lg">
@@ -433,39 +493,55 @@ export const AuctionDetail = () => {
                   입찰 기록
                 </Text>
 
-                <VStack space="md">
-                  {bidHistory.map((bid) => (
-                    <Box
-                      key={bid.id}
-                      className="rounded-2xl p-4"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.04)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.08)",
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 2 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 4,
-                        elevation: 4,
-                      }}
-                    >
-                      <HStack className="items-center justify-between">
-                        <VStack>
-                          <Text className="text-white font-semibold text-base tracking-wide">
-                            {bid.bidder}
-                          </Text>
-                          <Text className="text-white/50 text-xs tracking-[1px]">
-                            {bid.time}
-                          </Text>
-                        </VStack>
+                {bidsLoading ? (
+                  <Box className="items-center justify-center p-8">
+                    <ActivityIndicator size="small" color="#9333EA" />
+                    <Text className="text-gray-400 text-sm mt-2">
+                      입찰 기록을 불러오는 중...
+                    </Text>
+                  </Box>
+                ) : bidHistory.length > 0 ? (
+                  <VStack space="md">
+                    {bidHistory.map((bid) => (
+                      <Box
+                        key={bid.id}
+                        className="rounded-2xl p-4"
+                        style={{
+                          backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.08)",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: 0.2,
+                          shadowRadius: 4,
+                          elevation: 4,
+                        }}
+                      >
+                        <HStack className="items-center justify-between">
+                          <VStack>
+                            <Text className="text-white font-semibold text-base tracking-wide">
+                              {bid.bidder}
+                            </Text>
+                            <Text className="text-white/50 text-xs tracking-[1px]">
+                              {bid.time}
+                            </Text>
+                          </VStack>
 
-                        <Text className="text-white font-bold text-lg tracking-wide">
-                          {bid.amount}
-                        </Text>
-                      </HStack>
-                    </Box>
-                  ))}
-                </VStack>
+                          <Text className="text-white font-bold text-lg tracking-wide">
+                            {bid.amount}
+                          </Text>
+                        </HStack>
+                      </Box>
+                    ))}
+                  </VStack>
+                ) : (
+                  <Box className="items-center justify-center p-8">
+                    <Text className="text-gray-400 text-base text-center">
+                      아직 입찰 기록이 없습니다.
+                      {"\n"}첫 번째 입찰자가 되어보세요!
+                    </Text>
+                  </Box>
+                )}
               </VStack>
             </VStack>
           )}

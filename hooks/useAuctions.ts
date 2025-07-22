@@ -7,6 +7,7 @@ import {
   type AuctionItem,
   type AuctionCategory,
   type ScrapAuctionFormData,
+  type BidInfo,
 } from "@/data";
 
 // 쿼리 키 패턴
@@ -18,6 +19,8 @@ export const auctionKeys = {
   details: () => [...auctionKeys.all, "detail"] as const,
   detail: (id: string) => [...auctionKeys.details(), id] as const,
   myAuctions: (userId: string) => [...auctionKeys.all, "my", userId] as const,
+  bids: (auctionId: string) =>
+    [...auctionKeys.detail(auctionId), "bids"] as const,
 };
 
 // 로컬 데이터 저장소 (실제로는 AsyncStorage나 상태관리 라이브러리 사용)
@@ -136,6 +139,89 @@ const auctionAPI = {
 
     localAuctionData.splice(index, 1);
   },
+
+  // 입찰 생성
+  createBid: async (
+    auctionId: string,
+    bidData: {
+      userId: string;
+      userName: string;
+      amount: number;
+      location: string;
+    }
+  ): Promise<BidInfo> => {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const auctionIndex = localAuctionData.findIndex(
+      (auction) => auction.id === auctionId
+    );
+    if (auctionIndex === -1) {
+      throw new Error("경매를 찾을 수 없습니다.");
+    }
+
+    const auction = localAuctionData[auctionIndex];
+
+    // 경매가 종료되었는지 확인
+    if (auction.status === "ended") {
+      throw new Error("이미 종료된 경매입니다.");
+    }
+
+    // 현재 최고 입찰가 확인
+    const currentTopBid =
+      auction.bids.length > 0
+        ? Math.max(...auction.bids.map((bid) => bid.amount))
+        : 0;
+
+    // 입찰가가 현재 최고 입찰가보다 낮으면 에러
+    if (bidData.amount <= currentTopBid) {
+      throw new Error("현재 최고 입찰가보다 높은 금액을 입력해주세요.");
+    }
+
+    // 새 입찰 생성
+    const newBid: BidInfo = {
+      id: `bid_${Date.now()}`,
+      userId: bidData.userId,
+      userName: bidData.userName,
+      amount: bidData.amount,
+      location: bidData.location,
+      bidTime: new Date(),
+      isTopBid: true,
+    };
+
+    // 기존 입찰들의 isTopBid를 false로 변경
+    auction.bids.forEach((bid) => {
+      bid.isTopBid = false;
+    });
+
+    // 새 입찰 추가
+    auction.bids.push(newBid);
+
+    // 경매 정보 업데이트
+    auction.currentBid = bidData.amount;
+    auction.bidders = new Set(auction.bids.map((bid) => bid.userId)).size;
+    auction.updatedAt = new Date();
+
+    // 입찰 기록을 금액 순으로 정렬 (최고가 순)
+    auction.bids.sort((a, b) => b.amount - a.amount);
+
+    return newBid;
+  },
+
+  // 경매의 입찰 기록 조회
+  getBids: async (auctionId: string): Promise<BidInfo[]> => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    const auction = localAuctionData.find(
+      (auction) => auction.id === auctionId
+    );
+
+    if (!auction) {
+      throw new Error("경매를 찾을 수 없습니다.");
+    }
+
+    // 입찰 기록을 금액 순으로 정렬 (최고가 순)
+    return [...auction.bids].sort((a, b) => b.amount - a.amount);
+  },
 };
 
 // 경매 목록 조회 훅
@@ -217,5 +303,50 @@ export const useDeleteAuction = () => {
       // 상세 캐시에서 제거
       queryClient.removeQueries({ queryKey: auctionKeys.detail(deletedId) });
     },
+  });
+};
+
+// 입찰 생성 훅
+export const useCreateBid = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      auctionId,
+      bidData,
+    }: {
+      auctionId: string;
+      bidData: {
+        userId: string;
+        userName: string;
+        amount: number;
+        location: string;
+      };
+    }) => auctionAPI.createBid(auctionId, bidData),
+    onSuccess: (newBid, { auctionId }) => {
+      // 경매 상세 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: auctionKeys.detail(auctionId),
+      });
+
+      // 입찰 기록 캐시 무효화
+      queryClient.invalidateQueries({ queryKey: auctionKeys.bids(auctionId) });
+
+      // 경매 목록 캐시 무효화 (현재 입찰가 업데이트)
+      queryClient.invalidateQueries({ queryKey: auctionKeys.lists() });
+    },
+    onError: (error) => {
+      console.error("입찰 실패:", error);
+    },
+  });
+};
+
+// 입찰 기록 조회 훅
+export const useBids = (auctionId: string) => {
+  return useQuery({
+    queryKey: auctionKeys.bids(auctionId),
+    queryFn: () => auctionAPI.getBids(auctionId),
+    enabled: !!auctionId,
+    staleTime: 30 * 1000, // 30초
   });
 };

@@ -351,6 +351,118 @@ export const sampleBids: BidInfo[] = [
   },
 ];
 
+// 구리 경매용 입찰 데이터
+export const sampleCopperBids: BidInfo[] = [
+  {
+    id: "copper_bid1",
+    userId: "user4",
+    userName: "서울메탈",
+    amount: 12500000,
+    pricePerUnit: 5000,
+    location: "서울특별시 강남구",
+    bidTime: new Date(Date.now() - 2 * 60 * 1000), // 2분 전
+    isTopBid: true,
+  },
+  {
+    id: "copper_bid2",
+    userId: "user5",
+    userName: "인천철강",
+    amount: 12300000,
+    pricePerUnit: 4920,
+    location: "인천광역시",
+    bidTime: new Date(Date.now() - 5 * 60 * 1000), // 5분 전
+    isTopBid: false,
+  },
+  {
+    id: "copper_bid3",
+    userId: "user6",
+    userName: "대구스크랩",
+    amount: 12100000,
+    pricePerUnit: 4840,
+    location: "대구광역시",
+    bidTime: new Date(Date.now() - 8 * 60 * 1000), // 8분 전
+    isTopBid: false,
+  },
+  {
+    id: "copper_bid4",
+    userId: "user4",
+    userName: "서울메탈",
+    amount: 12000000,
+    pricePerUnit: 4800,
+    location: "서울특별시 강남구",
+    bidTime: new Date(Date.now() - 12 * 60 * 1000), // 12분 전
+    isTopBid: false,
+  },
+];
+
+// 스테인리스 경매용 입찰 데이터
+export const sampleStainlessBids: BidInfo[] = [
+  {
+    id: "stainless_bid1",
+    userId: "user7",
+    userName: "부산철강",
+    amount: 8960000,
+    pricePerUnit: 2800,
+    location: "부산광역시",
+    bidTime: new Date(Date.now() - 1 * 60 * 1000), // 1분 전
+    isTopBid: true,
+  },
+  {
+    id: "stainless_bid2",
+    userId: "user8",
+    userName: "울산메탈",
+    amount: 8800000,
+    pricePerUnit: 2750,
+    location: "울산광역시",
+    bidTime: new Date(Date.now() - 3 * 60 * 1000), // 3분 전
+    isTopBid: false,
+  },
+  {
+    id: "stainless_bid3",
+    userId: "user9",
+    userName: "창원스크랩",
+    amount: 8640000,
+    pricePerUnit: 2700,
+    location: "경남 창원시",
+    bidTime: new Date(Date.now() - 6 * 60 * 1000), // 6분 전
+    isTopBid: false,
+  },
+];
+
+// 황동 경매용 입찰 데이터 (종료된 경매)
+export const sampleBrassBids: BidInfo[] = [
+  {
+    id: "brass_bid1",
+    userId: "user10",
+    userName: "광주철강",
+    amount: 4750000,
+    pricePerUnit: 5000,
+    location: "광주광역시",
+    bidTime: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1일 전
+    isTopBid: true,
+  },
+  {
+    id: "brass_bid2",
+    userId: "user11",
+    userName: "전주메탈",
+    amount: 4700000,
+    pricePerUnit: 4947,
+    location: "전북 전주시",
+    bidTime: new Date(Date.now() - 25 * 60 * 60 * 1000), // 1일 1시간 전
+    isTopBid: false,
+  },
+  {
+    id: "brass_bid3",
+    userId: "user12",
+    userName: "청주스크랩",
+    amount: 4650000,
+    pricePerUnit: 4895,
+    location: "충북 청주시",
+    bidTime: new Date(Date.now() - 26 * 60 * 60 * 1000), // 1일 2시간 전
+    isTopBid: false,
+  },
+];
+
 // 고철 경매 샘플 데이터
 export const sampleScrapAuctions: ScrapAuctionItem[] = [
   {
@@ -398,7 +510,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     auctionCategory: "scrap",
     quantity: {
       knowsWeight: true,
-      estimatedWeight: 1800,
+      estimatedWeight: 2500,
       unit: "kg",
     } as ScrapQuantityInfo,
     salesEnvironment: {
@@ -411,28 +523,83 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     photos: samplePhotos,
     address: sampleAddresses[1], // 판교
     description: "고순도 구리 스크랩입니다. 압축되어 있어 운반이 편리합니다.",
-    currentBid: 3600000,
-    pricePerUnit: 2000,
-    totalBidAmount: 3600000,
+    currentBid: 12500000,
+    pricePerUnit: 5000,
+    totalBidAmount: 12500000,
     endTime: new Date(Date.now() + 5 * 60 * 60 * 1000), // 5시간 후
     status: "active",
-    bidders: 12,
+    bidders: 4,
     viewCount: 245,
-    bids: [
-      {
-        id: "bid4",
-        userId: "user4",
-        userName: "판교메탈",
-        amount: 3600000,
-        pricePerUnit: 2000,
-        location: "경기 성남시",
-        bidTime: new Date(Date.now() - 30 * 60 * 1000),
-        isTopBid: true,
-      },
-    ],
+    bids: sampleCopperBids,
     createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
     updatedAt: new Date(),
     userId: "seller2",
+  },
+  {
+    id: "scrap3",
+    title: "스테인리스 스틸 스크랩",
+    productType: scrapProductTypes[2], // 스테인리스
+    transactionType: "urgent",
+    auctionCategory: "scrap",
+    quantity: {
+      knowsWeight: true,
+      estimatedWeight: 3200,
+      unit: "kg",
+    } as ScrapQuantityInfo,
+    salesEnvironment: {
+      delivery: "seller",
+      shippingCost: "seller",
+      truckAccess: true,
+      loading: "seller",
+      sacksNeeded: false,
+    } as ScrapSalesEnvironment,
+    photos: samplePhotos,
+    address: sampleAddresses[2], // 부산
+    description: "고품질 스테인리스 스틸 스크랩입니다. 긴급 처분합니다.",
+    currentBid: 8960000,
+    pricePerUnit: 2800,
+    totalBidAmount: 8960000,
+    endTime: new Date(Date.now() + 1 * 60 * 60 * 1000), // 1시간 후
+    status: "ending",
+    bidders: 3,
+    viewCount: 567,
+    bids: sampleStainlessBids,
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    updatedAt: new Date(),
+    userId: "seller3",
+  },
+  {
+    id: "scrap4",
+    title: "황동 스크랩",
+    productType: scrapProductTypes[1], // 황동
+    transactionType: "normal",
+    auctionCategory: "scrap",
+    quantity: {
+      knowsWeight: true,
+      estimatedWeight: 950,
+      unit: "kg",
+    } as ScrapQuantityInfo,
+    salesEnvironment: {
+      delivery: "buyer",
+      shippingCost: "buyer",
+      truckAccess: false,
+      loading: "buyer",
+      sacksNeeded: true,
+    } as ScrapSalesEnvironment,
+    photos: samplePhotos,
+    address: sampleAddresses[0], // 서울
+    description: "고품질 황동 스크랩입니다. 깨끗하게 분리되어 있습니다.",
+    currentBid: 4750000,
+    pricePerUnit: 5000,
+    totalBidAmount: 4750000,
+    endTime: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1시간 전 (종료됨)
+    status: "ended",
+    bidders: 3,
+    viewCount: 234,
+    bids: sampleBrassBids,
+    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
+    updatedAt: new Date(),
+    userId: "seller4",
   },
 ];
 
