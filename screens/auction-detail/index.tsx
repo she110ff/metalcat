@@ -136,6 +136,7 @@ export const AuctionDetail = () => {
       return;
     }
 
+    // 콤마 제거 후 숫자 변환
     const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
     if (isNaN(amount) || amount <= 0) {
       Alert.alert("입력 오류", "올바른 금액을 입력해주세요.");
@@ -167,6 +168,24 @@ export const AuctionDetail = () => {
     } catch (error: any) {
       Alert.alert("입찰 실패", error.message || "입찰 중 오류가 발생했습니다.");
     }
+  };
+
+  // 숫자에 콤마 추가하는 함수
+  const formatNumberWithComma = (value: string) => {
+    // 숫자만 추출
+    const numbers = value.replace(/[^\d]/g, "");
+    // 콤마 추가
+    if (numbers.length > 0) {
+      return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    return "";
+  };
+
+  // 입력값 변경 처리
+  const handleBidAmountChange = (text: string) => {
+    // 콤마가 포함된 형식으로 변환
+    const formattedText = formatNumberWithComma(text);
+    setBidAmount(formattedText);
   };
 
   const handleBack = () => {
@@ -624,7 +643,7 @@ export const AuctionDetail = () => {
                           placeholder="입찰 금액을 입력하세요"
                           placeholderTextColor="rgba(255, 255, 255, 0.4)"
                           value={bidAmount}
-                          onChangeText={setBidAmount}
+                          onChangeText={handleBidAmountChange}
                           style={{
                             color: "white",
                             fontSize: 16,
