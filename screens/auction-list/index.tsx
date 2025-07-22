@@ -32,11 +32,7 @@ export const AuctionList = () => {
   const animatedValue = useState(new Animated.Value(0))[0];
 
   // TanStack Query로 경매 데이터 조회
-  const {
-    data: queryAuctions = [],
-    isLoading,
-    error,
-  } = useAuctions({ status: "active" });
+  const { data: queryAuctions = [], isLoading, error } = useAuctions(); // status 필터 제거하여 모든 경매 표시
 
   // TanStack Query 데이터를 사용하되, 로딩 중이거나 에러가 있으면 기본 데이터 사용
   const auctionItems =
@@ -266,94 +262,41 @@ export const AuctionList = () => {
                         <VStack space="md">
                           <HStack className="items-center justify-between">
                             <VStack className="flex-1">
-                              <Text
-                                className="text-white font-bold text-lg mb-1 tracking-wide"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
+                              <Text className="text-white font-semibold text-base tracking-wide">
                                 {item.title}
                               </Text>
-                              <Text
-                                className="text-white/50 text-xs uppercase tracking-[1px]"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
+                              <Text className="text-white/60 text-sm">
                                 {item.metalType} • {item.weight}
-                              </Text>
-                            </VStack>
-                            <Box
-                              className="px-3 py-1 rounded-lg"
-                              style={{
-                                backgroundColor: getStatusColor(item.status),
-                              }}
-                            >
-                              <Text
-                                className="text-white font-semibold text-xs tracking-wide"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                {getStatusText(item.status)}
-                              </Text>
-                            </Box>
-                          </HStack>
-
-                          <HStack className="items-center justify-between">
-                            <VStack>
-                              <Text
-                                className="text-white/60 text-xs uppercase tracking-[1px]"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                현재 입찰가
-                              </Text>
-                              <Text
-                                className="text-white font-bold text-base tracking-wide"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                {item.currentBid}
                               </Text>
                             </VStack>
 
                             <VStack className="items-end">
-                              <Text
-                                className="text-white/60 text-xs uppercase tracking-[1px]"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                남은 시간
+                              <Text className="text-white font-bold text-lg tracking-wide">
+                                {item.currentBid}
                               </Text>
-                              <Text
-                                className="text-white font-semibold text-sm tracking-wide"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                {item.endTime}
+                              <Text className="text-white/60 text-xs">
+                                {item.bidders}명 참여
                               </Text>
                             </VStack>
                           </HStack>
 
-                          <HStack className="items-center justify-between">
-                            <HStack className="items-center">
-                              <Ionicons
-                                name="people"
-                                size={16}
-                                color="rgba(255, 255, 255, 0.6)"
-                              />
-                              <Text
-                                className="text-white/60 text-xs ml-1"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                {item.bidders}명 참여
+                          <HStack className="items-center justify-between mt-2">
+                            <Box
+                              className="px-2 py-1 rounded-lg"
+                              style={{
+                                backgroundColor: getStatusColor(item.status),
+                              }}
+                            >
+                              <Text className="text-white font-semibold text-xs tracking-wide">
+                                {getStatusText(item.status)}
                               </Text>
-                            </HStack>
+                            </Box>
 
-                            <HStack className="items-center">
-                              <Ionicons
-                                name="arrow-forward"
-                                size={16}
-                                color="rgba(255, 255, 255, 0.6)"
-                              />
-                              <Text
-                                className="text-white/60 text-xs ml-1"
-                                style={{ fontFamily: "NanumGothic" }}
-                              >
-                                상세보기
-                              </Text>
-                            </HStack>
+                            <Text className="text-white/60 text-sm">
+                              {item.status === "ended"
+                                ? "종료됨"
+                                : item.endTime}
+                            </Text>
                           </HStack>
                         </VStack>
                       </Box>

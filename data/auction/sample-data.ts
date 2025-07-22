@@ -601,6 +601,94 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     updatedAt: new Date(),
     userId: "seller4",
   },
+  {
+    id: "scrap5",
+    title: "철 스크랩",
+    productType: scrapProductTypes[3], // 철
+    transactionType: "normal",
+    auctionCategory: "scrap",
+    quantity: {
+      knowsWeight: true,
+      estimatedWeight: 1500,
+      unit: "kg",
+    } as ScrapQuantityInfo,
+    salesEnvironment: {
+      delivery: "seller",
+      shippingCost: "seller",
+      truckAccess: true,
+      loading: "seller",
+      sacksNeeded: false,
+    } as ScrapSalesEnvironment,
+    photos: samplePhotos,
+    address: sampleAddresses[4], // 대구
+    description:
+      "고품질 철 스크랩입니다. 건축 자재에서 분리된 깨끗한 철입니다.",
+    currentBid: 1800000,
+    pricePerUnit: 1200,
+    totalBidAmount: 1800000,
+    endTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3일 전 (종료됨)
+    status: "ended",
+    bidders: 2,
+    viewCount: 156,
+    bids: [
+      {
+        id: "iron_bid1",
+        userId: "user13",
+        userName: "대구철강",
+        amount: 1800000,
+        pricePerUnit: 1200,
+        location: "대구광역시",
+        bidTime: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4일 전
+        isTopBid: true,
+      },
+      {
+        id: "iron_bid2",
+        userId: "user14",
+        userName: "경북메탈",
+        amount: 1750000,
+        pricePerUnit: 1167,
+        location: "경북 포항시",
+        bidTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5일 전
+        isTopBid: false,
+      },
+    ],
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date(),
+    userId: "seller5",
+  },
+  {
+    id: "scrap6",
+    title: "아연 스크랩",
+    productType: scrapProductTypes[5], // 아연
+    transactionType: "urgent",
+    auctionCategory: "scrap",
+    quantity: {
+      knowsWeight: true,
+      estimatedWeight: 800,
+      unit: "kg",
+    } as ScrapQuantityInfo,
+    salesEnvironment: {
+      delivery: "buyer",
+      shippingCost: "buyer",
+      truckAccess: false,
+      loading: "buyer",
+      sacksNeeded: true,
+    } as ScrapSalesEnvironment,
+    photos: samplePhotos,
+    address: sampleAddresses[5], // 인천
+    description: "고품질 아연 스크랩입니다. 긴급 처분이 필요한 상품입니다.",
+    currentBid: 0,
+    pricePerUnit: 0,
+    totalBidAmount: 0,
+    endTime: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6시간 전 (종료됨, 입찰 없음)
+    status: "ended",
+    bidders: 0,
+    viewCount: 89,
+    bids: [],
+    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    updatedAt: new Date(),
+    userId: "seller6",
+  },
 ];
 
 // 중고 기계 샘플 데이터 (화면 분석 기반)

@@ -274,7 +274,9 @@ export const AuctionDetail = () => {
                     <HStack className="items-center justify-between">
                       <VStack>
                         <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                          현재 입찰가
+                          {auctionDetail.status === "ended"
+                            ? "최종 입찰가"
+                            : "현재 입찰가"}
                         </Text>
                         <Text className="text-white font-bold text-2xl tracking-wide">
                           {auctionDetail.currentBid}
@@ -283,7 +285,9 @@ export const AuctionDetail = () => {
 
                       <VStack className="items-end">
                         <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                          남은 시간
+                          {auctionDetail.status === "ended"
+                            ? "종료 시간"
+                            : "남은 시간"}
                         </Text>
                         <Text className="text-white font-semibold text-lg tracking-wide">
                           {auctionDetail.endTime}
@@ -306,14 +310,70 @@ export const AuctionDetail = () => {
                       <Box
                         className="px-3 py-1 rounded-lg"
                         style={{
-                          backgroundColor: "rgba(34, 197, 94, 0.9)",
+                          backgroundColor:
+                            auctionDetail.status === "active"
+                              ? "rgba(34, 197, 94, 0.9)"
+                              : auctionDetail.status === "ending"
+                              ? "rgba(245, 158, 11, 0.9)"
+                              : "rgba(239, 68, 68, 0.9)",
                         }}
                       >
                         <Text className="text-white font-semibold text-xs tracking-wide">
-                          진행중
+                          {auctionDetail.status === "active"
+                            ? "진행중"
+                            : auctionDetail.status === "ending"
+                            ? "마감임박"
+                            : "종료"}
                         </Text>
                       </Box>
                     </HStack>
+
+                    {/* 종료된 경매에서 낙찰자 정보 표시 */}
+                    {auctionDetail.status === "ended" && bids.length > 0 && (
+                      <Box
+                        className="rounded-xl p-4 mt-2"
+                        style={{
+                          backgroundColor: "rgba(34, 197, 94, 0.1)",
+                          borderWidth: 1,
+                          borderColor: "rgba(34, 197, 94, 0.2)",
+                        }}
+                      >
+                        <HStack className="items-center justify-between">
+                          <VStack>
+                            <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
+                              낙찰자
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {bids[0]?.userName || "익명"}
+                            </Text>
+                          </VStack>
+                          <VStack className="items-end">
+                            <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
+                              낙찰가
+                            </Text>
+                            <Text className="text-white font-bold text-lg">
+                              {formatPrice(bids[0]?.amount || 0)}
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </Box>
+                    )}
+
+                    {/* 종료된 경매에서 입찰이 없는 경우 */}
+                    {auctionDetail.status === "ended" && bids.length === 0 && (
+                      <Box
+                        className="rounded-xl p-4 mt-2"
+                        style={{
+                          backgroundColor: "rgba(239, 68, 68, 0.1)",
+                          borderWidth: 1,
+                          borderColor: "rgba(239, 68, 68, 0.2)",
+                        }}
+                      >
+                        <Text className="text-red-300 text-sm font-semibold text-center">
+                          입찰자가 없어 경매가 무효 처리되었습니다.
+                        </Text>
+                      </Box>
+                    )}
                   </VStack>
                 </Box>
               </VStack>
@@ -408,6 +468,45 @@ export const AuctionDetail = () => {
                             : "입찰하기"}
                         </ButtonText>
                       </Button>
+                    </VStack>
+                  </Box>
+                </VStack>
+              )}
+
+              {/* 종료된 경매 안내 */}
+              {auctionDetail.status === "ended" && (
+                <VStack space="lg">
+                  <Text className="text-red-300 text-xl font-black tracking-[2px] uppercase">
+                    경매 종료
+                  </Text>
+
+                  <Box
+                    className="rounded-2xl p-6"
+                    style={{
+                      backgroundColor: "rgba(239, 68, 68, 0.05)",
+                      borderWidth: 1,
+                      borderColor: "rgba(239, 68, 68, 0.15)",
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 8,
+                      elevation: 8,
+                    }}
+                  >
+                    <VStack space="md" className="items-center">
+                      <Ionicons
+                        name="time-outline"
+                        size={48}
+                        color="rgba(239, 68, 68, 0.8)"
+                      />
+                      <Text className="text-red-300 text-lg font-bold text-center">
+                        이 경매는 종료되었습니다
+                      </Text>
+                      <Text className="text-white/60 text-sm text-center">
+                        {bids.length > 0
+                          ? "다른 경매에 참여해보세요!"
+                          : "입찰자가 없어 경매가 무효 처리되었습니다."}
+                      </Text>
                     </VStack>
                   </Box>
                 </VStack>
