@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { MetalPriceData } from "./types";
+import { MetalPriceData, MetalDetailData } from "../types/metal-price";
 
 export const lmePricesData: MetalPriceData[] = [
   {
@@ -76,3 +76,64 @@ export const domesticScrapData: MetalPriceData[] = [
     bgColor: "rgba(34, 197, 94, 0.9)",
   },
 ];
+
+// 니켈 상세 데이터 (2025년 7월 16일~22일 실제 거래일 기준)
+export const nickelDetailData: MetalDetailData = {
+  metalName: "니켈",
+  currentPrice: 15317.31,
+  unit: "USD/톤",
+  changePercent: 0.28,
+  changeType: "positive",
+  iconName: "battery-charging",
+  iconColor: "#1A1A1A",
+  bgColor: "rgba(158, 158, 158, 0.9)",
+  dailyData: [
+    {
+      date: "2025-07-16",
+      cashPrice: 15023.57,
+      threeMonthPrice: 15218.0,
+      changePercent: 0.83,
+      changeType: "positive",
+      spread: 194.43,
+    },
+    {
+      date: "2025-07-17",
+      cashPrice: 15275.0,
+      threeMonthPrice: 15440.0,
+      changePercent: 1.67,
+      changeType: "positive",
+      spread: 165.0,
+    },
+    {
+      date: "2025-07-18",
+      cashPrice: 15317.31,
+      threeMonthPrice: 15523.0,
+      changePercent: 0.28,
+      changeType: "positive",
+      spread: 205.69,
+    },
+    {
+      date: "2025-07-21",
+      cashPrice: 15345.5,
+      threeMonthPrice: 15568.0,
+      changePercent: 0.18,
+      changeType: "positive",
+      spread: 222.5,
+    },
+    {
+      date: "2025-07-22",
+      cashPrice: 15382.75,
+      threeMonthPrice: 15612.0,
+      changePercent: 0.24,
+      changeType: "positive",
+      spread: 229.25,
+    },
+  ],
+  statistics: {
+    highestPrice: 15382.75,
+    lowestPrice: 15023.57,
+    averagePrice: 15268.83,
+    volatility: 156.59,
+    totalChange: 2.39,
+  },
+};

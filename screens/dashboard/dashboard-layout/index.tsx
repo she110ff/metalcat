@@ -16,6 +16,12 @@ import { lmePricesData, domesticScrapData, groupMetalData } from "@/data";
 export const Dashboard = () => {
   const router = useRouter();
 
+  const handleMetalPress = (metalName: string) => {
+    if (metalName === "니켈") {
+      router.push("/metal-detail");
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
@@ -74,6 +80,7 @@ export const Dashboard = () => {
                       <MetalPriceCard
                         key={`lme-${rowIndex}-${itemIndex}`}
                         {...item}
+                        onPress={() => handleMetalPress(item.metalName)}
                       />
                     ))}
                   </HStack>
@@ -100,6 +107,7 @@ export const Dashboard = () => {
                       <MetalPriceCard
                         key={`domestic-${rowIndex}-${itemIndex}`}
                         {...item}
+                        onPress={() => handleMetalPress(item.metalName)}
                       />
                     ))}
                   </HStack>
