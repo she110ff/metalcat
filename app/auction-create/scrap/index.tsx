@@ -7,6 +7,8 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { ButtonText } from "@/components/ui/button";
 import { Pressable } from "@/components/ui/pressable";
+import { Input } from "@/components/ui/input";
+import { InputField } from "@/components/ui/input";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -24,6 +26,7 @@ interface PhotoInfo {
 export default function ScrapAuctionCreate() {
   const router = useRouter();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
+  const [weight, setWeight] = useState("");
   const [photos, setPhotos] = useState<PhotoInfo[]>([
     // 기본 사진 3개 미리 추가
     {
@@ -157,10 +160,15 @@ export default function ScrapAuctionCreate() {
   const handleNext = () => {
     console.log("handleNext 호출됨");
     console.log("selectedProductType:", selectedProductType);
+    console.log("weight:", weight);
     console.log("photos.length:", photos.length);
 
     if (!selectedProductType) {
       Alert.alert("알림", "고철 종류를 선택해주세요.");
+      return;
+    }
+    if (!weight.trim()) {
+      Alert.alert("알림", "중량을 입력해주세요.");
       return;
     }
     if (photos.length < 3) {
@@ -291,6 +299,43 @@ export default function ScrapAuctionCreate() {
                   ))
                 )}
               </VStack>
+            </VStack>
+
+            {/* 중량 입력 */}
+            <VStack space="md">
+              <Text
+                className="text-yellow-300 text-lg font-bold"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                중량 (kg)
+              </Text>
+              <Box
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255, 255, 255, 0.08)",
+                }}
+              >
+                <Input>
+                  <InputField
+                    placeholder="중량을 입력하세요 (예: 1000)"
+                    value={weight}
+                    onChangeText={(text) => {
+                      // 숫자만 입력 가능
+                      const numericValue = text.replace(/[^0-9]/g, "");
+                      setWeight(numericValue);
+                    }}
+                    keyboardType="numeric"
+                    style={{
+                      color: "#FFFFFF",
+                      fontFamily: "NanumGothic",
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                    }}
+                  />
+                </Input>
+              </Box>
             </VStack>
 
             {/* 사진 등록 */}

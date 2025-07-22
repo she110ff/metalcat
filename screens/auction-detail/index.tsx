@@ -67,6 +67,7 @@ export const AuctionDetail = () => {
             ? `${(auction as any).quantity.quantity}대`
             : "1건",
           purity: "99.5%", // 기본값
+          transactionType: (auction as any).transactionType || "normal",
           startPrice: `₩${formatPrice((auction as any).desiredPrice || 0)}`,
           currentBid: `₩${formatPrice(auction.currentBid || 0)}`,
           endTime: getRemainingTime(auction.endTime),
@@ -383,6 +384,22 @@ export const AuctionDetail = () => {
                       <Text className="text-white/80">위치:</Text>
                       <Text className="text-white font-semibold">
                         {auctionDetail.location}
+                      </Text>
+                    </HStack>
+
+                    <HStack className="justify-between items-center">
+                      <Text className="text-white/80">거래종류:</Text>
+                      <Text className="text-white font-semibold">
+                        {auctionDetail.transactionType === "urgent"
+                          ? "긴급 경매"
+                          : "일반 경매"}
+                      </Text>
+                    </HStack>
+
+                    <HStack className="justify-between items-center">
+                      <Text className="text-white/80">중량:</Text>
+                      <Text className="text-white font-semibold">
+                        {auctionDetail.weight}
                       </Text>
                     </HStack>
 

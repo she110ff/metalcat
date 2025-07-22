@@ -36,6 +36,9 @@ export default function ScrapAdditionalInfo() {
   const router = useRouter();
   const createAuctionMutation = useCreateAuction();
   const [title, setTitle] = useState("");
+  const [transactionType, setTransactionType] = useState<"normal" | "urgent">(
+    "normal"
+  );
   const [desiredPrice, setDesiredPrice] = useState("");
   const [phoneNumberDisclosure, setPhoneNumberDisclosure] = useState(false);
   const [salesEnvironment, setSalesEnvironment] = useState({
@@ -79,6 +82,7 @@ export default function ScrapAdditionalInfo() {
       Alert.alert("알림", "글 제목을 입력해주세요.");
       return;
     }
+
     if (!desiredPrice.trim()) {
       Alert.alert("알림", "희망 가격을 입력해주세요.");
       return;
@@ -125,7 +129,7 @@ export default function ScrapAdditionalInfo() {
         },
       ];
 
-      // 수량 정보 구성 (기본값)
+      // 수량 정보 구성 (기본값 사용)
       const quantityInfo: ScrapQuantityInfo = {
         knowsWeight: false,
         estimatedWeight: 1000,
@@ -154,17 +158,20 @@ export default function ScrapAdditionalInfo() {
           description: "구리 스크랩",
           auctionCategory: "scrap" as const,
         }, // 기본값
-        transactionType: "normal" as const,
+        transactionType: transactionType,
         auctionCategory: "scrap" as const,
         quantity: quantityInfo,
         salesEnvironment: salesEnvironmentInfo,
         photos: photoInfo,
         address: addressInfo,
         description: description || "고철 경매입니다.",
-        desiredPrice: parseInt(desiredPrice.replace(/,/g, ""), 10),
+        desiredPrice: parseInt(desiredPrice, 10),
         phoneNumberDisclosure: phoneNumberDisclosure,
         userId: "current_user", // 실제로는 로그인된 사용자 ID
-        endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후 종료
+        endTime: new Date(
+          Date.now() +
+            (transactionType === "urgent" ? 3 : 7) * 24 * 60 * 60 * 1000
+        ), // 거래종류에 따라 종료일 설정
       };
 
       // TanStack Query를 사용하여 경매 데이터 저장
@@ -292,6 +299,83 @@ export default function ScrapAdditionalInfo() {
               </Input>
             </VStack>
 
+            {/* 거래 종류 */}
+            <VStack space="md">
+              <Text
+                className="text-yellow-300 text-lg font-bold"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                거래 종류
+              </Text>
+              <HStack space="md">
+                <Pressable
+                  onPress={() => setTransactionType("normal")}
+                  className="flex-1"
+                >
+                  <Box
+                    className="rounded-xl p-4 items-center"
+                    style={{
+                      backgroundColor:
+                        transactionType === "normal"
+                          ? "rgba(147, 51, 234, 0.2)"
+                          : "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor:
+                        transactionType === "normal"
+                          ? "rgba(147, 51, 234, 0.5)"
+                          : "rgba(255, 255, 255, 0.08)",
+                    }}
+                  >
+                    <Text
+                      className="text-white font-bold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      일반 경매
+                    </Text>
+                    <Text
+                      className="text-gray-400 text-sm mt-1"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      7일간 진행
+                    </Text>
+                  </Box>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setTransactionType("urgent")}
+                  className="flex-1"
+                >
+                  <Box
+                    className="rounded-xl p-4 items-center"
+                    style={{
+                      backgroundColor:
+                        transactionType === "urgent"
+                          ? "rgba(239, 68, 68, 0.2)"
+                          : "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor:
+                        transactionType === "urgent"
+                          ? "rgba(239, 68, 68, 0.5)"
+                          : "rgba(255, 255, 255, 0.08)",
+                    }}
+                  >
+                    <Text
+                      className="text-white font-bold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      긴급 경매
+                    </Text>
+                    <Text
+                      className="text-gray-400 text-sm mt-1"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      3일간 진행
+                    </Text>
+                  </Box>
+                </Pressable>
+              </HStack>
+            </VStack>
+
             {/* 희망 가격 */}
             <VStack space="md">
               <Text
@@ -302,9 +386,13 @@ export default function ScrapAdditionalInfo() {
               </Text>
               <Input>
                 <InputField
-                  placeholder="희망 가격을 입력하세요"
+                  placeholder="희망 가격을 입력하세요 (예: 1000000)"
                   value={desiredPrice}
-                  onChangeText={setDesiredPrice}
+                  onChangeText={(text) => {
+                    // 숫자만 입력 가능
+                    const numericValue = text.replace(/[^0-9]/g, "");
+                    setDesiredPrice(numericValue);
+                  }}
                   keyboardType="numeric"
                   style={{
                     color: "#FFFFFF",
