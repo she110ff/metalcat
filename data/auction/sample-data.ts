@@ -928,3 +928,44 @@ export const sampleAuctionsByCategory = {
 
 // 기존 호환성을 위한 별칭
 export const sampleAuctionItems = allSampleAuctions;
+
+// 새로운 경매 데이터 추가 함수
+export const addNewScrapAuction = (
+  newAuction: Omit<
+    ScrapAuctionItem,
+    | "id"
+    | "createdAt"
+    | "updatedAt"
+    | "status"
+    | "bidders"
+    | "viewCount"
+    | "bids"
+    | "currentBid"
+    | "pricePerUnit"
+    | "totalBidAmount"
+    | "endTime"
+  >
+) => {
+  const auction: ScrapAuctionItem = {
+    ...newAuction,
+    id: `scrap_${Date.now()}`,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    status: "active",
+    bidders: 0,
+    viewCount: 0,
+    bids: [],
+    currentBid: 0,
+    pricePerUnit: 0,
+    totalBidAmount: 0,
+    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7일 후
+  };
+
+  // 실제 앱에서는 여기서 서버에 저장하거나 로컬 스토리지에 저장
+  console.log("새로운 고철 경매 등록:", auction);
+
+  // 샘플 데이터에 추가 (실제로는 상태 관리 라이브러리 사용)
+  sampleScrapAuctions.unshift(auction);
+
+  return auction;
+};

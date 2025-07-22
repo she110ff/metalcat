@@ -23,9 +23,18 @@ import {
   DaumAddressSearch,
   DaumAddressResult,
 } from "@/components/DaumAddressSearch";
+import {
+  ScrapAuctionItem,
+  ScrapQuantityInfo,
+  ScrapSalesEnvironment,
+  AddressInfo,
+  PhotoInfo,
+} from "@/data/types/auction";
+import { useCreateAuction } from "@/hooks/useAuctions";
 
 export default function ScrapAdditionalInfo() {
   const router = useRouter();
+  const createAuctionMutation = useCreateAuction();
   const [title, setTitle] = useState("");
   const [desiredPrice, setDesiredPrice] = useState("");
   const [phoneNumberDisclosure, setPhoneNumberDisclosure] = useState(false);
@@ -83,8 +92,108 @@ export default function ScrapAdditionalInfo() {
       return;
     }
 
-    // 다음 화면으로 이동
-    router.push("/auction-create/scrap/confirmation" as any);
+    try {
+      // 주소 정보 구성
+      const addressInfo: AddressInfo = {
+        postalCode: selectedAddress?.zonecode || "",
+        roadAddress: selectedAddress?.roadAddress || address,
+        lotAddress: selectedAddress?.jibunAddress || "",
+        detailAddress: addressDetail,
+        city: selectedAddress?.sido || "",
+        district: selectedAddress?.sigungu || "",
+      };
+
+      // 사진 정보 구성 (기본 사진 3개)
+      const photoInfo: PhotoInfo[] = [
+        {
+          id: "default_1",
+          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+          isRepresentative: true,
+          type: "full",
+        },
+        {
+          id: "default_2",
+          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+          isRepresentative: false,
+          type: "closeup",
+        },
+        {
+          id: "default_3",
+          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+          isRepresentative: false,
+          type: "detail",
+        },
+      ];
+
+      // 수량 정보 구성 (기본값)
+      const quantityInfo: ScrapQuantityInfo = {
+        knowsWeight: false,
+        estimatedWeight: 1000,
+        unit: "kg",
+      };
+
+      // 판매 환경 정보 구성
+      const salesEnvironmentInfo: ScrapSalesEnvironment = {
+        delivery:
+          (salesEnvironment.delivery as "both" | "seller" | "buyer") || "both",
+        shippingCost:
+          (salesEnvironment.shippingCost as "seller" | "buyer") || "buyer",
+        truckAccess: salesEnvironment.truckAccess,
+        loading:
+          (salesEnvironment.loading as "both" | "seller" | "buyer") || "both",
+        sacksNeeded: salesEnvironment.sacksNeeded,
+      };
+
+      // 새로운 경매 데이터 생성
+      const newAuctionData = {
+        title: title,
+        productType: {
+          id: "copper",
+          name: "구리",
+          category: "copper",
+          description: "구리 스크랩",
+          auctionCategory: "scrap" as const,
+        }, // 기본값
+        transactionType: "normal" as const,
+        auctionCategory: "scrap" as const,
+        quantity: quantityInfo,
+        salesEnvironment: salesEnvironmentInfo,
+        photos: photoInfo,
+        address: addressInfo,
+        description: description || "고철 경매입니다.",
+        desiredPrice: parseInt(desiredPrice.replace(/,/g, ""), 10),
+        phoneNumberDisclosure: phoneNumberDisclosure,
+        userId: "current_user", // 실제로는 로그인된 사용자 ID
+      };
+
+      // TanStack Query를 사용하여 경매 데이터 저장
+      createAuctionMutation.mutate(newAuctionData, {
+        onSuccess: (savedAuction) => {
+          Alert.alert("등록 완료", "고철 경매가 성공적으로 등록되었습니다!", [
+            {
+              text: "확인",
+              onPress: () => {
+                // 메인 화면으로 이동
+                router.push("/auction" as any);
+              },
+            },
+          ]);
+        },
+        onError: (error) => {
+          console.error("경매 등록 에러:", error);
+          Alert.alert(
+            "오류",
+            "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
+          );
+        },
+      });
+    } catch (error) {
+      console.error("경매 등록 에러:", error);
+      Alert.alert(
+        "오류",
+        "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
+      );
+    }
   };
 
   return (
@@ -379,15 +488,18 @@ export default function ScrapAdditionalInfo() {
             variant="solid"
             onPress={handleSubmit}
             className="w-full"
+            disabled={createAuctionMutation.isPending}
             style={{
-              backgroundColor: "rgba(147, 51, 234, 0.9)",
+              backgroundColor: createAuctionMutation.isPending
+                ? "rgba(107, 114, 128, 0.5)"
+                : "rgba(147, 51, 234, 0.9)",
             }}
           >
             <ButtonText
               className="text-white font-bold"
               style={{ fontFamily: "NanumGothic" }}
             >
-              경매 등록
+              {createAuctionMutation.isPending ? "등록 중..." : "경매 등록"}
             </ButtonText>
           </Button>
         </Box>

@@ -31,56 +31,76 @@ export const AuctionList = () => {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
 
-  // TanStack Query로 경매 데이터 조회 (향후 사용)
+  // TanStack Query로 경매 데이터 조회
   const {
     data: queryAuctions = [],
     isLoading,
     error,
   } = useAuctions({ status: "active" });
 
-  // 현재는 기존 샘플 데이터 사용
-  const auctionItems = [
-    {
-      id: "1",
-      title: "고순도 구리 스크랩",
-      metalType: "구리",
-      weight: "2,500kg",
-      currentBid: "₩12,500,000",
-      endTime: "2시간 30분",
-      status: "active",
-      bidders: 8,
-    },
-    {
-      id: "2",
-      title: "알루미늄 캔 스크랩",
-      metalType: "알루미늄",
-      weight: "1,800kg",
-      currentBid: "₩3,600,000",
-      endTime: "5시간 15분",
-      status: "active",
-      bidders: 12,
-    },
-    {
-      id: "3",
-      title: "스테인리스 스틸 스크랩",
-      metalType: "스테인리스",
-      weight: "3,200kg",
-      currentBid: "₩8,960,000",
-      endTime: "1시간 45분",
-      status: "ending",
-      bidders: 15,
-    },
-    {
-      id: "4",
-      title: "황동 스크랩",
-      metalType: "황동",
-      weight: "950kg",
-      currentBid: "₩4,750,000",
-      endTime: "종료됨",
-      status: "ended",
-      bidders: 6,
-    },
-  ];
+  // TanStack Query 데이터를 사용하되, 로딩 중이거나 에러가 있으면 기본 데이터 사용
+  const auctionItems =
+    isLoading || error
+      ? [
+          {
+            id: "1",
+            title: "고순도 구리 스크랩",
+            metalType: "구리",
+            weight: "2,500kg",
+            currentBid: "₩12,500,000",
+            endTime: "2시간 30분",
+            status: "active",
+            bidders: 8,
+          },
+          {
+            id: "2",
+            title: "알루미늄 캔 스크랩",
+            metalType: "알루미늄",
+            weight: "1,800kg",
+            currentBid: "₩3,600,000",
+            endTime: "5시간 15분",
+            status: "active",
+            bidders: 12,
+          },
+          {
+            id: "3",
+            title: "스테인리스 스틸 스크랩",
+            metalType: "스테인리스",
+            weight: "3,200kg",
+            currentBid: "₩8,960,000",
+            endTime: "1시간 45분",
+            status: "ending",
+            bidders: 15,
+          },
+          {
+            id: "4",
+            title: "황동 스크랩",
+            metalType: "황동",
+            weight: "950kg",
+            currentBid: "₩4,750,000",
+            endTime: "종료됨",
+            status: "ended",
+            bidders: 6,
+          },
+        ]
+      : queryAuctions.map((auction) => ({
+          id: auction.id,
+          title:
+            (auction as any).title ||
+            (auction as any).demolitionTitle ||
+            (auction as any).productName ||
+            "고철 경매",
+          metalType: auction.productType?.name || "고철",
+          weight: (auction as any).quantity?.estimatedWeight
+            ? `${(auction as any).quantity.estimatedWeight}kg`
+            : (auction as any).quantity?.quantity
+            ? `${(auction as any).quantity.quantity}대`
+            : "1건",
+          currentBid: `₩${formatPrice(auction.currentBid || 0)}`,
+          endTime: getRemainingTime(auction.endTime),
+          status: auction.status as "active" | "ending" | "ended",
+          bidders: auction.bidders || 0,
+        }));
 
   const auctionTypes = [
     { id: "scrap", name: "고철", icon: "construct", enabled: true },

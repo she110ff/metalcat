@@ -21,12 +21,20 @@ export const auctionKeys = {
 };
 
 // 로컬 데이터 저장소 (실제로는 AsyncStorage나 상태관리 라이브러리 사용)
-let localAuctionData: AuctionItem[] = [
-  ...sampleScrapAuctions,
-  ...sampleMachineryAuctions,
-  ...sampleMaterialsAuctions,
-  ...sampleDemolitionAuctions,
-];
+let localAuctionData: AuctionItem[] = [];
+
+// 초기 데이터가 없으면 Sample 데이터 추가
+const initializeSampleData = () => {
+  if (localAuctionData.length === 0) {
+    localAuctionData = [
+      ...sampleScrapAuctions,
+      ...sampleMachineryAuctions,
+      ...sampleMaterialsAuctions,
+      ...sampleDemolitionAuctions,
+    ];
+    console.log("Sample 데이터 초기화 완료:", localAuctionData.length, "개");
+  }
+};
 
 // 시뮬레이션된 API 함수들
 const auctionAPI = {
@@ -37,6 +45,9 @@ const auctionAPI = {
   }): Promise<AuctionItem[]> => {
     // 네트워크 지연 시뮬레이션
     await new Promise((resolve) => setTimeout(resolve, 500));
+
+    // 데이터가 없으면 Sample 데이터 초기화
+    initializeSampleData();
 
     let filtered = localAuctionData;
 

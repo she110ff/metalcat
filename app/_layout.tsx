@@ -7,9 +7,10 @@ import {
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
-import { LogBox } from "react-native";
+import React, { useEffect, useState } from "react";
+import { LogBox, TouchableOpacity, Text } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryDebugger } from "@/components/QueryDebugger";
 
 // Configure LogBox to ignore specific warnings
 LogBox.ignoreLogs([
@@ -88,6 +89,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const [showDebugger, setShowDebugger] = useState(false);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -102,6 +104,30 @@ function RootLayoutNav() {
           </Stack>
         </ThemeProvider>
       </GluestackUIProvider>
+      {/* 개발 환경에서만 Query Debugger 표시 */}
+      {__DEV__ && (
+        <>
+          <QueryDebugger
+            visible={showDebugger}
+            onClose={() => setShowDebugger(false)}
+          />
+          {/* 디버거 토글 버튼 */}
+          <TouchableOpacity
+            style={{
+              position: "absolute",
+              top: 50,
+              right: 10,
+              backgroundColor: "#333",
+              padding: 10,
+              borderRadius: 5,
+              zIndex: 999,
+            }}
+            onPress={() => setShowDebugger(!showDebugger)}
+          >
+            <Text style={{ color: "#fff", fontSize: 12 }}>Query Debug</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </QueryClientProvider>
   );
 }

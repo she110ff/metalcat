@@ -24,7 +24,24 @@ interface PhotoInfo {
 export default function ScrapAuctionCreate() {
   const router = useRouter();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
-  const [photos, setPhotos] = useState<PhotoInfo[]>([]);
+  const [photos, setPhotos] = useState<PhotoInfo[]>([
+    // 기본 사진 3개 미리 추가
+    {
+      id: "default_1",
+      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      isRepresentative: true,
+    },
+    {
+      id: "default_2",
+      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      isRepresentative: false,
+    },
+    {
+      id: "default_3",
+      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      isRepresentative: false,
+    },
+  ]);
 
   // 권한 요청 함수
   const requestPermissions = async () => {
@@ -49,7 +66,12 @@ export default function ScrapAuctionCreate() {
   };
 
   const handleProductTypeSelect = (productType: any) => {
-    setSelectedProductType(productType);
+    // 토글 기능: 같은 종류를 다시 클릭하면 선택 해제
+    if (selectedProductType?.id === productType.id) {
+      setSelectedProductType(null);
+    } else {
+      setSelectedProductType(productType);
+    }
   };
 
   const handleTakePhoto = async () => {
@@ -189,23 +211,17 @@ export default function ScrapAuctionCreate() {
               </Text>
 
               <VStack space="md">
-                {scrapProductTypes.map((productType) => (
+                {selectedProductType ? (
+                  // 선택된 고철만 표시
                   <Pressable
-                    key={productType.id}
-                    onPress={() => handleProductTypeSelect(productType)}
+                    onPress={() => handleProductTypeSelect(selectedProductType)}
                   >
                     <Box
                       className="rounded-xl p-4"
                       style={{
-                        backgroundColor:
-                          selectedProductType?.id === productType.id
-                            ? "rgba(147, 51, 234, 0.2)"
-                            : "rgba(255, 255, 255, 0.04)",
+                        backgroundColor: "rgba(147, 51, 234, 0.2)",
                         borderWidth: 1,
-                        borderColor:
-                          selectedProductType?.id === productType.id
-                            ? "rgba(147, 51, 234, 0.5)"
-                            : "rgba(255, 255, 255, 0.08)",
+                        borderColor: "rgba(147, 51, 234, 0.5)",
                       }}
                     >
                       <HStack className="items-center justify-between">
@@ -214,26 +230,66 @@ export default function ScrapAuctionCreate() {
                             className="text-white font-bold text-base"
                             style={{ fontFamily: "NanumGothic" }}
                           >
-                            {productType.name}
+                            {selectedProductType.name}
                           </Text>
                           <Text
                             className="text-gray-400 text-sm mt-1"
                             style={{ fontFamily: "NanumGothic" }}
                           >
-                            {productType.description}
+                            {selectedProductType.description}
                           </Text>
                         </VStack>
-                        {selectedProductType?.id === productType.id && (
+                        <HStack space="sm" className="items-center">
                           <Ionicons
                             name="checkmark-circle"
                             size={24}
                             color="#9333EA"
                           />
-                        )}
+                          <Text
+                            className="text-purple-400 text-sm"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            선택됨
+                          </Text>
+                        </HStack>
                       </HStack>
                     </Box>
                   </Pressable>
-                ))}
+                ) : (
+                  // 전체 고철 종류 표시
+                  scrapProductTypes.map((productType) => (
+                    <Pressable
+                      key={productType.id}
+                      onPress={() => handleProductTypeSelect(productType)}
+                    >
+                      <Box
+                        className="rounded-xl p-4"
+                        style={{
+                          backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.08)",
+                        }}
+                      >
+                        <HStack className="items-center justify-between">
+                          <VStack className="flex-1">
+                            <Text
+                              className="text-white font-bold text-base"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
+                              {productType.name}
+                            </Text>
+                            <Text
+                              className="text-gray-400 text-sm mt-1"
+                              style={{ fontFamily: "NanumGothic" }}
+                            >
+                              {productType.description}
+                            </Text>
+                          </VStack>
+                        </HStack>
+                      </Box>
+                    </Pressable>
+                  ))
+                )}
               </VStack>
             </VStack>
 
