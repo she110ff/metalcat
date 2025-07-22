@@ -6,6 +6,7 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { MetalPriceCardProps } from "@/data";
+import { formatMetalPrice } from "@/data/utils/metal-price-utils";
 
 export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
   metalName,
@@ -64,7 +65,7 @@ export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
                   className="text-white font-black text-xs tracking-wide"
                   style={{ fontFamily: "NanumGothic" }}
                 >
-                  {typeof price === "number" ? price.toLocaleString() : price}
+                  {typeof price === "number" ? formatMetalPrice(price) : price}
                 </Text>
                 <Text
                   className="text-white/50 text-xs uppercase tracking-[1px] ml-1"

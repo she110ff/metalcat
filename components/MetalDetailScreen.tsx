@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { MetalDetailData, DailyPriceData } from "../data/types/metal-price";
-import { NickelPriceChart } from "./NickelPriceChart";
+import { MetalPriceChart } from "./MetalPriceChart";
 
 interface MetalDetailScreenProps {
   data: MetalDetailData;
@@ -136,7 +136,11 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   const renderPriceChart = () => (
     <View style={styles.chartContainer}>
       <Text style={styles.sectionTitle}>가격 추이</Text>
-      <NickelPriceChart data={data.dailyData} chartType="line" />
+      <MetalPriceChart
+        data={data.dailyData}
+        chartType="line"
+        metalName={data.metalName}
+      />
     </View>
   );
 

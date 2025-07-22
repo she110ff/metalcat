@@ -3,17 +3,19 @@ import { View, Text, Dimensions, StyleSheet } from "react-native";
 import { LineChart, BarChart } from "react-native-chart-kit";
 import { DailyPriceData } from "../data/types/metal-price";
 
-interface NickelPriceChartProps {
+interface MetalPriceChartProps {
   data: DailyPriceData[];
   chartType: "line" | "bar";
+  metalName: string;
 }
 
 const { width } = Dimensions.get("window");
 const chartWidth = Math.min(width - 60, 350); // 차트 너비 제한
 
-export const NickelPriceChart: React.FC<NickelPriceChartProps> = ({
+export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   data,
   chartType,
+  metalName,
 }) => {
   // 날짜 포맷팅
   const formatDate = (dateString: string) => {
@@ -89,7 +91,7 @@ export const NickelPriceChart: React.FC<NickelPriceChartProps> = ({
   // 메인 가격 차트 (CASH 가격만)
   const renderMainPriceChart = () => (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>니켈 CASH 가격 추이 (USD)</Text>
+      <Text style={styles.chartTitle}>{metalName} CASH 가격 추이 (USD)</Text>
       <View style={styles.chartWrapper}>
         <LineChart
           data={mainPriceData}

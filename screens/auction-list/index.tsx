@@ -13,7 +13,11 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useAuctions } from "@/hooks/useAuctions";
-import { formatPrice, getRemainingTime, getAuctionStatusColor } from "@/data";
+import {
+  formatAuctionPrice,
+  getRemainingTime,
+  getAuctionStatusColor,
+} from "@/data";
 
 interface AuctionItem {
   id: string;
@@ -92,7 +96,7 @@ export const AuctionList = () => {
             : (auction as any).quantity?.quantity
             ? `${(auction as any).quantity.quantity}대`
             : "1건",
-          currentBid: formatPrice(auction.currentBid || 0),
+          currentBid: formatAuctionPrice(auction.currentBid || 0),
           endTime: getRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",
           bidders: auction.bidders || 0,

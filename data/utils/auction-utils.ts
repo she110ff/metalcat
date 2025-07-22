@@ -117,8 +117,8 @@ export const getRemainingTime = (endTime: Date | undefined): string => {
   }
 };
 
-// 가격 포맷팅
-export const formatPrice = (price: number): string => {
+// 경매 가격 포맷팅
+export const formatAuctionPrice = (price: number): string => {
   return `₩${price.toLocaleString()}`;
 };
 

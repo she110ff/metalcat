@@ -11,14 +11,25 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { MetalPriceCard } from "@/components/dashboard/metal-price-card";
-import { lmePricesData, domesticScrapData, groupMetalData } from "@/data";
+import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 
 export const Dashboard = () => {
   const router = useRouter();
 
   const handleMetalPress = (metalName: string) => {
-    if (metalName === "니켈") {
-      router.push("/metal-detail");
+    // 금속별 라우팅 매핑
+    const metalRoutes: { [key: string]: string } = {
+      구리: "copper",
+      니켈: "nickel",
+      알루미늄: "aluminum",
+      아연: "zinc",
+      주석: "tin",
+      납: "lead",
+    };
+
+    const routeName = metalRoutes[metalName];
+    if (routeName) {
+      router.push(`/metal-detail/${routeName}`);
     }
   };
 

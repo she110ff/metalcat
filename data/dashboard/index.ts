@@ -1,1 +1,1 @@
-export * from "./metal-prices";
+export * from "./collected-metal-prices";
