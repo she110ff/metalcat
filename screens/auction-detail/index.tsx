@@ -90,8 +90,8 @@ export const AuctionDetail = () => {
             : "1건",
           purity: "99.5%", // 기본값
           transactionType: (auction as any).transactionType || "normal",
-          startPrice: `₩${formatPrice((auction as any).desiredPrice || 0)}`,
-          currentBid: `₩${formatPrice(auction.currentBid || 0)}`,
+          startPrice: formatPrice((auction as any).desiredPrice || 0),
+          currentBid: formatPrice(auction.currentBid || 0),
           endTime: getRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",
           bidders: auction.bidders || 0,
@@ -112,7 +112,7 @@ export const AuctionDetail = () => {
   const bidHistory: BidHistory[] = bids.map((bid) => ({
     id: bid.id,
     bidder: bid.userName || "익명",
-    amount: `₩${formatPrice(bid.amount)}`,
+    amount: formatPrice(bid.amount),
     time: getTimeAgo(bid.bidTime),
   }));
 
@@ -369,7 +369,7 @@ export const AuctionDetail = () => {
 
                       {currentTopBid > 0 && (
                         <Text className="text-yellow-300 text-xs font-medium">
-                          최소 입찰가: ₩{formatPrice(currentTopBid + 10000)}
+                          최소 입찰가: {formatPrice(currentTopBid + 10000)}
                         </Text>
                       )}
 

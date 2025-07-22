@@ -96,7 +96,7 @@ export const AuctionList = () => {
             : (auction as any).quantity?.quantity
             ? `${(auction as any).quantity.quantity}대`
             : "1건",
-          currentBid: `₩${formatPrice(auction.currentBid || 0)}`,
+          currentBid: formatPrice(auction.currentBid || 0),
           endTime: getRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",
           bidders: auction.bidders || 0,
