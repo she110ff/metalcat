@@ -1,5 +1,5 @@
 import React from "react";
-import { ScrollView } from "react-native";
+import { ScrollView, Image } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -25,38 +25,36 @@ export const Dashboard = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          <VStack className="flex-1 p-6" space="xl">
-            {/* LME MARKET DATA Header */}
-            <VStack space="lg">
-              <Box
-                className="rounded-3xl p-8"
+          <Box className="flex-1 p-4">
+            {/* MetalCat Logo Header */}
+            <Box className="items-center">
+              <Image
+                source={require("@/assets/images/metalcat-logo.png")}
                 style={{
-                  backgroundColor: "rgba(100, 200, 255, 0.08)",
-                  borderWidth: 1,
-                  borderColor: "rgba(100, 200, 255, 0.15)",
-                  shadowColor: "#64C8FF",
-                  shadowOffset: { width: 0, height: 20 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 40,
-                  elevation: 20,
+                  width: 80,
+                  height: 80,
+                  resizeMode: "contain",
+                }}
+              />
+              <Text
+                className="text-white text-base font-black uppercase text-center"
+                style={{
+                  marginTop: -15,
+                  fontFamily: "SpaceMono",
+                  textShadowColor: "rgba(255, 255, 255, 0.4)",
+                  textShadowOffset: { width: 0, height: 2 },
+                  textShadowRadius: 4,
+                  letterSpacing: 6,
+                  fontWeight: "900",
+                  color: "#F8FAFC",
                 }}
               >
-                <VStack space="md">
-                  <Text className="text-cyan-300 text-sm font-medium tracking-[3px] uppercase">
-                    LME Market Data
-                  </Text>
-                  <Text className="text-white text-4xl font-black tracking-wide">
-                    2025.07.21
-                  </Text>
-                  <Text className="text-cyan-200/80 text-sm font-medium tracking-wider uppercase">
-                    Exchange Rate: ₩1,382.5
-                  </Text>
-                </VStack>
-              </Box>
-            </VStack>
+                METALCAT
+              </Text>
+            </Box>
 
             {/* LME PRICES Section */}
-            <VStack space="lg">
+            <VStack space="lg" className="mt-20">
               <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
                 LME Prices
               </Text>
@@ -333,7 +331,7 @@ export const Dashboard = () => {
             </VStack>
 
             {/* DOMESTIC SCRAP Section */}
-            <VStack space="lg">
+            <VStack space="lg" className="mt-10">
               <Text className="text-white text-xl font-black tracking-[2px] uppercase">
                 Domestic Scrap
               </Text>
@@ -498,7 +496,7 @@ export const Dashboard = () => {
             </VStack>
 
             {/* TRENDING AUCTIONS Section */}
-            <VStack space="lg">
+            <VStack space="lg" className="mt-10">
               <Text className="text-white text-xl font-black tracking-[2px] uppercase">
                 Trending Auctions
               </Text>
@@ -607,7 +605,7 @@ export const Dashboard = () => {
                 </Pressable>
               </VStack>
             </VStack>
-          </VStack>
+          </Box>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
