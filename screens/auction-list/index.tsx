@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Animated } from "react-native";
+import { ScrollView, Animated, ActivityIndicator } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -12,6 +12,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { useAuctions } from "@/hooks/useAuctions";
+import { formatPrice, getRemainingTime, getAuctionStatusColor } from "@/data";
 
 interface AuctionItem {
   id: string;
@@ -29,8 +31,15 @@ export const AuctionList = () => {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
 
-  // 샘플 경매 데이터
-  const auctionItems: AuctionItem[] = [
+  // TanStack Query로 경매 데이터 조회 (향후 사용)
+  const {
+    data: queryAuctions = [],
+    isLoading,
+    error,
+  } = useAuctions({ status: "active" });
+
+  // 현재는 기존 샘플 데이터 사용
+  const auctionItems = [
     {
       id: "1",
       title: "고순도 구리 스크랩",
@@ -74,10 +83,10 @@ export const AuctionList = () => {
   ];
 
   const auctionTypes = [
-    { id: "scrap", name: "고철", icon: "construct" },
-    { id: "machinery", name: "중고기계", icon: "settings" },
-    { id: "materials", name: "중고자재", icon: "cube" },
-    { id: "demolition", name: "철거", icon: "hammer" },
+    { id: "scrap", name: "고철", icon: "construct", enabled: true },
+    { id: "machinery", name: "중고기계", icon: "settings", enabled: false },
+    { id: "materials", name: "중고자재", icon: "cube", enabled: false },
+    { id: "demolition", name: "철거", icon: "hammer", enabled: false },
   ];
 
   const getStatusColor = (status: string) => {
@@ -118,7 +127,14 @@ export const AuctionList = () => {
       useNativeDriver: false,
     }).start();
 
-    router.push("/auction-create");
+    // 현재는 고철 경매만 활성화
+    if (auctionType === "scrap") {
+      router.push("/auction-create/scrap" as any);
+    } else {
+      // 다른 타입들은 아직 구현되지 않음
+      console.log(`${auctionType} 경매는 아직 구현되지 않았습니다.`);
+      // TODO: 추후 구현 예정
+    }
   };
 
   const toggleActionMenu = () => {
@@ -180,120 +196,149 @@ export const AuctionList = () => {
               </Text>
 
               <VStack space="md">
-                {auctionItems.map((item) => (
-                  <Pressable
-                    key={item.id}
-                    onPress={() => handleAuctionPress(item.id)}
-                  >
-                    <Box
-                      className="rounded-2xl p-4"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.04)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.08)",
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.4,
-                        shadowRadius: 8,
-                        elevation: 8,
-                      }}
+                {/* 로딩 상태 */}
+                {isLoading && (
+                  <Box className="py-8 items-center justify-center">
+                    <ActivityIndicator size="large" color="#9333EA" />
+                    <Text
+                      className="text-white text-base mt-4"
+                      style={{ fontFamily: "NanumGothic" }}
                     >
-                      <VStack space="md">
-                        <HStack className="items-center justify-between">
-                          <VStack className="flex-1">
-                            <Text
-                              className="text-white font-bold text-lg mb-1 tracking-wide"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {item.title}
-                            </Text>
-                            <Text
-                              className="text-white/50 text-xs uppercase tracking-[1px]"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {item.metalType} • {item.weight}
-                            </Text>
-                          </VStack>
-                          <Box
-                            className="px-3 py-1 rounded-lg"
-                            style={{
-                              backgroundColor: getStatusColor(item.status),
-                            }}
-                          >
-                            <Text
-                              className="text-white font-semibold text-xs tracking-wide"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {getStatusText(item.status)}
-                            </Text>
-                          </Box>
-                        </HStack>
+                      경매 목록을 불러오는 중...
+                    </Text>
+                  </Box>
+                )}
 
-                        <HStack className="items-center justify-between">
-                          <VStack>
-                            <Text
-                              className="text-white/60 text-xs uppercase tracking-[1px]"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              현재 입찰가
-                            </Text>
-                            <Text
-                              className="text-white font-bold text-base tracking-wide"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {item.currentBid}
-                            </Text>
-                          </VStack>
+                {/* 에러 상태 */}
+                {error && (
+                  <Box className="py-8 items-center justify-center">
+                    <Ionicons name="alert-circle" size={48} color="#EF4444" />
+                    <Text
+                      className="text-red-400 text-base mt-4 text-center"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      경매 목록을 불러오는데 실패했습니다.
+                    </Text>
+                  </Box>
+                )}
 
-                          <VStack className="items-end">
-                            <Text
-                              className="text-white/60 text-xs uppercase tracking-[1px]"
-                              style={{ fontFamily: "NanumGothic" }}
+                {/* 경매 목록 */}
+                {!isLoading &&
+                  !error &&
+                  auctionItems.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => handleAuctionPress(item.id)}
+                    >
+                      <Box
+                        className="rounded-2xl p-4"
+                        style={{
+                          backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor: "rgba(255, 255, 255, 0.08)",
+                          shadowColor: "#000",
+                          shadowOffset: { width: 0, height: 4 },
+                          shadowOpacity: 0.4,
+                          shadowRadius: 8,
+                          elevation: 8,
+                        }}
+                      >
+                        <VStack space="md">
+                          <HStack className="items-center justify-between">
+                            <VStack className="flex-1">
+                              <Text
+                                className="text-white font-bold text-lg mb-1 tracking-wide"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {item.title}
+                              </Text>
+                              <Text
+                                className="text-white/50 text-xs uppercase tracking-[1px]"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {item.metalType} • {item.weight}
+                              </Text>
+                            </VStack>
+                            <Box
+                              className="px-3 py-1 rounded-lg"
+                              style={{
+                                backgroundColor: getStatusColor(item.status),
+                              }}
                             >
-                              남은 시간
-                            </Text>
-                            <Text
-                              className="text-white font-semibold text-sm tracking-wide"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {item.endTime}
-                            </Text>
-                          </VStack>
-                        </HStack>
-
-                        <HStack className="items-center justify-between">
-                          <HStack className="items-center">
-                            <Ionicons
-                              name="people"
-                              size={16}
-                              color="rgba(255, 255, 255, 0.6)"
-                            />
-                            <Text
-                              className="text-white/60 text-xs ml-1"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {item.bidders}명 참여
-                            </Text>
+                              <Text
+                                className="text-white font-semibold text-xs tracking-wide"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {getStatusText(item.status)}
+                              </Text>
+                            </Box>
                           </HStack>
 
-                          <HStack className="items-center">
-                            <Ionicons
-                              name="arrow-forward"
-                              size={16}
-                              color="rgba(255, 255, 255, 0.6)"
-                            />
-                            <Text
-                              className="text-white/60 text-xs ml-1"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              상세보기
-                            </Text>
+                          <HStack className="items-center justify-between">
+                            <VStack>
+                              <Text
+                                className="text-white/60 text-xs uppercase tracking-[1px]"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                현재 입찰가
+                              </Text>
+                              <Text
+                                className="text-white font-bold text-base tracking-wide"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {item.currentBid}
+                              </Text>
+                            </VStack>
+
+                            <VStack className="items-end">
+                              <Text
+                                className="text-white/60 text-xs uppercase tracking-[1px]"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                남은 시간
+                              </Text>
+                              <Text
+                                className="text-white font-semibold text-sm tracking-wide"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {item.endTime}
+                              </Text>
+                            </VStack>
                           </HStack>
-                        </HStack>
-                      </VStack>
-                    </Box>
-                  </Pressable>
-                ))}
+
+                          <HStack className="items-center justify-between">
+                            <HStack className="items-center">
+                              <Ionicons
+                                name="people"
+                                size={16}
+                                color="rgba(255, 255, 255, 0.6)"
+                              />
+                              <Text
+                                className="text-white/60 text-xs ml-1"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                {item.bidders}명 참여
+                              </Text>
+                            </HStack>
+
+                            <HStack className="items-center">
+                              <Ionicons
+                                name="arrow-forward"
+                                size={16}
+                                color="rgba(255, 255, 255, 0.6)"
+                              />
+                              <Text
+                                className="text-white/60 text-xs ml-1"
+                                style={{ fontFamily: "NanumGothic" }}
+                              >
+                                상세보기
+                              </Text>
+                            </HStack>
+                          </HStack>
+                        </VStack>
+                      </Box>
+                    </Pressable>
+                  ))}
               </VStack>
             </VStack>
           </VStack>
@@ -342,22 +387,27 @@ export const AuctionList = () => {
                   pointerEvents="box-none"
                 >
                   <Pressable
-                    onPress={() => handleCreateAuction(type.id)}
+                    onPress={() => type.enabled && handleCreateAuction(type.id)}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
-                      backgroundColor: "rgba(15, 10, 26, 0.95)",
+                      backgroundColor: type.enabled
+                        ? "rgba(15, 10, 26, 0.95)"
+                        : "rgba(15, 10, 26, 0.5)",
                       borderRadius: 16,
                       paddingHorizontal: 16,
                       paddingVertical: 12,
                       borderWidth: 1,
-                      borderColor: "rgba(147, 51, 234, 0.3)",
-                      shadowColor: "#9333EA",
+                      borderColor: type.enabled
+                        ? "rgba(147, 51, 234, 0.3)"
+                        : "rgba(107, 114, 128, 0.3)",
+                      shadowColor: type.enabled ? "#9333EA" : "#6B7280",
                       shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.4,
+                      shadowOpacity: type.enabled ? 0.4 : 0.2,
                       shadowRadius: 12,
-                      elevation: 8,
+                      elevation: type.enabled ? 8 : 4,
                       minWidth: 160,
+                      opacity: type.enabled ? 1 : 0.5,
                     }}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
@@ -366,9 +416,13 @@ export const AuctionList = () => {
                         width: 32,
                         height: 32,
                         borderRadius: 8,
-                        backgroundColor: "rgba(147, 51, 234, 0.2)",
+                        backgroundColor: type.enabled
+                          ? "rgba(147, 51, 234, 0.2)"
+                          : "rgba(107, 114, 128, 0.2)",
                         borderWidth: 1,
-                        borderColor: "rgba(147, 51, 234, 0.4)",
+                        borderColor: type.enabled
+                          ? "rgba(147, 51, 234, 0.4)"
+                          : "rgba(107, 114, 128, 0.4)",
                         justifyContent: "center",
                         alignItems: "center",
                         marginRight: 12,
@@ -377,11 +431,18 @@ export const AuctionList = () => {
                       <Ionicons
                         name={type.icon as any}
                         size={18}
-                        color="#9333EA"
+                        color={type.enabled ? "#9333EA" : "#6B7280"}
                       />
                     </Box>
-                    <Text className="text-white font-semibold text-sm tracking-wide">
+                    <Text
+                      className="font-semibold text-sm tracking-wide"
+                      style={{
+                        color: type.enabled ? "#FFFFFF" : "#6B7280",
+                        fontFamily: "NanumGothic",
+                      }}
+                    >
                       {type.name}
+                      {!type.enabled && " (준비중)"}
                     </Text>
                   </Pressable>
                 </Animated.View>
