@@ -43,7 +43,6 @@ export const scrapSalesEnvironmentOptions = {
   delivery: [
     { id: "seller", label: "갔다드림", description: "판매자가 배송" },
     { id: "buyer", label: "실어드림", description: "구매자가 수령" },
-    { id: "both", label: "상호 협의", description: "협의 후 결정" },
   ],
   shippingCost: [
     {
@@ -57,9 +56,19 @@ export const scrapSalesEnvironmentOptions = {
       description: "구매자가 운송비 부담",
     },
   ],
-  loading: [
-    { id: "seller", label: "실어드림", description: "판매자가 적재" },
-    { id: "buyer", label: "직접 적재", description: "구매자가 직접 적재" },
+  additional: [
+    {
+      id: "truckAccess",
+      label: "5톤 집게차 진입 가능",
+      description: "5톤 집게차 진입 가능",
+    },
+    { id: "sacksNeeded", label: "마대 필요", description: "마대 필요" },
+    { id: "drumNeeded", label: "드럼통 필요", description: "드럼통 필요" },
+    {
+      id: "forkliftAvailable",
+      label: "지게차 보유",
+      description: "지게차 보유",
+    },
   ],
 };
 

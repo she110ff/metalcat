@@ -42,13 +42,9 @@ export default function ScrapAdditionalInfo() {
   const [desiredPrice, setDesiredPrice] = useState("");
   const [phoneNumberDisclosure, setPhoneNumberDisclosure] = useState(false);
   const [salesEnvironment, setSalesEnvironment] = useState({
-    delivery: "",
-    shippingCost: "",
-    truckAccess: false,
-    loading: "",
-    sacksNeeded: false,
-    craneAccess: false,
-    forkliftAccess: false,
+    delivery: [] as string[],
+    shippingCost: [] as string[],
+    additional: [] as string[],
   });
   const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
@@ -139,13 +135,16 @@ export default function ScrapAdditionalInfo() {
       // 판매 환경 정보 구성
       const salesEnvironmentInfo: ScrapSalesEnvironment = {
         delivery:
-          (salesEnvironment.delivery as "both" | "seller" | "buyer") || "both",
+          salesEnvironment.delivery.length > 0
+            ? (salesEnvironment.delivery[0] as "seller" | "buyer")
+            : "seller",
         shippingCost:
-          (salesEnvironment.shippingCost as "seller" | "buyer") || "buyer",
-        truckAccess: salesEnvironment.truckAccess,
-        loading:
-          (salesEnvironment.loading as "both" | "seller" | "buyer") || "both",
-        sacksNeeded: salesEnvironment.sacksNeeded,
+          salesEnvironment.shippingCost.length > 0
+            ? (salesEnvironment.shippingCost[0] as "seller" | "buyer")
+            : "buyer",
+        truckAccess: salesEnvironment.additional.includes("truckAccess"),
+        loading: "seller", // 기본값
+        sacksNeeded: salesEnvironment.additional.includes("sacksNeeded"),
       };
 
       // 새로운 경매 데이터 생성
@@ -419,44 +418,197 @@ export default function ScrapAdditionalInfo() {
                 해당하는 것을 전부 선택해 주세요.
               </Text>
 
-              <VStack space="sm">
-                {scrapSalesEnvironmentOptions.delivery.map((option) => (
-                  <Pressable
-                    key={option.id}
-                    onPress={() =>
-                      setSalesEnvironment({
-                        ...salesEnvironment,
-                        delivery: option.id,
-                      })
-                    }
+              <VStack space="md">
+                {/* 배송 방식 */}
+                <VStack space="sm">
+                  <Text
+                    className="text-white text-base font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
                   >
-                    <HStack className="items-center space-x-3">
-                      <Box
-                        className="w-4 h-4 rounded-full border-2 items-center justify-center"
-                        style={{
-                          borderColor:
-                            salesEnvironment.delivery === option.id
+                    배송 방식
+                  </Text>
+                  {scrapSalesEnvironmentOptions.delivery.map((option) => (
+                    <Pressable
+                      key={option.id}
+                      onPress={() => {
+                        const isSelected = salesEnvironment.delivery.includes(
+                          option.id
+                        );
+                        setSalesEnvironment({
+                          ...salesEnvironment,
+                          delivery: isSelected
+                            ? salesEnvironment.delivery.filter(
+                                (id) => id !== option.id
+                              )
+                            : [...salesEnvironment.delivery, option.id],
+                        });
+                      }}
+                    >
+                      <HStack className="items-center space-x-3">
+                        <Box
+                          className="w-4 h-4 border-2 items-center justify-center"
+                          style={{
+                            borderColor: salesEnvironment.delivery.includes(
+                              option.id
+                            )
                               ? "#9333EA"
                               : "rgba(255, 255, 255, 0.3)",
-                          backgroundColor:
-                            salesEnvironment.delivery === option.id
+                            backgroundColor: salesEnvironment.delivery.includes(
+                              option.id
+                            )
                               ? "#9333EA"
                               : "transparent",
+                          }}
+                        >
+                          {salesEnvironment.delivery.includes(option.id) && (
+                            <Ionicons
+                              name="checkmark"
+                              size={12}
+                              color="#FFFFFF"
+                            />
+                          )}
+                        </Box>
+                        <VStack className="flex-1">
+                          <Text
+                            className="text-white text-base"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            {option.label}
+                          </Text>
+                          <Text
+                            className="text-gray-400 text-sm"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            {option.description}
+                          </Text>
+                        </VStack>
+                      </HStack>
+                    </Pressable>
+                  ))}
+                </VStack>
+
+                {/* 운송비 부담 */}
+                <VStack space="sm">
+                  <Text
+                    className="text-white text-base font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    운송비 부담
+                  </Text>
+                  {scrapSalesEnvironmentOptions.shippingCost.map((option) => (
+                    <Pressable
+                      key={option.id}
+                      onPress={() => {
+                        const isSelected =
+                          salesEnvironment.shippingCost.includes(option.id);
+                        setSalesEnvironment({
+                          ...salesEnvironment,
+                          shippingCost: isSelected
+                            ? salesEnvironment.shippingCost.filter(
+                                (id) => id !== option.id
+                              )
+                            : [...salesEnvironment.shippingCost, option.id],
+                        });
+                      }}
+                    >
+                      <HStack className="items-center space-x-3">
+                        <Box
+                          className="w-4 h-4 border-2 items-center justify-center"
+                          style={{
+                            borderColor: salesEnvironment.shippingCost.includes(
+                              option.id
+                            )
+                              ? "#9333EA"
+                              : "rgba(255, 255, 255, 0.3)",
+                            backgroundColor:
+                              salesEnvironment.shippingCost.includes(option.id)
+                                ? "#9333EA"
+                                : "transparent",
+                          }}
+                        >
+                          {salesEnvironment.shippingCost.includes(
+                            option.id
+                          ) && (
+                            <Ionicons
+                              name="checkmark"
+                              size={12}
+                              color="#FFFFFF"
+                            />
+                          )}
+                        </Box>
+                        <Text
+                          className="text-white text-base"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          {option.label}
+                        </Text>
+                      </HStack>
+                    </Pressable>
+                  ))}
+                </VStack>
+
+                {/* 추가 옵션 */}
+                <VStack space="sm">
+                  <Text
+                    className="text-white text-base font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    추가 옵션
+                  </Text>
+                  <Box className="flex-row flex-wrap">
+                    {scrapSalesEnvironmentOptions.additional.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        onPress={() => {
+                          const isSelected =
+                            salesEnvironment.additional.includes(option.id);
+                          setSalesEnvironment({
+                            ...salesEnvironment,
+                            additional: isSelected
+                              ? salesEnvironment.additional.filter(
+                                  (id) => id !== option.id
+                                )
+                              : [...salesEnvironment.additional, option.id],
+                          });
                         }}
+                        className="w-1/2 pr-2 mb-2"
                       >
-                        {salesEnvironment.delivery === option.id && (
-                          <Box className="w-2 h-2 rounded-full bg-white" />
-                        )}
-                      </Box>
-                      <Text
-                        className="text-white text-base"
-                        style={{ fontFamily: "NanumGothic" }}
-                      >
-                        {option.label}
-                      </Text>
-                    </HStack>
-                  </Pressable>
-                ))}
+                        <HStack className="items-center space-x-2">
+                          <Box
+                            className="w-4 h-4 border-2 items-center justify-center"
+                            style={{
+                              borderColor: salesEnvironment.additional.includes(
+                                option.id
+                              )
+                                ? "#9333EA"
+                                : "rgba(255, 255, 255, 0.3)",
+                              backgroundColor:
+                                salesEnvironment.additional.includes(option.id)
+                                  ? "#9333EA"
+                                  : "transparent",
+                            }}
+                          >
+                            {salesEnvironment.additional.includes(
+                              option.id
+                            ) && (
+                              <Ionicons
+                                name="checkmark"
+                                size={12}
+                                color="#FFFFFF"
+                              />
+                            )}
+                          </Box>
+                          <Text
+                            className="text-white text-sm flex-1"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            {option.label}
+                          </Text>
+                        </HStack>
+                      </Pressable>
+                    ))}
+                  </Box>
+                </VStack>
               </VStack>
             </VStack>
 
