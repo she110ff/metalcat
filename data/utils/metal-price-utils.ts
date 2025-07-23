@@ -97,6 +97,54 @@ export const convertMetalPriceData = (
 };
 
 /**
+ * 날짜 유효성 검증
+ * @param dateString 검증할 날짜 문자열 (YYYY-MM-DD 형식)
+ * @param maxDate 최대 허용 날짜 (기본값: 오늘)
+ * @returns 유효한 날짜인지 여부
+ */
+export const validateDate = (
+  dateString: string,
+  maxDate: Date = new Date()
+): boolean => {
+  try {
+    const date = new Date(dateString);
+    const today = new Date();
+
+    // 날짜 형식이 올바른지 확인
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    // 미래 날짜인지 확인 (오늘 이후)
+    if (date > today) {
+      return false;
+    }
+
+    // 최대 허용 날짜를 초과하는지 확인
+    if (date > maxDate) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * 일별 가격 데이터에서 유효하지 않은 날짜 필터링
+ * @param dailyData 일별 가격 데이터 배열
+ * @param maxDate 최대 허용 날짜 (기본값: 오늘)
+ * @returns 필터링된 일별 가격 데이터
+ */
+export const filterValidDates = <T extends { date: string }>(
+  dailyData: T[],
+  maxDate: Date = new Date()
+): T[] => {
+  return dailyData.filter((item) => validateDate(item.date, maxDate));
+};
+
+/**
  * 환율 정보를 포함한 가격 변환 (실시간 환율 API 연동 시 확장 가능)
  */
 export const priceConverter = {

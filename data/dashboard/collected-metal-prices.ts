@@ -2,19 +2,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { MetalPriceData, MetalDetailData } from "../types/metal-price";
 import { convertUsdPerTonToKrwPerKg } from "../utils/metal-price-utils";
 
-// 자동 수집된 금속 데이터 (2025-07-23 15:30:00)
+// 자동 수집된 금속 데이터 (2025-07-21 15:30:00)
 // 데이터 소스: 조달청 비철금속 국제가격 + 한국철강협회
-// 수집 시간: 2025-07-23 15:30:00
+// 수집 시간: 2025-07-21 15:30:00
 // 참조: https://pps.go.kr/bichuk/bbs/view.do?bbsSn=2507220006&key=00823
 
-// 원본 USD/톤 가격 데이터 (조달청에서 수집)
+// 원본 USD/톤 가격 데이터 (일일 데이터 최종일자 기준)
 const rawUsdPerTonPrices = {
-  알루미늄: 2750.0, // USD/톤
-  납: 2064.5, // USD/톤
-  아연: 2945.0, // USD/톤
-  구리: 10169.0, // USD/톤
-  주석: 35166.0, // USD/톤
-  니켈: 15906.0, // USD/톤
+  알루미늄: 2648.68, // USD/톤 (7월 21일 일일 데이터 기준)
+  납: 1988.53, // USD/톤 (7월 21일 일일 데이터 기준)
+  아연: 2810.1, // USD/톤 (7월 21일 일일 데이터 기준)
+  구리: 9793.04, // USD/톤 (7월 21일 일일 데이터 기준)
+  주석: 33864.0, // USD/톤 (7월 21일 일일 데이터 기준)
+  니켈: 15317.31, // USD/톤 (7월 21일 일일 데이터 기준)
 };
 
 export const lmePricesData: MetalPriceData[] = [
@@ -80,7 +80,7 @@ export const lmePricesData: MetalPriceData[] = [
   },
 ];
 
-// 국내 고철 시세 데이터 (2025-07-23 기준)
+// 국내 고철 시세 데이터 (2025-07-21 기준)
 // 데이터 소스: 한국철강협회, 지역 고철업체 시세 종합
 // 참조: 실제 국내 고철 시장 동향 반영
 const domesticScrapPrices = {
@@ -125,7 +125,7 @@ export const domesticScrapData: MetalPriceData[] = [
 // 알루미늄 상세 데이터
 export const aluminumDetailData: MetalDetailData = {
   metalName: "알루미늄",
-  currentPrice: 2648.68,
+  currentPrice: rawUsdPerTonPrices.알루미늄,
   unit: "USD/톤",
   changePercent: 0.76,
   changeType: "positive",
@@ -173,28 +173,12 @@ export const aluminumDetailData: MetalDetailData = {
       changeType: "positive",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 2691.24,
-      threeMonthPrice: 2741.24,
-      changePercent: 1.6,
-      changeType: "positive",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 2669.67,
-      threeMonthPrice: 2719.67,
-      changePercent: 0.79,
-      changeType: "positive",
-      spread: 50.0,
-    },
   ],
   statistics: {
-    highestPrice: 2691.24,
+    highestPrice: 2656.46,
     lowestPrice: 2601.31,
-    averagePrice: 2648.68,
-    volatility: 52.93,
+    averagePrice: 2622.17,
+    volatility: 55.15,
     totalChange: 0.76,
   },
 };
@@ -202,7 +186,7 @@ export const aluminumDetailData: MetalDetailData = {
 // 납 상세 데이터
 export const leadDetailData: MetalDetailData = {
   metalName: "납",
-  currentPrice: 1988.53,
+  currentPrice: rawUsdPerTonPrices.납,
   unit: "USD/톤",
   changePercent: 0.14,
   changeType: "positive",
@@ -250,28 +234,12 @@ export const leadDetailData: MetalDetailData = {
       changeType: "positive",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 1962.91,
-      threeMonthPrice: 2012.91,
-      changePercent: 1.29,
-      changeType: "negative",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 1970.63,
-      threeMonthPrice: 2020.63,
-      changePercent: 0.39,
-      changeType: "positive",
-      spread: 50.0,
-    },
   ],
   statistics: {
     highestPrice: 1988.53,
-    lowestPrice: 1962.91,
-    averagePrice: 1988.53,
-    volatility: 39.77,
+    lowestPrice: 1968.74,
+    averagePrice: 1984.88,
+    volatility: 19.79,
     totalChange: 0.14,
   },
 };
@@ -279,7 +247,7 @@ export const leadDetailData: MetalDetailData = {
 // 아연 상세 데이터
 export const zincDetailData: MetalDetailData = {
   metalName: "아연",
-  currentPrice: 2836.78,
+  currentPrice: rawUsdPerTonPrices.아연,
   unit: "USD/톤",
   changePercent: 0.48,
   changeType: "positive",
@@ -327,28 +295,12 @@ export const zincDetailData: MetalDetailData = {
       changeType: "negative",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 2805.41,
-      threeMonthPrice: 2855.41,
-      changePercent: 0.17,
-      changeType: "negative",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 2807.81,
-      threeMonthPrice: 2857.81,
-      changePercent: 0.09,
-      changeType: "positive",
-      spread: 50.0,
-    },
   ],
   statistics: {
     highestPrice: 2865.24,
-    lowestPrice: 2805.41,
+    lowestPrice: 2807.81,
     averagePrice: 2836.78,
-    volatility: 56.74,
+    volatility: 57.43,
     totalChange: 0.48,
   },
 };
@@ -356,7 +308,7 @@ export const zincDetailData: MetalDetailData = {
 // 구리 상세 데이터
 export const copperDetailData: MetalDetailData = {
   metalName: "구리",
-  currentPrice: 9793.04,
+  currentPrice: rawUsdPerTonPrices.구리,
   unit: "USD/톤",
   changePercent: 0.7,
   changeType: "positive",
@@ -404,28 +356,12 @@ export const copperDetailData: MetalDetailData = {
       changeType: "positive",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 9707.79,
-      threeMonthPrice: 9757.79,
-      changePercent: 0.87,
-      changeType: "negative",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 9813.18,
-      threeMonthPrice: 9863.18,
-      changePercent: 1.09,
-      changeType: "positive",
-      spread: 50.0,
-    },
   ],
   statistics: {
     highestPrice: 9900.63,
-    lowestPrice: 9707.79,
-    averagePrice: 9793.04,
-    volatility: 195.86,
+    lowestPrice: 9715.35,
+    averagePrice: 9807.42,
+    volatility: 185.28,
     totalChange: 0.7,
   },
 };
@@ -433,7 +369,7 @@ export const copperDetailData: MetalDetailData = {
 // 주석 상세 데이터
 export const tinDetailData: MetalDetailData = {
   metalName: "주석",
-  currentPrice: 33864.0,
+  currentPrice: rawUsdPerTonPrices.주석,
   unit: "USD/톤",
   changePercent: 1.12,
   changeType: "positive",
@@ -481,28 +417,12 @@ export const tinDetailData: MetalDetailData = {
       changeType: "positive",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 34035.36,
-      threeMonthPrice: 34085.36,
-      changePercent: 0.51,
-      changeType: "positive",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 33728.64,
-      threeMonthPrice: 33778.64,
-      changePercent: 0.9,
-      changeType: "negative",
-      spread: 50.0,
-    },
   ],
   statistics: {
-    highestPrice: 34035.36,
+    highestPrice: 33864.0,
     lowestPrice: 33588.62,
-    averagePrice: 33864.0,
-    volatility: 677.28,
+    averagePrice: 33727.09,
+    volatility: 275.38,
     totalChange: 1.12,
   },
 };
@@ -510,7 +430,7 @@ export const tinDetailData: MetalDetailData = {
 // 니켈 상세 데이터
 export const nickelDetailData: MetalDetailData = {
   metalName: "니켈",
-  currentPrice: 15317.31,
+  currentPrice: rawUsdPerTonPrices.니켈,
   unit: "USD/톤",
   changePercent: 1.96,
   changeType: "positive",
@@ -558,28 +478,12 @@ export const nickelDetailData: MetalDetailData = {
       changeType: "positive",
       spread: 50.0,
     },
-    {
-      date: "2025-07-22",
-      cashPrice: 15485.88,
-      threeMonthPrice: 15535.88,
-      changePercent: 1.1,
-      changeType: "positive",
-      spread: 50.0,
-    },
-    {
-      date: "2025-07-23",
-      cashPrice: 15378.76,
-      threeMonthPrice: 15428.76,
-      changePercent: 0.69,
-      changeType: "negative",
-      spread: 50.0,
-    },
   ],
   statistics: {
-    highestPrice: 15485.88,
+    highestPrice: 15464.54,
     lowestPrice: 15164.08,
-    averagePrice: 15317.31,
-    volatility: 306.35,
+    averagePrice: 15311.99,
+    volatility: 300.46,
     totalChange: 1.96,
   },
 };

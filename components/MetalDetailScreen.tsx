@@ -29,12 +29,21 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   data,
   onBack,
 }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    "1D" | "1W" | "1M" | "3M"
-  >("1M");
+  // USD/톤을 원/KG로 변환
+  const convertUsdPerTonToKrwPerKg = (usdPerTon: number) => {
+    const USD_TO_KRW_RATE = 1300; // 환율
+    const TON_TO_KG = 1000; // 1톤 = 1,000kg
+    return Math.round((usdPerTon * USD_TO_KRW_RATE) / TON_TO_KG);
+  };
 
   const formatPrice = (price: number) => {
     return formatMetalPrice(price);
+  };
+
+  // USD/톤 가격을 원/KG로 변환하여 포매팅
+  const formatPriceInKrw = (usdPerTon: number) => {
+    const krwPerKg = convertUsdPerTonToKrwPerKg(usdPerTon);
+    return formatMetalPrice(krwPerKg);
   };
 
   const formatDate = (dateString: string) => {
@@ -90,16 +99,13 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
             날짜
           </Text>
           <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
-            CASH
+            CASH (원/KG)
           </Text>
           <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
-            3M
+            3M (원/KG)
           </Text>
           <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
             변동
-          </Text>
-          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
-            스프레드
           </Text>
         </HStack>
 
@@ -116,13 +122,13 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                 className="text-white text-xs flex-1 text-center font-bold"
                 style={{ fontFamily: "NanumGothic" }}
               >
-                ${formatPrice(item.cashPrice)}
+                {formatPriceInKrw(item.cashPrice)}
               </Text>
               <Text
                 className="text-white text-xs flex-1 text-center font-bold"
                 style={{ fontFamily: "NanumGothic" }}
               >
-                ${formatPrice(item.threeMonthPrice)}
+                {formatPriceInKrw(item.threeMonthPrice)}
               </Text>
               <HStack className="flex-1 justify-center items-center">
                 <Ionicons
@@ -141,12 +147,6 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                   {item.changePercent.toFixed(2)}%
                 </Text>
               </HStack>
-              <Text
-                className="text-white/70 text-xs flex-1 text-center"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                ${formatPrice(item.spread)}
-              </Text>
             </HStack>
           ))}
         </ScrollView>
@@ -156,7 +156,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
 
   const renderStatistics = () => (
     <Box
-      className="rounded-2xl p-6 mb-6"
+      className="rounded-2xl p-6 mb-8 mt-6"
       style={{
         backgroundColor: "rgba(255, 255, 255, 0.04)",
         borderWidth: 1,
@@ -178,8 +178,8 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
         통계 분석
       </Text>
 
-      <VStack space="md">
-        <HStack space="md">
+      <VStack space="lg">
+        <HStack space="lg">
           <Box
             className="flex-1 rounded-xl p-4"
             style={{
@@ -195,7 +195,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              ${formatPrice(data.statistics.highestPrice)}
+              {formatPriceInKrw(data.statistics.highestPrice)}
             </Text>
           </Box>
           <Box
@@ -213,12 +213,12 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              ${formatPrice(data.statistics.lowestPrice)}
+              {formatPriceInKrw(data.statistics.lowestPrice)}
             </Text>
           </Box>
         </HStack>
 
-        <HStack space="md">
+        <HStack space="lg">
           <Box
             className="flex-1 rounded-xl p-4"
             style={{
@@ -234,7 +234,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              ${formatPrice(data.statistics.averagePrice)}
+              {formatPriceInKrw(data.statistics.averagePrice)}
             </Text>
           </Box>
           <Box
@@ -252,7 +252,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              ${formatPrice(data.statistics.volatility)}
+              {formatPriceInKrw(data.statistics.volatility)}
             </Text>
           </Box>
         </HStack>
@@ -284,7 +284,11 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
         가격 추이
       </Text>
       <MetalPriceChart
-        data={data.dailyData}
+        data={data.dailyData.map((item) => ({
+          ...item,
+          cashPrice: convertUsdPerTonToKrwPerKg(item.cashPrice),
+          threeMonthPrice: convertUsdPerTonToKrwPerKg(item.threeMonthPrice),
+        }))}
         chartType="line"
         metalName={data.metalName}
       />
@@ -301,7 +305,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
         <Box
           className="p-6"
           style={{
-            backgroundColor: data.bgColor,
+            backgroundColor: "rgba(255, 255, 255, 0.03)",
             borderBottomLeftRadius: 20,
             borderBottomRightRadius: 20,
           }}
@@ -314,12 +318,12 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               <Box
                 className="w-12 h-12 rounded-xl items-center justify-center mr-3"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "rgba(255, 255, 255, 0.05)",
                   shadowColor: data.iconColor,
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.6,
-                  shadowRadius: 8,
-                  elevation: 8,
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 4,
+                  elevation: 4,
                 }}
               >
                 <Ionicons
@@ -350,7 +354,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-3xl font-black tracking-wide"
               style={{ fontFamily: "NanumGothic" }}
             >
-              ${formatPrice(data.currentPrice)}
+              {formatPriceInKrw(data.currentPrice)}
             </Text>
             <HStack className="items-center mt-2">
               <Ionicons
@@ -372,46 +376,11 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
           </VStack>
         </Box>
 
-        {/* 기간 선택 */}
-        <HStack className="p-6 gap-3">
-          {(["1D", "1W", "1M", "3M"] as const).map((period) => (
-            <TouchableOpacity
-              key={period}
-              className="flex-1 rounded-2xl py-3"
-              style={{
-                backgroundColor:
-                  selectedPeriod === period
-                    ? "rgba(255, 255, 255, 0.1)"
-                    : "rgba(255, 255, 255, 0.02)",
-                borderWidth: 1,
-                borderColor:
-                  selectedPeriod === period
-                    ? "rgba(255, 255, 255, 0.2)"
-                    : "rgba(255, 255, 255, 0.05)",
-              }}
-              onPress={() => setSelectedPeriod(period)}
-            >
-              <Text
-                className="text-center font-bold text-sm uppercase tracking-[1px]"
-                style={{
-                  color:
-                    selectedPeriod === period
-                      ? "#FFFFFF"
-                      : "rgba(255, 255, 255, 0.6)",
-                  fontFamily: "NanumGothic",
-                }}
-              >
-                {period}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </HStack>
-
         {/* 콘텐츠 */}
         <ScrollView
           className="flex-1 px-6"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 40, paddingTop: 24 }}
         >
           {renderStatistics()}
           {renderPriceTable()}

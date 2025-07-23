@@ -93,7 +93,7 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   // 메인 가격 차트 (CASH 가격만)
   const renderMainPriceChart = () => (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>{metalName} CASH 가격 추이 (USD)</Text>
+      <Text style={styles.chartTitle}>{metalName} CASH 가격 추이 (원/KG)</Text>
       <View style={styles.chartWrapper}>
         <LineChart
           data={mainPriceData}
@@ -110,7 +110,7 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   // 가격 변동 차트
   const renderPriceChangeChart = () => (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>일별 가격 변동 (USD)</Text>
+      <Text style={styles.chartTitle}>일별 가격 변동 (원/KG)</Text>
       <View style={styles.chartWrapper}>
         <BarChart
           data={priceChangeData}
