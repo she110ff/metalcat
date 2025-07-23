@@ -32,7 +32,7 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     datasets: [
       {
         data: data.map((item) => item.cashPrice),
-        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // 파란색
+        color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`, // 노란색 (시세 화면과 일치)
         strokeWidth: 4,
       },
     ],
@@ -60,30 +60,32 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     datasets: [
       {
         data: data.map((item) => item.changePercent),
-        color: (opacity = 1) => `rgba(168, 85, 247, ${opacity})`, // 보라색
+        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // 파란색
         strokeWidth: 2,
       },
     ],
   };
 
-  const chartConfig = {
-    backgroundColor: "#FFFFFF",
-    backgroundGradientFrom: "#FFFFFF",
-    backgroundGradientTo: "#FFFFFF",
+  // 다크 테마 차트 설정
+  const darkChartConfig = {
+    backgroundColor: "transparent",
+    backgroundGradientFrom: "transparent",
+    backgroundGradientTo: "transparent",
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.7})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
       r: "4",
       strokeWidth: "2",
-      stroke: "#3B82F6",
+      stroke: "#FFC107", // 노란색
+      fill: "#FFC107",
     },
     propsForBackgroundLines: {
       strokeDasharray: "",
-      stroke: "#E5E7EB",
+      stroke: "rgba(255, 255, 255, 0.1)",
       strokeWidth: 1,
     },
   };
@@ -97,62 +99,32 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
           data={mainPriceData}
           width={chartWidth}
           height={200}
-          chartConfig={{
-            ...chartConfig,
-            formatYLabel: (value) => `${parseInt(value).toLocaleString()}`,
-          }}
+          chartConfig={darkChartConfig}
           bezier
           style={styles.chart}
-          withDots={true}
-          withShadow={false}
-          withInnerLines={true}
-          withOuterLines={false}
-          withVerticalLines={false}
-          withHorizontalLines={true}
-          withVerticalLabels={true}
-          withHorizontalLabels={true}
-          fromZero={false}
-          yAxisInterval={1}
-          segments={4}
         />
       </View>
     </View>
   );
 
-  // 가격 변동 차트 (절대값)
+  // 가격 변동 차트
   const renderPriceChangeChart = () => (
     <View style={styles.chartContainer}>
       <Text style={styles.chartTitle}>일별 가격 변동 (USD)</Text>
       <View style={styles.chartWrapper}>
         <BarChart
-          data={{
-            labels: data.map((item) => formatDate(item.date)),
-            datasets: [
-              {
-                data: data.map((item, index) => {
-                  if (index === 0) return 0;
-                  const change = item.cashPrice - data[index - 1].cashPrice;
-                  return change;
-                }),
-              },
-            ],
-          }}
+          data={priceChangeData}
           width={chartWidth}
-          height={160}
+          height={150}
           chartConfig={{
-            ...chartConfig,
+            ...darkChartConfig,
             color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
-            barPercentage: 0.6,
           }}
           style={styles.chart}
-          withInnerLines={true}
-          withVerticalLabels={true}
-          withHorizontalLabels={true}
-          fromZero={true}
           yAxisLabel=""
           yAxisSuffix=""
-          yAxisInterval={1}
-          segments={4}
+          showBarTops
+          showValuesOnTopOfBars
         />
       </View>
     </View>
@@ -161,34 +133,18 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   // 변동률 차트
   const renderChangePercentChart = () => (
     <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>일별 변동률 (%)</Text>
+      <Text style={styles.chartTitle}>변동률 추이 (%)</Text>
       <View style={styles.chartWrapper}>
         <LineChart
           data={changePercentData}
           width={chartWidth}
-          height={160}
+          height={150}
           chartConfig={{
-            ...chartConfig,
-            color: (opacity = 1) => `rgba(168, 85, 247, ${opacity})`,
-            propsForDots: {
-              r: "3",
-              strokeWidth: "2",
-              stroke: "#A855F7",
-            },
+            ...darkChartConfig,
+            color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
           }}
           bezier
           style={styles.chart}
-          withDots={true}
-          withShadow={false}
-          withInnerLines={true}
-          withOuterLines={false}
-          withVerticalLines={false}
-          withHorizontalLines={true}
-          withVerticalLabels={true}
-          withHorizontalLabels={true}
-          fromZero={false}
-          yAxisInterval={1}
-          segments={4}
         />
       </View>
     </View>
@@ -205,31 +161,28 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    flex: 1,
   },
   chartContainer: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
   chartTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: "bold",
-    color: "#1F2937",
-    marginBottom: 15,
+    color: "rgba(255, 255, 255, 0.8)",
+    marginBottom: 10,
     textAlign: "center",
+    fontFamily: "NanumGothic",
   },
   chartWrapper: {
     alignItems: "center",
-    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.02)",
+    borderRadius: 16,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
   },
   chart: {
-    marginVertical: 8,
     borderRadius: 16,
   },
 });

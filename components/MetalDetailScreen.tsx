@@ -9,8 +9,14 @@ import {
   Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "@/components/ui/safe-area-view";
+import { Box } from "@/components/ui/box";
+import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
 import { MetalDetailData, DailyPriceData } from "../data/types/metal-price";
 import { MetalPriceChart } from "./MetalPriceChart";
+import { formatMetalPrice } from "@/data/utils/metal-price-utils";
 
 interface MetalDetailScreenProps {
   data: MetalDetailData;
@@ -28,10 +34,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   >("1M");
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
+    return formatMetalPrice(price);
   };
 
   const formatDate = (dateString: string) => {
@@ -51,338 +54,370 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   };
 
   const renderPriceTable = () => (
-    <View style={styles.tableContainer}>
-      <Text style={styles.sectionTitle}>일별 가격 데이터</Text>
-      <View style={styles.tableHeader}>
-        <Text style={[styles.tableHeaderText, styles.dateColumn]}>날짜</Text>
-        <Text style={[styles.tableHeaderText, styles.priceColumn]}>CASH</Text>
-        <Text style={[styles.tableHeaderText, styles.priceColumn]}>3M</Text>
-        <Text style={[styles.tableHeaderText, styles.changeColumn]}>변동</Text>
-        <Text style={[styles.tableHeaderText, styles.spreadColumn]}>
-          스프레드
-        </Text>
-      </View>
-      <ScrollView style={styles.tableBody}>
-        {[...data.dailyData].reverse().map((item, index) => (
-          <View key={index} style={styles.tableRow}>
-            <Text style={[styles.tableCell, styles.dateColumn]}>
-              {formatDate(item.date)}
-            </Text>
-            <Text style={[styles.tableCell, styles.priceColumn]}>
-              ${formatPrice(item.cashPrice)}
-            </Text>
-            <Text style={[styles.tableCell, styles.priceColumn]}>
-              ${formatPrice(item.threeMonthPrice)}
-            </Text>
-            <View style={styles.changeColumn}>
-              <View style={styles.changeContainer}>
+    <Box
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.04)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+      }}
+    >
+      <Text
+        className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
+        style={{
+          fontFamily: "NanumGothic",
+          fontWeight: "800",
+        }}
+      >
+        일별 가격 데이터
+      </Text>
+
+      <Box
+        className="rounded-xl p-4 mb-4"
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.02)",
+          borderWidth: 1,
+          borderColor: "rgba(255, 255, 255, 0.05)",
+        }}
+      >
+        <HStack className="mb-3">
+          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1">
+            날짜
+          </Text>
+          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
+            CASH
+          </Text>
+          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
+            3M
+          </Text>
+          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
+            변동
+          </Text>
+          <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] flex-1 text-center">
+            스프레드
+          </Text>
+        </HStack>
+
+        <ScrollView style={{ maxHeight: 300 }}>
+          {[...data.dailyData].reverse().map((item, index) => (
+            <HStack key={index} className="py-2 border-b border-white/5">
+              <Text
+                className="text-white/80 text-xs flex-1"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                {formatDate(item.date)}
+              </Text>
+              <Text
+                className="text-white text-xs flex-1 text-center font-bold"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                ${formatPrice(item.cashPrice)}
+              </Text>
+              <Text
+                className="text-white text-xs flex-1 text-center font-bold"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                ${formatPrice(item.threeMonthPrice)}
+              </Text>
+              <HStack className="flex-1 justify-center items-center">
                 <Ionicons
                   name={getChangeIcon(item.changeType)}
-                  size={12}
+                  size={10}
                   color={getChangeColor(item.changeType)}
                 />
                 <Text
-                  style={[
-                    styles.changeText,
-                    { color: getChangeColor(item.changeType) },
-                  ]}
+                  className="text-xs font-bold ml-1"
+                  style={{
+                    color: getChangeColor(item.changeType),
+                    fontFamily: "NanumGothic",
+                  }}
                 >
                   {item.changePercent > 0 ? "+" : ""}
                   {item.changePercent.toFixed(2)}%
                 </Text>
-              </View>
-            </View>
-            <Text style={[styles.tableCell, styles.spreadColumn]}>
-              ${formatPrice(item.spread)}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
+              </HStack>
+              <Text
+                className="text-white/70 text-xs flex-1 text-center"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                ${formatPrice(item.spread)}
+              </Text>
+            </HStack>
+          ))}
+        </ScrollView>
+      </Box>
+    </Box>
   );
 
   const renderStatistics = () => (
-    <View style={styles.statsContainer}>
-      <Text style={styles.sectionTitle}>통계 분석</Text>
-      <View style={styles.statsGrid}>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>최고가</Text>
-          <Text style={styles.statValue}>
-            ${formatPrice(data.statistics.highestPrice)}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>최저가</Text>
-          <Text style={styles.statValue}>
-            ${formatPrice(data.statistics.lowestPrice)}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>평균가</Text>
-          <Text style={styles.statValue}>
-            ${formatPrice(data.statistics.averagePrice)}
-          </Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statLabel}>변동성</Text>
-          <Text style={styles.statValue}>
-            ${formatPrice(data.statistics.volatility)}
-          </Text>
-        </View>
-      </View>
-    </View>
+    <Box
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.04)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+      }}
+    >
+      <Text
+        className="text-white text-xl font-black tracking-[2px] uppercase mb-4"
+        style={{
+          fontFamily: "NanumGothic",
+          fontWeight: "800",
+        }}
+      >
+        통계 분석
+      </Text>
+
+      <VStack space="md">
+        <HStack space="md">
+          <Box
+            className="flex-1 rounded-xl p-4"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.05)",
+            }}
+          >
+            <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] mb-2">
+              최고가
+            </Text>
+            <Text
+              className="text-white text-lg font-black"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              ${formatPrice(data.statistics.highestPrice)}
+            </Text>
+          </Box>
+          <Box
+            className="flex-1 rounded-xl p-4"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.05)",
+            }}
+          >
+            <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] mb-2">
+              최저가
+            </Text>
+            <Text
+              className="text-white text-lg font-black"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              ${formatPrice(data.statistics.lowestPrice)}
+            </Text>
+          </Box>
+        </HStack>
+
+        <HStack space="md">
+          <Box
+            className="flex-1 rounded-xl p-4"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.05)",
+            }}
+          >
+            <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] mb-2">
+              평균가
+            </Text>
+            <Text
+              className="text-white text-lg font-black"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              ${formatPrice(data.statistics.averagePrice)}
+            </Text>
+          </Box>
+          <Box
+            className="flex-1 rounded-xl p-4"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.02)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.05)",
+            }}
+          >
+            <Text className="text-white/60 text-xs font-bold uppercase tracking-[1px] mb-2">
+              변동성
+            </Text>
+            <Text
+              className="text-white text-lg font-black"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              ${formatPrice(data.statistics.volatility)}
+            </Text>
+          </Box>
+        </HStack>
+      </VStack>
+    </Box>
   );
 
   const renderPriceChart = () => (
-    <View style={styles.chartContainer}>
-      <Text style={styles.sectionTitle}>가격 추이</Text>
+    <Box
+      className="rounded-2xl p-6 mb-6"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.04)",
+        borderWidth: 1,
+        borderColor: "rgba(255, 255, 255, 0.08)",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 8,
+      }}
+    >
+      <Text
+        className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
+        style={{
+          fontFamily: "NanumGothic",
+          fontWeight: "800",
+        }}
+      >
+        가격 추이
+      </Text>
       <MetalPriceChart
         data={data.dailyData}
         chartType="line"
         metalName={data.metalName}
       />
-    </View>
+    </Box>
   );
 
   return (
-    <View style={styles.container}>
-      {/* 헤더 */}
-      <View style={[styles.header, { backgroundColor: data.bgColor }]}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <View style={styles.headerContent}>
-          <View style={styles.metalInfo}>
-            <Ionicons name={data.iconName} size={24} color={data.iconColor} />
-            <Text style={styles.metalName}>{data.metalName}</Text>
-          </View>
-          <View style={styles.priceInfo}>
-            <Text style={styles.currentPrice}>
+    <LinearGradient
+      colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
+      className="flex-1"
+    >
+      <SafeAreaView className="flex-1">
+        {/* 헤더 */}
+        <Box
+          className="p-6"
+          style={{
+            backgroundColor: data.bgColor,
+            borderBottomLeftRadius: 20,
+            borderBottomRightRadius: 20,
+          }}
+        >
+          <HStack className="items-center justify-between mb-4">
+            <TouchableOpacity onPress={onBack} className="p-2">
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <HStack className="items-center">
+              <Box
+                className="w-12 h-12 rounded-xl items-center justify-center mr-3"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  shadowColor: data.iconColor,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.6,
+                  shadowRadius: 8,
+                  elevation: 8,
+                }}
+              >
+                <Ionicons
+                  name={data.iconName}
+                  size={24}
+                  color={data.iconColor}
+                />
+              </Box>
+              <VStack className="items-start">
+                <Text
+                  className="text-white text-2xl font-black tracking-wide"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  {data.metalName}
+                </Text>
+                <Text
+                  className="text-white/60 text-sm uppercase tracking-[1px]"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  {data.unit}
+                </Text>
+              </VStack>
+            </HStack>
+          </HStack>
+
+          <VStack className="items-end">
+            <Text
+              className="text-white text-3xl font-black tracking-wide"
+              style={{ fontFamily: "NanumGothic" }}
+            >
               ${formatPrice(data.currentPrice)}
             </Text>
-            <View style={styles.changeContainer}>
+            <HStack className="items-center mt-2">
               <Ionicons
                 name={getChangeIcon(data.changeType)}
                 size={16}
                 color={getChangeColor(data.changeType)}
               />
               <Text
-                style={[
-                  styles.changeText,
-                  { color: getChangeColor(data.changeType) },
-                ]}
+                className="text-sm font-bold ml-2"
+                style={{
+                  color: getChangeColor(data.changeType),
+                  fontFamily: "NanumGothic",
+                }}
               >
                 {data.changePercent > 0 ? "+" : ""}
                 {data.changePercent.toFixed(2)}%
               </Text>
-            </View>
-          </View>
-        </View>
-        <Text style={styles.unit}>{data.unit}</Text>
-      </View>
+            </HStack>
+          </VStack>
+        </Box>
 
-      {/* 기간 선택 */}
-      <View style={styles.periodSelector}>
-        {(["1D", "1W", "1M", "3M"] as const).map((period) => (
-          <TouchableOpacity
-            key={period}
-            style={[
-              styles.periodButton,
-              selectedPeriod === period && styles.periodButtonActive,
-            ]}
-            onPress={() => setSelectedPeriod(period)}
-          >
-            <Text
-              style={[
-                styles.periodButtonText,
-                selectedPeriod === period && styles.periodButtonTextActive,
-              ]}
+        {/* 기간 선택 */}
+        <HStack className="p-6 gap-3">
+          {(["1D", "1W", "1M", "3M"] as const).map((period) => (
+            <TouchableOpacity
+              key={period}
+              className="flex-1 rounded-2xl py-3"
+              style={{
+                backgroundColor:
+                  selectedPeriod === period
+                    ? "rgba(255, 255, 255, 0.1)"
+                    : "rgba(255, 255, 255, 0.02)",
+                borderWidth: 1,
+                borderColor:
+                  selectedPeriod === period
+                    ? "rgba(255, 255, 255, 0.2)"
+                    : "rgba(255, 255, 255, 0.05)",
+              }}
+              onPress={() => setSelectedPeriod(period)}
             >
-              {period}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+              <Text
+                className="text-center font-bold text-sm uppercase tracking-[1px]"
+                style={{
+                  color:
+                    selectedPeriod === period
+                      ? "#FFFFFF"
+                      : "rgba(255, 255, 255, 0.6)",
+                  fontFamily: "NanumGothic",
+                }}
+              >
+                {period}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </HStack>
 
-      {/* 콘텐츠 */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderStatistics()}
-        {renderPriceTable()}
-        {renderPriceChart()}
-      </ScrollView>
-    </View>
+        {/* 콘텐츠 */}
+        <ScrollView
+          className="flex-1 px-6"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 40 }}
+        >
+          {renderStatistics()}
+          {renderPriceTable()}
+          {renderPriceChart()}
+        </ScrollView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-  },
-  header: {
-    paddingTop: 60,
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-  },
-  backButton: {
-    marginBottom: 15,
-  },
-  headerContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  metalInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  metalName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  priceInfo: {
-    alignItems: "flex-end",
-  },
-  currentPrice: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFFFFF",
-  },
-  changeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  changeText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  unit: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    opacity: 0.8,
-    textAlign: "right",
-    marginTop: 4,
-  },
-  periodSelector: {
-    flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    gap: 10,
-  },
-  periodButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#E5E7EB",
-  },
-  periodButtonActive: {
-    backgroundColor: "#3B82F6",
-  },
-  periodButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-  periodButtonTextActive: {
-    color: "#FFFFFF",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1F2937",
-    marginBottom: 15,
-  },
-  statsContainer: {
-    marginBottom: 25,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  statCard: {
-    flex: 1,
-    minWidth: (width - 50) / 2,
-    backgroundColor: "#FFFFFF",
-    padding: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#1F2937",
-  },
-  chartContainer: {
-    marginBottom: 25,
-  },
-  tableContainer: {
-    marginBottom: 25,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#F3F4F6",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  tableHeaderText: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#374151",
-  },
-  tableBody: {
-    maxHeight: 300,
-  },
-  tableRow: {
-    flexDirection: "row",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    marginBottom: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  tableCell: {
-    fontSize: 12,
-    color: "#1F2937",
-  },
-  dateColumn: {
-    flex: 1,
-  },
-  priceColumn: {
-    flex: 1,
-    textAlign: "center",
-  },
-  changeColumn: {
-    flex: 1,
-    alignItems: "center",
-  },
-  spreadColumn: {
-    flex: 1,
-    textAlign: "center",
-  },
-});
