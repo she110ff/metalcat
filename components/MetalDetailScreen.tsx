@@ -175,7 +175,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
           fontWeight: "800",
         }}
       >
-        통계 분석
+        통계 분석 (원/KG)
       </Text>
 
       <VStack space="lg">
@@ -195,7 +195,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              {formatPriceInKrw(data.statistics.highestPrice)}
+              ₩{formatPriceInKrw(data.statistics.highestPrice)}
             </Text>
           </Box>
           <Box
@@ -213,7 +213,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              {formatPriceInKrw(data.statistics.lowestPrice)}
+              ₩{formatPriceInKrw(data.statistics.lowestPrice)}
             </Text>
           </Box>
         </HStack>
@@ -234,7 +234,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              {formatPriceInKrw(data.statistics.averagePrice)}
+              ₩{formatPriceInKrw(data.statistics.averagePrice)}
             </Text>
           </Box>
           <Box
@@ -252,7 +252,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-lg font-black"
               style={{ fontFamily: "NanumGothic" }}
             >
-              {formatPriceInKrw(data.statistics.volatility)}
+              ₩{formatPriceInKrw(data.statistics.volatility)}
             </Text>
           </Box>
         </HStack>
@@ -354,7 +354,13 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               className="text-white text-3xl font-black tracking-wide"
               style={{ fontFamily: "NanumGothic" }}
             >
-              {formatPriceInKrw(data.currentPrice)}
+              ₩{formatPriceInKrw(data.currentPrice)}
+            </Text>
+            <Text
+              className="text-white/60 text-sm uppercase tracking-[1px] mt-1"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              원/KG
             </Text>
             <HStack className="items-center mt-2">
               <Ionicons
