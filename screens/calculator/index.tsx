@@ -1,27 +1,21 @@
 import React, { useState } from "react";
-import { ScrollView } from "react-native";
-import { Box } from "@/components/ui/box";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import { Text } from "@/components/ui/text";
-import { Button, ButtonText } from "@/components/ui/button";
-import { Input, InputField } from "@/components/ui/input";
-import { Pressable } from "@/components/ui/pressable";
 import {
-  Select,
-  SelectTrigger,
-  SelectInput,
-  SelectPortal,
-  SelectBackdrop,
-  SelectContent,
-  SelectDragIndicator,
-  SelectDragIndicatorWrapper,
-  SelectItem,
-} from "@/components/ui/select";
-import { Ionicons } from "@expo/vector-icons";
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  Dimensions,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "@/components/ui/safe-area-view";
+import { SafeAreaView } from "react-native";
 import { useRouter } from "expo-router";
+import {
+  Calculator as CalculatorIcon,
+  RotateCcw,
+  TrendingUp,
+} from "lucide-react-native";
 
 interface CalculationResult {
   metalType: string;
@@ -32,12 +26,15 @@ interface CalculationResult {
 }
 
 export const Calculator = () => {
-  console.log("🧮 Calculator component rendering with NativeWind test...");
+  console.log(
+    "🧮 Calculator component rendering - 순수 React Native 스타일 버전"
+  );
 
   const [selectedMetal, setSelectedMetal] = useState("구리");
   const [weight, setWeight] = useState("");
   const [purity, setPurity] = useState("99");
   const [result, setResult] = useState<CalculationResult | null>(null);
+  const [showMetalPicker, setShowMetalPicker] = useState(false);
 
   const router = useRouter();
 
@@ -83,286 +80,365 @@ export const Calculator = () => {
     setResult(null);
   };
 
+  // 금속 선택 핸들러
+  const handleMetalSelect = (metal: string) => {
+    setSelectedMetal(metal);
+    setShowMetalPicker(false);
+  };
+
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
-      <SafeAreaView className="flex-1">
+      <SafeAreaView style={{ flex: 1 }}>
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          <VStack className="flex-1 p-6" space="xl">
-            {/* Header - NativeWind className 테스트 */}
-            <VStack className="items-center">
-              <Text
-                className="text-white text-2xl font-black uppercase text-center"
+          <View style={{ flex: 1, padding: 24 }}>
+            {/* Header */}
+            <View
+              style={{ alignItems: "center", marginTop: 20, marginBottom: 40 }}
+            >
+              <View
                 style={{
-                  fontFamily: "SpaceMono",
-                  textShadowColor: "rgba(255, 255, 255, 0.4)",
-                  textShadowOffset: { width: 0, height: 2 },
-                  textShadowRadius: 4,
-                  letterSpacing: 6,
-                  fontWeight: "900",
-                  color: "#F8FAFC",
-                  marginTop: 20,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 16,
                 }}
               >
-                CALCULATOR
-              </Text>
-              {/* NativeWind 테스트용 박스 */}
-              <VStack className="bg-red-500 p-4 rounded-lg mt-4">
-                <Text className="text-white text-center font-bold">
-                  NativeWind 테스트 - 빨간 박스가 보이면 className 작동!
+                <CalculatorIcon size={32} color="#FCD34D" strokeWidth={2.5} />
+                <Text
+                  style={{
+                    fontFamily: "SpaceMono",
+                    fontSize: 28,
+                    fontWeight: "900",
+                    color: "#F8FAFC",
+                    letterSpacing: 6,
+                    marginLeft: 12,
+                    textShadowColor: "rgba(255, 255, 255, 0.4)",
+                    textShadowOffset: { width: 0, height: 2 },
+                    textShadowRadius: 4,
+                  }}
+                >
+                  CALCULATOR
                 </Text>
-              </VStack>
-            </VStack>
+              </View>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 16,
+                  textAlign: "center",
+                  fontWeight: "600",
+                }}
+              >
+                금속 가격 계산기
+              </Text>
+            </View>
             {/* Metal Selection */}
-            <Box
+            <View
               style={{
                 borderRadius: 24,
                 padding: 24,
-                marginTop: 40,
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 255, 255, 0.08)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.4,
-                shadowRadius: 24,
-                elevation: 12,
+                marginBottom: 24,
               }}
             >
               <Text
-                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
-                style={{ fontFamily: "NanumGothic" }}
+                style={{
+                  color: "#FCD34D",
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  letterSpacing: 2,
+                  marginBottom: 16,
+                }}
               >
                 금속 종류
               </Text>
 
-              <VStack className="space-sm">
-                <Select
-                  selectedValue={selectedMetal}
-                  onValueChange={(value) => setSelectedMetal(value)}
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  borderWidth: 1,
+                  borderColor: "rgba(255, 255, 255, 0.08)",
+                  borderRadius: 16,
+                  padding: 16,
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+                onPress={() => setShowMetalPicker(!showMetalPicker)}
+              >
+                <Text style={{ color: "white", fontSize: 16 }}>
+                  {selectedMetal}
+                </Text>
+                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 16 }}>
+                  ▼
+                </Text>
+              </TouchableOpacity>
+
+              {/* Metal Picker */}
+              {showMetalPicker && (
+                <View
+                  style={{
+                    backgroundColor: "rgba(26, 26, 26, 0.95)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 255, 255, 0.1)",
+                    borderRadius: 16,
+                    marginTop: 8,
+                    overflow: "hidden",
+                  }}
                 >
-                  <SelectTrigger
-                    className="rounded-2xl"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
-                  >
-                    <SelectInput
-                      placeholder="금속을 선택하세요"
-                      placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                      className="text-white text-base"
-                    />
-                  </SelectTrigger>
-                  <SelectPortal>
-                    <SelectBackdrop />
-                    <SelectContent
-                      className="rounded-2xl"
+                  {Object.keys(metalPrices).map((metal) => (
+                    <TouchableOpacity
+                      key={metal}
                       style={{
-                        backgroundColor: "rgba(26, 26, 26, 0.95)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.1)",
+                        padding: 16,
+                        borderBottomWidth:
+                          metal !== Object.keys(metalPrices).slice(-1)[0]
+                            ? 1
+                            : 0,
+                        borderBottomColor: "rgba(255,255,255,0.05)",
                       }}
+                      onPress={() => handleMetalSelect(metal)}
                     >
-                      <SelectDragIndicatorWrapper>
-                        <SelectDragIndicator />
-                      </SelectDragIndicatorWrapper>
-                      {Object.keys(metalPrices).map((metal) => (
-                        <SelectItem
-                          key={metal}
-                          label={metal}
-                          value={metal}
-                          className="py-3"
-                        >
-                          <Text className="text-white text-base">{metal}</Text>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </SelectPortal>
-                </Select>
-              </VStack>
-            </Box>
+                      <Text style={{ color: "white", fontSize: 16 }}>
+                        {metal} ({metalPrices[metal].price}{" "}
+                        {metalPrices[metal].unit})
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
 
             {/* Input Fields */}
-            <Box
-              className="rounded-3xl p-6"
+            <View
               style={{
+                borderRadius: 24,
+                padding: 24,
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 255, 255, 0.08)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.4,
-                shadowRadius: 24,
-                elevation: 12,
+                marginBottom: 24,
               }}
             >
               <Text
-                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4"
-                style={{ fontFamily: "NanumGothic" }}
+                style={{
+                  color: "#FCD34D",
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  letterSpacing: 2,
+                  marginBottom: 24,
+                }}
               >
                 계산 정보
               </Text>
 
-              <VStack className="space-lg">
-                <VStack className="space-sm">
+              {/* Weight Input */}
+              <View style={{ marginBottom: 20 }}>
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginBottom: 8,
+                    letterSpacing: 1,
+                  }}
+                >
+                  중량
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 255, 255, 0.08)",
+                    borderRadius: 16,
+                    color: "white",
+                    fontSize: 16,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                  placeholder={
+                    selectedMetal === "금" ||
+                    selectedMetal === "은" ||
+                    selectedMetal === "백금"
+                      ? "그램 단위로 입력"
+                      : "킬로그램 단위로 입력"
+                  }
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  value={weight}
+                  onChangeText={setWeight}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              {/* Purity Input */}
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    color: "rgba(255,255,255,0.8)",
+                    fontSize: 14,
+                    fontWeight: "600",
+                    marginBottom: 8,
+                    letterSpacing: 1,
+                  }}
+                >
+                  순도 (%)
+                </Text>
+                <TextInput
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.04)",
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 255, 255, 0.08)",
+                    borderRadius: 16,
+                    color: "white",
+                    fontSize: 16,
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                  }}
+                  placeholder="순도를 입력하세요 (예: 99)"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  value={purity}
+                  onChangeText={setPurity}
+                  keyboardType="numeric"
+                />
+              </View>
+
+              {/* Buttons */}
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "rgba(34, 197, 94, 0.15)",
+                    borderColor: "rgba(34, 197, 94, 0.3)",
+                    borderRadius: 18,
+                    borderWidth: 1.5,
+                    minHeight: 56,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexDirection: "row",
+                  }}
+                  onPress={calculate}
+                >
+                  <TrendingUp size={20} color="#22C55E" strokeWidth={2.5} />
                   <Text
-                    className="text-white/80 text-sm font-semibold uppercase tracking-[1px]"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    중량
-                  </Text>
-                  <Input
                     style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                      borderRadius: 16,
-                      overflow: "hidden",
+                      color: "#22C55E",
+                      fontWeight: "bold",
+                      fontSize: 16,
+                      marginLeft: 8,
                     }}
                   >
-                    <InputField
-                      placeholder={
-                        selectedMetal === "금" ||
-                        selectedMetal === "은" ||
-                        selectedMetal === "백금"
-                          ? "그램 단위로 입력"
-                          : "킬로그램 단위로 입력"
-                      }
-                      placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                      value={weight}
-                      onChangeText={setWeight}
-                      style={{
-                        color: "white",
-                        fontSize: 16,
-                        borderRadius: 16,
-                        paddingHorizontal: 16,
-                        paddingVertical: 12,
-                      }}
-                      keyboardType="numeric"
-                    />
-                  </Input>
-                </VStack>
-
-                <VStack className="space-sm mt-2">
-                  <Text
-                    className="text-white/80 text-sm font-semibold uppercase tracking-[1px]"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    순도 (%)
+                    계산하기
                   </Text>
-                  <Input
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                    borderColor: "rgba(255, 255, 255, 0.12)",
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    minHeight: 56,
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexDirection: "row",
+                  }}
+                  onPress={reset}
+                >
+                  <RotateCcw
+                    size={18}
+                    color="rgba(255,255,255,0.7)"
+                    strokeWidth={2}
+                  />
+                  <Text
                     style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                      borderRadius: 16,
-                      overflow: "hidden",
+                      color: "rgba(255,255,255,0.7)",
+                      fontWeight: "600",
+                      fontSize: 14,
+                      marginLeft: 8,
                     }}
                   >
-                    <InputField
-                      placeholder="순도를 입력하세요 (예: 99)"
-                      placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                      value={purity}
-                      onChangeText={setPurity}
-                      style={{
-                        color: "white",
-                        fontSize: 16,
-                        borderRadius: 16,
-                        paddingHorizontal: 16,
-                        paddingVertical: 12,
-                      }}
-                      keyboardType="numeric"
-                    />
-                  </Input>
-                </VStack>
-
-                <VStack className="space-md mt-4">
-                  <HStack>
-                    <Button
-                      className="flex-1"
-                      onPress={calculate}
-                      style={{
-                        backgroundColor: "rgba(34, 197, 94, 0.15)",
-                        borderColor: "rgba(34, 197, 94, 0.3)",
-                        borderRadius: 18,
-                        borderWidth: 1.5,
-                        shadowColor: "#22C55E",
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.4,
-                        shadowRadius: 12,
-                        elevation: 12,
-                        minHeight: 56,
-                        marginRight: 16,
-                      }}
-                    >
-                      <ButtonText className="font-bold text-green-300 tracking-wide text-base">
-                        계산하기
-                      </ButtonText>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onPress={reset}
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.03)",
-                        borderColor: "rgba(255, 255, 255, 0.12)",
-                        borderRadius: 16,
-                        shadowColor: "#000",
-                        shadowOffset: { width: 0, height: 3 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 6,
-                        elevation: 6,
-                        minHeight: 56,
-                      }}
-                    >
-                      <ButtonText className="font-semibold text-white/70 tracking-wide text-sm">
-                        초기화
-                      </ButtonText>
-                    </Button>
-                  </HStack>
-                </VStack>
-              </VStack>
-            </Box>
+                    초기화
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
 
             {/* Result */}
             {result && (
-              <Box
-                className="rounded-3xl p-6"
+              <View
                 style={{
+                  borderRadius: 24,
+                  padding: 24,
                   backgroundColor: "rgba(147, 51, 234, 0.08)",
                   borderWidth: 1,
                   borderColor: "rgba(147, 51, 234, 0.15)",
-                  shadowColor: "#9333EA",
-                  shadowOffset: { width: 0, height: 12 },
-                  shadowOpacity: 0.4,
-                  shadowRadius: 24,
-                  elevation: 12,
                 }}
               >
-                <Text className="text-purple-300 text-xl font-black tracking-[2px] uppercase mb-4">
+                <Text
+                  style={{
+                    color: "#C084FC",
+                    fontSize: 20,
+                    fontWeight: "bold",
+                    letterSpacing: 2,
+                    marginBottom: 20,
+                  }}
+                >
                   계산 결과
                 </Text>
 
-                <VStack className="space-sm">
-                  <HStack className="justify-between items-center">
-                    <Text className="text-white/80">금속 종류:</Text>
-                    <Text className="text-white font-semibold">
+                <View style={{ gap: 12 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                    >
+                      금속 종류:
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
                       {result.metalType}
                     </Text>
-                  </HStack>
+                  </View>
 
-                  <HStack className="justify-between items-center">
-                    <Text className="text-white/80">중량:</Text>
-                    <Text className="text-white font-semibold">
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                    >
+                      중량:
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
                       {result.weight}{" "}
                       {result.metalType === "금" ||
                       result.metalType === "은" ||
@@ -370,37 +446,96 @@ export const Calculator = () => {
                         ? "g"
                         : "kg"}
                     </Text>
-                  </HStack>
+                  </View>
 
-                  <HStack className="justify-between items-center">
-                    <Text className="text-white/80">순도:</Text>
-                    <Text className="text-white font-semibold">
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                    >
+                      순도:
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
                       {result.purity}%
                     </Text>
-                  </HStack>
+                  </View>
 
-                  <HStack className="justify-between items-center">
-                    <Text className="text-white/80">단가:</Text>
-                    <Text className="text-white font-semibold">
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                    >
+                      단가:
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
                       ${result.pricePerUnit.toFixed(2)}{" "}
                       {metalPrices[result.metalType].unit}
                     </Text>
-                  </HStack>
+                  </View>
 
-                  <Box className="border-t border-white/20 pt-4">
-                    <HStack className="justify-between items-center">
-                      <Text className="text-lg font-bold text-white">
+                  <View
+                    style={{
+                      borderTopWidth: 1,
+                      borderTopColor: "rgba(255,255,255,0.2)",
+                      paddingTop: 16,
+                      marginTop: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: "bold",
+                          color: "white",
+                        }}
+                      >
                         총 가치:
                       </Text>
-                      <Text className="text-2xl font-black text-green-400">
+                      <Text
+                        style={{
+                          fontSize: 24,
+                          fontWeight: "900",
+                          color: "#22C55E",
+                        }}
+                      >
                         ${result.totalValue.toFixed(2)}
                       </Text>
-                    </HStack>
-                  </Box>
-                </VStack>
-              </Box>
+                    </View>
+                  </View>
+                </View>
+              </View>
             )}
-          </VStack>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
