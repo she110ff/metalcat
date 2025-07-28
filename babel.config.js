@@ -30,6 +30,8 @@ module.exports = function (api) {
           ],
         },
       ],
+      // ❌ @unitools 사용 중단으로 babel 플러그인 제거
+      // "@unitools/babel-plugin-universal-image",
       "react-native-reanimated/plugin",
     ],
   };

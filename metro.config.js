@@ -38,11 +38,11 @@ config.resolver.platforms = ["ios", "android", "native", "web"];
 // Module resolution order
 config.resolver.resolverMainFields = ["react-native", "browser", "main"];
 
-// Asset registry optimization
-config.transformer = {
-  ...config.transformer,
-  assetRegistryPath: "react-native/Libraries/Image/AssetRegistry",
-};
+// ❌ Asset Registry 수동 설정 제거 - Expo 기본 설정 사용
+// config.transformer = {
+//   ...config.transformer,
+//   assetRegistryPath: "react-native/Libraries/Image/AssetRegistry",
+// };
 
 // Cache settings for better performance
 config.resetCache = true;

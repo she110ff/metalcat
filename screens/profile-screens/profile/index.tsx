@@ -20,7 +20,8 @@ import { Pressable } from "@/components/ui/pressable";
 import { AlertCircle, type LucideIcon } from "lucide-react-native";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
-import Image from "@unitools/image";
+// ✅ React Native 기본 Image 컴포넌트 사용 (Asset Registry 충돌 해결)
+import { Image } from "react-native";
 import { ScrollView } from "@/components/ui/scroll-view";
 import {
   Modal,
@@ -37,7 +38,8 @@ import {
   AvatarFallbackText,
   AvatarImage,
 } from "@/components/ui/avatar";
-import useRouter from "@unitools/router";
+// ✅ expo-router 사용으로 일관성 맞춤
+import { useRouter } from "expo-router";
 import { ProfileIcon } from "./assets/icons/profile";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Center } from "@/components/ui/center";

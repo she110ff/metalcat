@@ -427,6 +427,13 @@ export default function ScrapAuctionCreate() {
                         source={{ uri: photo.uri }}
                         className="w-20 h-20 rounded-lg"
                         style={{ resizeMode: "cover" }}
+                        onError={(error) => {
+                          console.warn("이미지 로딩 실패:", photo.uri, error);
+                        }}
+                        // 로딩 실패 시 기본 배경색 표시
+                        defaultSource={{
+                          uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        }}
                       />
                       <Pressable
                         onPress={() => handleRemovePhoto(photo.id)}

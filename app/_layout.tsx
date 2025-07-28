@@ -13,20 +13,25 @@ import { QueryDebugger } from "@/components/QueryDebugger";
 
 // Configure LogBox to ignore specific warnings
 LogBox.ignoreLogs([
+  // UI 스타일 관련 (React Native 호환성)
   "props.pointerEvents is deprecated",
   "shadow* style props are deprecated",
   "Use style.pointerEvents",
   "Use boxShadow",
+  "Image: style.resizeMode is deprecated",
+  "Please use props.resizeMode",
+
+  // 순환 참조 관련 (Metro bundler)
   "Require cycles are allowed",
   "Consider refactoring to remove the need for a cycle",
   "factory",
   "Require cycle:",
-  "Failed to decode downloaded font",
-  "OTS parsing error",
+
+  // 컴포넌트 관련
   "Access to storage is not allowed from this context",
   "Function components cannot be given refs",
-  "Image: style.resizeMode is deprecated",
-  "Please use props.resizeMode",
+
+  // 폰트 관련 경고 제거 (FontAwesome 제거 후 불필요)
 ]);
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { useColorScheme } from "@/components/useColorScheme";
