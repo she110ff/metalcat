@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -43,6 +44,8 @@ export const AuctionList = () => {
   console.log("🏛️ AuctionList 렌더링 - 순수 React Native 스타일 버전");
 
   const router = useRouter();
+  console.log("📱 Router 객체:", router);
+  console.log("📱 Router canGoBack:", router.canGoBack());
   const [showActionMenu, setShowActionMenu] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
 
@@ -161,6 +164,8 @@ export const AuctionList = () => {
   };
 
   const handleCreateAuction = (auctionType: string) => {
+    console.log("🔍 handleCreateAuction 호출됨, 타입:", auctionType);
+
     setShowActionMenu(false);
     Animated.timing(animatedValue, {
       toValue: 0,
@@ -170,23 +175,78 @@ export const AuctionList = () => {
 
     // 현재는 고철 경매만 활성화
     if (auctionType === "scrap") {
-      router.push("/auction-create/scrap" as any);
+      console.log("🚀 고철 경매 생성 화면으로 이동 시도 중...");
+
+      // 원래 고철 경매 플로우로 복원
+      const routes = [
+        "/auction-create/scrap", // 1순위: 고철 경매 생성 화면 (금속 종류, 이미지 선택)
+        "/auction-create", // 2순위: 메인 경매 생성 화면 (대안)
+      ];
+
+      let routeSuccess = false;
+
+      for (const route of routes) {
+        try {
+          console.log("📁 시도하는 라우팅 경로:", route);
+          router.push(route as any);
+          console.log("✅ 라우팅 성공:", route);
+          routeSuccess = true;
+          break;
+        } catch (error) {
+          console.error("❌ 라우팅 실패:", route, error);
+        }
+      }
+
+      if (!routeSuccess) {
+        console.error("🚫 모든 라우팅 경로 실패");
+        Alert.alert(
+          "라우팅 오류",
+          "경매 생성 화면으로 이동할 수 없습니다.\n\n시도된 경로:\n" +
+            routes.join("\n") +
+            "\n\n메인 경매 화면을 사용하시겠습니까?",
+          [
+            { text: "취소", style: "cancel" },
+            {
+              text: "메인 경매",
+              onPress: () => {
+                try {
+                  router.push("/(tabs)/auction");
+                  console.log("📱 대안 라우팅: 메인 경매 화면으로 이동");
+                } catch (e) {
+                  console.error("❌ 대안 라우팅도 실패:", e);
+                }
+              },
+            },
+          ]
+        );
+      }
     } else {
       // 다른 타입들은 아직 구현되지 않음
+      Alert.alert(
+        "준비중",
+        `${
+          auctionTypes.find((t) => t.id === auctionType)?.name
+        } 경매는 준비중입니다.`
+      );
       console.log(`${auctionType} 경매는 아직 구현되지 않았습니다.`);
-      // TODO: 추후 구현 예정
     }
   };
 
   const toggleActionMenu = () => {
+    console.log("🎬 toggleActionMenu 호출됨, 현재 상태:", showActionMenu);
+
     if (showActionMenu) {
       Animated.timing(animatedValue, {
         toValue: 0,
         duration: 200,
         useNativeDriver: false,
-      }).start(() => setShowActionMenu(false));
+      }).start(() => {
+        setShowActionMenu(false);
+        console.log("🎬 액션 메뉴 닫힌됨");
+      });
     } else {
       setShowActionMenu(true);
+      console.log("🎬 액션 메뉴 열림됨");
       Animated.timing(animatedValue, {
         toValue: 1,
         duration: 300,
@@ -453,9 +513,10 @@ export const AuctionList = () => {
           <Animated.View
             style={{
               position: "absolute",
-              bottom: 185,
+              bottom: 200, // 좀 더 위로 올려서 확실히 보이도록
               right: 24,
               opacity: animatedValue,
+              zIndex: 10, // 메뉴를 최상위에 배치
               transform: [
                 {
                   scale: animatedValue.interpolate({
@@ -471,7 +532,7 @@ export const AuctionList = () => {
                 },
               ],
             }}
-            pointerEvents="box-none"
+            pointerEvents="auto"
           >
             <View style={{ gap: 12 }}>
               {auctionTypes.reverse().map((type, index) => (
@@ -488,10 +549,26 @@ export const AuctionList = () => {
                       },
                     ],
                   }}
-                  pointerEvents="box-none"
+                  pointerEvents="auto"
                 >
                   <TouchableOpacity
-                    onPress={() => type.enabled && handleCreateAuction(type.id)}
+                    onPress={() => {
+                      console.log(
+                        "🖱️ 플로팅 버튼 터치됨, 타입:",
+                        type.id,
+                        "활성화됨:",
+                        type.enabled
+                      );
+                      console.log("🖱️ 터치된 버튼 이름:", type.name);
+                      if (type.enabled) {
+                        console.log(
+                          "✅ 활성화된 버튼이므로 handleCreateAuction 호출"
+                        );
+                        handleCreateAuction(type.id);
+                      } else {
+                        console.log("⚠️ 비활성화된 버튼이 터치됨:", type.name);
+                      }
+                    }}
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
@@ -500,15 +577,17 @@ export const AuctionList = () => {
                         : "rgba(15, 10, 26, 0.5)",
                       borderRadius: 16,
                       paddingHorizontal: 16,
-                      paddingVertical: 12,
+                      paddingVertical: 16, // 터치 영역 확대
                       borderWidth: 1,
                       borderColor: type.enabled
                         ? "rgba(147, 51, 234, 0.3)"
                         : "rgba(107, 114, 128, 0.3)",
                       minWidth: 160,
+                      minHeight: 50, // 최소 높이 추가
                       opacity: type.enabled ? 1 : 0.5,
                     }}
                     activeOpacity={0.7}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // 터치 영역 확장
                   >
                     <View
                       style={{
@@ -552,7 +631,10 @@ export const AuctionList = () => {
 
         {/* Floating Action Button */}
         <TouchableOpacity
-          onPress={toggleActionMenu}
+          onPress={() => {
+            console.log("➕ 메인 플로팅 버튼 터치됨");
+            toggleActionMenu();
+          }}
           style={{
             position: "absolute",
             bottom: 120,
@@ -577,7 +659,10 @@ export const AuctionList = () => {
         {/* Backdrop */}
         {showActionMenu && (
           <TouchableOpacity
-            onPress={toggleActionMenu}
+            onPress={() => {
+              console.log("🔙 백드롭 터치됨 - 메뉴 닫기");
+              toggleActionMenu();
+            }}
             style={{
               position: "absolute",
               top: 0,
@@ -585,6 +670,7 @@ export const AuctionList = () => {
               right: 0,
               bottom: 0,
               backgroundColor: "rgba(0, 0, 0, 0.2)",
+              zIndex: 1, // 백드롭을 메뉴보다 뒤에 배치
             }}
             activeOpacity={1}
           />

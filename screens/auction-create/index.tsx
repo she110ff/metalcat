@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Alert } from "react-native";
+import { ScrollView, Alert, Platform } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -62,7 +62,7 @@ export const AuctionCreate = () => {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <ScrollView
@@ -73,23 +73,44 @@ export const AuctionCreate = () => {
           <VStack className="flex-1 p-6" space="xl">
             {/* Header */}
             <VStack space="lg">
-              <HStack className="items-center justify-between">
-                <Pressable onPress={handleBack}>
-                  <Box
-                    className="w-10 h-10 rounded-xl items-center justify-center"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.1)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.2)",
-                    }}
-                  >
-                    <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-                  </Box>
+              <HStack className="items-center justify-between px-4 py-3">
+                {/* 모바일 표준 뒤로가기 버튼 */}
+                <Pressable
+                  onPress={handleBack}
+                  className="active:opacity-60"
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                  }}
+                >
+                  <HStack className="items-center" space="xs">
+                    <Ionicons
+                      name={
+                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
+                      }
+                      size={Platform.OS === "ios" ? 28 : 24}
+                      color="#FFFFFF"
+                      style={{
+                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                      }}
+                    />
+                    {Platform.OS === "ios" && (
+                      <Text className="text-white text-base font-medium">
+                        뒤로
+                      </Text>
+                    )}
+                  </HStack>
                 </Pressable>
+
                 <Text className="text-white font-bold text-lg tracking-wide">
                   경매 생성
                 </Text>
-                <Box className="w-10 h-10" />
+
+                {/* 오른쪽 여백 (대칭을 위해) */}
+                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
               </HStack>
 
               <Box

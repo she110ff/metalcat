@@ -6,6 +6,7 @@ import {
   FlatList,
   Dimensions,
   Image,
+  Platform,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -222,18 +223,7 @@ export const AuctionDetail = () => {
           onError={() => handleImageError(item.id)}
         />
         {!isLoaded && (
-          <Box
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: "rgba(0, 0, 0, 0.3)",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          <Box className="absolute inset-0 bg-black/30 items-center justify-center">
             <ActivityIndicator size="large" color="#FFFFFF" />
           </Box>
         )}
@@ -254,13 +244,9 @@ export const AuctionDetail = () => {
         {photos.map((_, index) => (
           <Box
             key={index}
-            className="w-2 h-2 rounded-full"
-            style={{
-              backgroundColor:
-                index === 0
-                  ? "rgba(255, 255, 255, 0.9)"
-                  : "rgba(255, 255, 255, 0.3)",
-            }}
+            className={`w-2 h-2 rounded-full ${
+              index === 0 ? "bg-white/90" : "bg-white/30"
+            }`}
           />
         ))}
       </HStack>
@@ -270,33 +256,27 @@ export const AuctionDetail = () => {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         {/* 로딩 상태 */}
         {isLoading && (
-          <Box className="items-center justify-center p-8 flex-1">
+          <VStack className="items-center justify-center p-8 flex-1" space="md">
             <ActivityIndicator size="large" color="#9333EA" />
-            <Text
-              className="text-gray-400 text-base mt-4"
-              style={{ fontFamily: "NanumGothic" }}
-            >
+            <Text className="text-gray-400 text-base mt-4 font-nanum">
               경매 정보를 불러오는 중...
             </Text>
-          </Box>
+          </VStack>
         )}
 
         {/* 에러 상태 */}
         {error && (
-          <Box className="items-center justify-center p-8 flex-1">
-            <Text
-              className="text-red-500 text-base text-center"
-              style={{ fontFamily: "NanumGothic" }}
-            >
+          <VStack className="items-center justify-center p-8 flex-1" space="md">
+            <Text className="text-red-500 text-base text-center font-nanum">
               경매 정보를 불러오는데 실패했습니다.
               {"\n"}다시 시도해주세요.
             </Text>
-          </Box>
+          </VStack>
         )}
 
         {/* 경매 상세 정보 */}
@@ -310,23 +290,44 @@ export const AuctionDetail = () => {
             <VStack space="xl">
               {/* Header */}
               <VStack space="lg">
-                <HStack className="items-center justify-between p-6">
-                  <Pressable onPress={handleBack}>
-                    <Box
-                      className="w-10 h-10 rounded-xl items-center justify-center"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.1)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.2)",
-                      }}
-                    >
-                      <Ionicons name="arrow-back" size={20} color="#FFFFFF" />
-                    </Box>
+                <HStack className="items-center justify-between px-4 py-3">
+                  {/* 모바일 표준 뒤로가기 버튼 */}
+                  <Pressable
+                    onPress={handleBack}
+                    className="active:opacity-60"
+                    style={{
+                      minWidth: 44,
+                      minHeight: 44,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginLeft: -8,
+                    }}
+                  >
+                    <HStack className="items-center" space="xs">
+                      <Ionicons
+                        name={
+                          Platform.OS === "ios" ? "chevron-back" : "arrow-back"
+                        }
+                        size={Platform.OS === "ios" ? 28 : 24}
+                        color="#FFFFFF"
+                        style={{
+                          fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                        }}
+                      />
+                      {Platform.OS === "ios" && (
+                        <Text className="text-white text-base font-medium">
+                          뒤로
+                        </Text>
+                      )}
+                    </HStack>
                   </Pressable>
+
                   <Text className="text-white font-bold text-lg tracking-wide">
                     경매 상세
                   </Text>
-                  <Box className="w-10 h-10" />
+
+                  {/* 오른쪽 여백 (대칭을 위해) */}
+                  <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
                 </HStack>
 
                 {/* 이미지 슬라이드 */}
@@ -347,15 +348,8 @@ export const AuctionDetail = () => {
                 ) : (
                   // 기본 이미지 (이미지가 없는 경우)
                   <Box
-                    style={{
-                      width: screenWidth,
-                      height: 256,
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.1)",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
+                    style={{ width: screenWidth, height: 256 }}
+                    className="bg-white/5 border border-white/10 items-center justify-center"
                   >
                     <Ionicons
                       name="images-outline"
@@ -368,19 +362,7 @@ export const AuctionDetail = () => {
                   </Box>
                 )}
 
-                <Box
-                  className="rounded-3xl p-8 mx-6"
-                  style={{
-                    backgroundColor: "rgba(147, 51, 234, 0.08)",
-                    borderWidth: 1,
-                    borderColor: "rgba(147, 51, 234, 0.15)",
-                    shadowColor: "#9333EA",
-                    shadowOffset: { width: 0, height: 20 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 40,
-                    elevation: 20,
-                  }}
-                >
+                <Box className="rounded-3xl p-8 mx-6 bg-purple-600/8 border border-purple-500/15 shadow-2xl shadow-purple-600/30">
                   <VStack space="md">
                     <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
                       {auctionDetail.metalType} Auction
@@ -401,19 +383,7 @@ export const AuctionDetail = () => {
                   상세 정보
                 </Text>
 
-                <Box
-                  className="rounded-2xl p-6"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  }}
-                >
+                <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
                   <VStack space="md">
                     <VStack space="sm">
                       <Text className="text-white/60 text-xs uppercase tracking-[1px]">
@@ -489,22 +459,10 @@ export const AuctionDetail = () => {
                   현재 입찰 현황
                 </Text>
 
-                <Box
-                  className="rounded-2xl p-6"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.4,
-                    shadowRadius: 8,
-                    elevation: 8,
-                  }}
-                >
+                <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
                   <VStack space="lg">
                     <HStack className="items-center justify-between">
-                      <VStack>
+                      <VStack space="xs">
                         <Text className="text-white/60 text-xs uppercase tracking-[1px]">
                           {auctionDetail.status === "ended"
                             ? "최종 입찰가"
@@ -515,7 +473,7 @@ export const AuctionDetail = () => {
                         </Text>
                       </VStack>
 
-                      <VStack className="items-end">
+                      <VStack className="items-end" space="xs">
                         <Text className="text-white/60 text-xs uppercase tracking-[1px]">
                           {auctionDetail.status === "ended"
                             ? "종료 시간"
@@ -528,27 +486,25 @@ export const AuctionDetail = () => {
                     </HStack>
 
                     <HStack className="items-center justify-between">
-                      <HStack className="items-center">
+                      <HStack className="items-center" space="xs">
                         <Ionicons
                           name="people"
                           size={16}
                           color="rgba(255, 255, 255, 0.6)"
                         />
-                        <Text className="text-white/60 text-xs ml-1">
+                        <Text className="text-white/60 text-xs">
                           {auctionDetail.bidders}명 참여
                         </Text>
                       </HStack>
 
                       <Box
-                        className="px-3 py-1 rounded-lg"
-                        style={{
-                          backgroundColor:
-                            auctionDetail.status === "active"
-                              ? "rgba(34, 197, 94, 0.9)"
-                              : auctionDetail.status === "ending"
-                              ? "rgba(245, 158, 11, 0.9)"
-                              : "rgba(239, 68, 68, 0.9)",
-                        }}
+                        className={`px-3 py-1 rounded-lg ${
+                          auctionDetail.status === "active"
+                            ? "bg-green-500"
+                            : auctionDetail.status === "ending"
+                            ? "bg-amber-500"
+                            : "bg-red-500"
+                        }`}
                       >
                         <Text className="text-white font-semibold text-xs tracking-wide">
                           {auctionDetail.status === "active"
@@ -562,16 +518,9 @@ export const AuctionDetail = () => {
 
                     {/* 종료된 경매에서 낙찰자 정보 표시 */}
                     {auctionDetail.status === "ended" && bids.length > 0 && (
-                      <Box
-                        className="rounded-xl p-4 mt-2"
-                        style={{
-                          backgroundColor: "rgba(34, 197, 94, 0.1)",
-                          borderWidth: 1,
-                          borderColor: "rgba(34, 197, 94, 0.2)",
-                        }}
-                      >
+                      <Box className="rounded-xl p-4 mt-2 bg-green-500/10 border border-green-500/20">
                         <HStack className="items-center justify-between">
-                          <VStack>
+                          <VStack space="xs">
                             <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
                               낙찰자
                             </Text>
@@ -579,7 +528,7 @@ export const AuctionDetail = () => {
                               {bids[0]?.userName || "익명"}
                             </Text>
                           </VStack>
-                          <VStack className="items-end">
+                          <VStack className="items-end" space="xs">
                             <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
                               낙찰가
                             </Text>
@@ -593,14 +542,7 @@ export const AuctionDetail = () => {
 
                     {/* 종료된 경매에서 입찰이 없는 경우 */}
                     {auctionDetail.status === "ended" && bids.length === 0 && (
-                      <Box
-                        className="rounded-xl p-4 mt-2"
-                        style={{
-                          backgroundColor: "rgba(239, 68, 68, 0.1)",
-                          borderWidth: 1,
-                          borderColor: "rgba(239, 68, 68, 0.2)",
-                        }}
-                      >
+                      <Box className="rounded-xl p-4 mt-2 bg-red-500/10 border border-red-500/20">
                         <Text className="text-red-300 text-sm font-semibold text-center">
                           입찰자가 없어 경매가 무효 처리되었습니다.
                         </Text>
@@ -617,44 +559,18 @@ export const AuctionDetail = () => {
                     입찰하기
                   </Text>
 
-                  <Box
-                    className="rounded-2xl p-6"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.4,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    }}
-                  >
+                  <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
                     <VStack space="md">
                       <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
                         입찰 금액
                       </Text>
-                      <Input
-                        style={{
-                          backgroundColor: "rgba(255, 255, 255, 0.04)",
-                          borderWidth: 1,
-                          borderColor: "rgba(255, 255, 255, 0.08)",
-                          borderRadius: 16,
-                          overflow: "hidden",
-                        }}
-                      >
+                      <Input className="bg-white/5 border-white/10 rounded-2xl">
                         <InputField
                           placeholder="입찰 금액을 입력하세요"
                           placeholderTextColor="rgba(255, 255, 255, 0.4)"
                           value={bidAmount}
                           onChangeText={handleBidAmountChange}
-                          style={{
-                            color: "white",
-                            fontSize: 16,
-                            borderRadius: 16,
-                            paddingHorizontal: 16,
-                            paddingVertical: 12,
-                          }}
+                          className="text-white text-base px-4 py-3"
                           keyboardType="numeric"
                         />
                       </Input>
@@ -667,27 +583,17 @@ export const AuctionDetail = () => {
                       )}
 
                       <Button
-                        className="rounded-2xl"
                         onPress={handleBid}
                         disabled={createBidMutation.isPending}
-                        style={{
-                          backgroundColor: createBidMutation.isPending
-                            ? "rgba(107, 114, 128, 0.3)"
-                            : "rgba(34, 197, 94, 0.15)",
-                          borderColor: createBidMutation.isPending
-                            ? "rgba(107, 114, 128, 0.3)"
-                            : "rgba(34, 197, 94, 0.3)",
-                          borderRadius: 18,
-                          borderWidth: 1.5,
-                          shadowColor: createBidMutation.isPending
-                            ? "#6B7280"
-                            : "#22C55E",
-                          shadowOffset: { width: 0, height: 6 },
-                          shadowOpacity: 0.4,
-                          shadowRadius: 12,
-                          elevation: 12,
-                          minHeight: 56,
-                        }}
+                        className={`rounded-2xl border-2 min-h-14 ${
+                          createBidMutation.isPending
+                            ? "bg-gray-500/30 border-gray-500/30"
+                            : "bg-green-500/15 border-green-500/30"
+                        } shadow-xl ${
+                          createBidMutation.isPending
+                            ? "shadow-gray-500/40"
+                            : "shadow-green-500/40"
+                        }`}
                       >
                         <ButtonText
                           className={`font-bold tracking-wide text-base ${
@@ -713,19 +619,7 @@ export const AuctionDetail = () => {
                     경매 종료
                   </Text>
 
-                  <Box
-                    className="rounded-2xl p-6"
-                    style={{
-                      backgroundColor: "rgba(239, 68, 68, 0.05)",
-                      borderWidth: 1,
-                      borderColor: "rgba(239, 68, 68, 0.15)",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.4,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    }}
-                  >
+                  <Box className="rounded-2xl p-6 bg-red-500/5 border border-red-500/15 shadow-lg shadow-black/40">
                     <VStack space="md" className="items-center">
                       <Ionicons
                         name="time-outline"
@@ -752,31 +646,14 @@ export const AuctionDetail = () => {
                     입찰 기록
                   </Text>
 
-                  <Box
-                    className="rounded-2xl p-6"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.4,
-                      shadowRadius: 8,
-                      elevation: 8,
-                    }}
-                  >
+                  <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
                     <VStack space="md">
                       {bidHistory.map((bid) => (
                         <HStack
                           key={bid.id}
-                          className="items-center justify-between p-3 rounded-xl"
-                          style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.02)",
-                            borderWidth: 1,
-                            borderColor: "rgba(255, 255, 255, 0.05)",
-                          }}
+                          className="items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5"
                         >
-                          <VStack>
+                          <VStack space="xs">
                             <Text className="text-white font-semibold text-base">
                               {bid.bidder}
                             </Text>

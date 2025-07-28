@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Alert } from "react-native";
+import { ScrollView, Alert, Platform } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -206,7 +206,7 @@ export default function ScrapAdditionalInfo() {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <ScrollView
@@ -217,18 +217,48 @@ export default function ScrapAdditionalInfo() {
           <VStack className="flex-1 p-6" space="xl">
             {/* Header */}
             <VStack space="lg">
-              <Box className="flex-row items-center justify-between">
-                <Button variant="outline" onPress={handleBack} className="p-2">
-                  <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                </Button>
+              <HStack className="items-center justify-between px-4 py-3">
+                {/* 모바일 표준 뒤로가기 버튼 */}
+                <Pressable
+                  onPress={handleBack}
+                  className="active:opacity-60"
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                  }}
+                >
+                  <HStack className="items-center" space="xs">
+                    <Ionicons
+                      name={
+                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
+                      }
+                      size={Platform.OS === "ios" ? 28 : 24}
+                      color="#FFFFFF"
+                      style={{
+                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                      }}
+                    />
+                    {Platform.OS === "ios" && (
+                      <Text className="text-white text-base font-medium">
+                        뒤로
+                      </Text>
+                    )}
+                  </HStack>
+                </Pressable>
+
                 <Text
                   className="text-white text-xl font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
                   추가 정보 입력
                 </Text>
-                <Box className="w-10" />
-              </Box>
+
+                {/* 오른쪽 여백 (대칭을 위해) */}
+                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
+              </HStack>
             </VStack>
 
             {/* 전화번호 노출 동의 */}
@@ -251,15 +281,11 @@ export default function ScrapAdditionalInfo() {
               >
                 <HStack className="items-center space-x-3">
                   <Box
-                    className="w-5 h-5 rounded border-2 items-center justify-center"
-                    style={{
-                      borderColor: phoneNumberDisclosure
-                        ? "#9333EA"
-                        : "rgba(255, 255, 255, 0.3)",
-                      backgroundColor: phoneNumberDisclosure
-                        ? "#9333EA"
-                        : "transparent",
-                    }}
+                    className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                      phoneNumberDisclosure
+                        ? "border-purple-600 bg-purple-600"
+                        : "border-white/30 bg-transparent"
+                    }`}
                   >
                     {phoneNumberDisclosure && (
                       <Ionicons name="checkmark" size={16} color="#FFFFFF" />
@@ -283,17 +309,12 @@ export default function ScrapAdditionalInfo() {
               >
                 글 제목
               </Text>
-              <Input>
+              <Input className="bg-white/5 border-white/10 rounded-2xl">
                 <InputField
                   placeholder="글 제목을 입력하세요"
                   value={title}
                   onChangeText={setTitle}
-                  style={{
-                    color: "#FFFFFF",
-                    fontFamily: "NanumGothic",
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                  }}
+                  className="text-white text-base px-4 py-3 font-nanum"
                 />
               </Input>
             </VStack>
@@ -312,18 +333,11 @@ export default function ScrapAdditionalInfo() {
                   className="flex-1"
                 >
                   <Box
-                    className="rounded-xl p-4 items-center"
-                    style={{
-                      backgroundColor:
-                        transactionType === "normal"
-                          ? "rgba(147, 51, 234, 0.2)"
-                          : "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor:
-                        transactionType === "normal"
-                          ? "rgba(147, 51, 234, 0.5)"
-                          : "rgba(255, 255, 255, 0.08)",
-                    }}
+                    className={`rounded-xl p-4 items-center border ${
+                      transactionType === "normal"
+                        ? "bg-purple-600/20 border-purple-500/50"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   >
                     <Text
                       className="text-white font-bold text-base"
@@ -345,18 +359,11 @@ export default function ScrapAdditionalInfo() {
                   className="flex-1"
                 >
                   <Box
-                    className="rounded-xl p-4 items-center"
-                    style={{
-                      backgroundColor:
-                        transactionType === "urgent"
-                          ? "rgba(239, 68, 68, 0.2)"
-                          : "rgba(255, 255, 255, 0.04)",
-                      borderWidth: 1,
-                      borderColor:
-                        transactionType === "urgent"
-                          ? "rgba(239, 68, 68, 0.5)"
-                          : "rgba(255, 255, 255, 0.08)",
-                    }}
+                    className={`rounded-xl p-4 items-center border ${
+                      transactionType === "urgent"
+                        ? "bg-red-500/20 border-red-500/50"
+                        : "bg-white/5 border-white/10"
+                    }`}
                   >
                     <Text
                       className="text-white font-bold text-base"
@@ -383,7 +390,7 @@ export default function ScrapAdditionalInfo() {
               >
                 희망 가격 설정 (원)
               </Text>
-              <Input>
+              <Input className="bg-white/5 border-white/10 rounded-2xl">
                 <InputField
                   placeholder="희망 가격을 입력하세요 (예: 1000000)"
                   value={desiredPrice}
@@ -393,12 +400,7 @@ export default function ScrapAdditionalInfo() {
                     setDesiredPrice(numericValue);
                   }}
                   keyboardType="numeric"
-                  style={{
-                    color: "#FFFFFF",
-                    fontFamily: "NanumGothic",
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                  }}
+                  className="text-white text-base px-4 py-3 font-nanum"
                 />
               </Input>
             </VStack>
@@ -446,19 +448,11 @@ export default function ScrapAdditionalInfo() {
                     >
                       <HStack className="items-center space-x-3">
                         <Box
-                          className="w-4 h-4 border-2 items-center justify-center"
-                          style={{
-                            borderColor: salesEnvironment.delivery.includes(
-                              option.id
-                            )
-                              ? "#9333EA"
-                              : "rgba(255, 255, 255, 0.3)",
-                            backgroundColor: salesEnvironment.delivery.includes(
-                              option.id
-                            )
-                              ? "#9333EA"
-                              : "transparent",
-                          }}
+                          className={`w-4 h-4 border-2 items-center justify-center ${
+                            salesEnvironment.delivery.includes(option.id)
+                              ? "border-purple-600 bg-purple-600"
+                              : "border-white/30 bg-transparent"
+                          }`}
                         >
                           {salesEnvironment.delivery.includes(option.id) && (
                             <Ionicons
@@ -513,18 +507,11 @@ export default function ScrapAdditionalInfo() {
                     >
                       <HStack className="items-center space-x-3">
                         <Box
-                          className="w-4 h-4 border-2 items-center justify-center"
-                          style={{
-                            borderColor: salesEnvironment.shippingCost.includes(
-                              option.id
-                            )
-                              ? "#9333EA"
-                              : "rgba(255, 255, 255, 0.3)",
-                            backgroundColor:
-                              salesEnvironment.shippingCost.includes(option.id)
-                                ? "#9333EA"
-                                : "transparent",
-                          }}
+                          className={`w-4 h-4 border-2 items-center justify-center ${
+                            salesEnvironment.shippingCost.includes(option.id)
+                              ? "border-purple-600 bg-purple-600"
+                              : "border-white/30 bg-transparent"
+                          }`}
                         >
                           {salesEnvironment.shippingCost.includes(
                             option.id
@@ -575,18 +562,11 @@ export default function ScrapAdditionalInfo() {
                       >
                         <HStack className="items-center space-x-2">
                           <Box
-                            className="w-4 h-4 border-2 items-center justify-center"
-                            style={{
-                              borderColor: salesEnvironment.additional.includes(
-                                option.id
-                              )
-                                ? "#9333EA"
-                                : "rgba(255, 255, 255, 0.3)",
-                              backgroundColor:
-                                salesEnvironment.additional.includes(option.id)
-                                  ? "#9333EA"
-                                  : "transparent",
-                            }}
+                            className={`w-4 h-4 border-2 items-center justify-center ${
+                              salesEnvironment.additional.includes(option.id)
+                                ? "border-purple-600 bg-purple-600"
+                                : "border-white/30 bg-transparent"
+                            }`}
                           >
                             {salesEnvironment.additional.includes(
                               option.id
@@ -657,17 +637,12 @@ export default function ScrapAdditionalInfo() {
               )}
 
               <HStack space="md">
-                <Input className="flex-1">
+                <Input className="flex-1 bg-white/5 border-white/10 rounded-2xl">
                   <InputField
                     placeholder="현장 주소를 입력하세요"
                     value={address}
                     onChangeText={setAddress}
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: "NanumGothic",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
+                    className="text-white text-base px-4 py-3 font-nanum"
                   />
                 </Input>
                 <Button
@@ -682,17 +657,12 @@ export default function ScrapAdditionalInfo() {
               </HStack>
 
               {/* 상세 주소 입력 */}
-              <Input>
+              <Input className="bg-white/5 border-white/10 rounded-2xl">
                 <InputField
                   placeholder="상세 주소 (동, 호수 등)"
                   value={addressDetail}
                   onChangeText={setAddressDetail}
-                  style={{
-                    color: "#FFFFFF",
-                    fontFamily: "NanumGothic",
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                  }}
+                  className="text-white text-base px-4 py-3 font-nanum"
                 />
               </Input>
             </VStack>
@@ -705,18 +675,13 @@ export default function ScrapAdditionalInfo() {
               >
                 설명
               </Text>
-              <Textarea>
+              <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-24">
                 <TextareaInput
                   placeholder="고철에 대한 상세 설명을 입력하세요"
                   value={description}
                   onChangeText={setDescription}
                   numberOfLines={4}
-                  style={{
-                    color: "#FFFFFF",
-                    fontFamily: "NanumGothic",
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                  }}
+                  className="text-white text-base px-4 py-3 font-nanum"
                 />
               </Textarea>
             </VStack>
@@ -728,13 +693,12 @@ export default function ScrapAdditionalInfo() {
           <Button
             variant="solid"
             onPress={handleSubmit}
-            className="w-full"
             disabled={createAuctionMutation.isPending}
-            style={{
-              backgroundColor: createAuctionMutation.isPending
-                ? "rgba(107, 114, 128, 0.5)"
-                : "rgba(147, 51, 234, 0.9)",
-            }}
+            className={`w-full rounded-2xl min-h-14 ${
+              createAuctionMutation.isPending
+                ? "bg-gray-500/50"
+                : "bg-purple-600/90"
+            }`}
           >
             <ButtonText
               className="text-white font-bold"

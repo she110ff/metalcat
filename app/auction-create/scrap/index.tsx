@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ScrollView, Image, Alert } from "react-native";
+import { ScrollView, Image, Alert, Platform } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -184,7 +184,7 @@ export default function ScrapAuctionCreate() {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <ScrollView
@@ -195,18 +195,48 @@ export default function ScrapAuctionCreate() {
           <VStack className="flex-1 p-6" space="xl">
             {/* Header */}
             <VStack space="lg">
-              <Box className="flex-row items-center justify-between">
-                <Button variant="outline" onPress={handleBack} className="p-2">
-                  <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                </Button>
+              <HStack className="items-center justify-between px-4 py-3">
+                {/* 모바일 표준 뒤로가기 버튼 */}
+                <Pressable
+                  onPress={handleBack}
+                  className="active:opacity-60"
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                  }}
+                >
+                  <HStack className="items-center" space="xs">
+                    <Ionicons
+                      name={
+                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
+                      }
+                      size={Platform.OS === "ios" ? 28 : 24}
+                      color="#FFFFFF"
+                      style={{
+                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                      }}
+                    />
+                    {Platform.OS === "ios" && (
+                      <Text className="text-white text-base font-medium">
+                        뒤로
+                      </Text>
+                    )}
+                  </HStack>
+                </Pressable>
+
                 <Text
                   className="text-white text-xl font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
                   고철 경매 등록
                 </Text>
-                <Box className="w-10" />
-              </Box>
+
+                {/* 오른쪽 여백 (대칭을 위해) */}
+                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
+              </HStack>
             </VStack>
 
             {/* 고철 종류 선택 */}

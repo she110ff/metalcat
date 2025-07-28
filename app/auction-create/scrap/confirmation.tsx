@@ -20,7 +20,7 @@ export default function ScrapConfirmation() {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <VStack className="flex-1 p-6 justify-center items-center" space="xl">
@@ -50,10 +50,7 @@ export default function ScrapConfirmation() {
           <Button
             variant="solid"
             onPress={handleGoToList}
-            className="w-full"
-            style={{
-              backgroundColor: "rgba(147, 51, 234, 0.9)",
-            }}
+            className="w-full rounded-2xl bg-purple-600/90 min-h-14"
           >
             <ButtonText
               className="text-white font-bold"
