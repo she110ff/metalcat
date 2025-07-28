@@ -14,6 +14,7 @@
     "preset": "jest-expo"
   },
   "dependencies": {
+    "@actbase/react-daum-postcode": "^1.0.4",
     "@babel/runtime": "^7.27.6",
     "@expo/html-elements": "^0.10.1",
     "@expo/vector-icons": "^14.0.0",

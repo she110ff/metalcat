@@ -58,19 +58,52 @@ export default function ScrapAdditionalInfo() {
   };
 
   const handleAddressSearch = () => {
+    console.log("🔍 주소 검색 시작 - 모달 열기");
     setShowAddressSearch(true);
+    console.log("✅ showAddressSearch 상태:", true);
   };
 
   const handleAddressComplete = (result: DaumAddressResult) => {
+    console.log("🎯 주소 검색 완료 - 받은 데이터:");
+    console.log("📋 전체 결과:", result);
+    console.log("📍 기본 주소:", result.address);
+    console.log("🛣️ 도로명 주소:", result.roadAddress);
+    console.log("📮 우편번호:", result.zonecode);
+    console.log("🏢 건물명:", result.buildingName);
+    console.log("🌍 시도:", result.sido);
+    console.log("🏘️ 시군구:", result.sigungu);
+    console.log("📌 법정동:", result.bname);
+
+    // 선택된 주소 객체 저장
     setSelectedAddress(result);
-    // 도로명 주소를 우선 사용, 없으면 기본 주소 사용
+    console.log("✅ selectedAddress 상태 업데이트됨");
+
+    // 표시할 주소 결정 (도로명 주소 우선, 없으면 기본 주소)
     const mainAddress = result.roadAddress || result.address;
+    console.log("🏠 표시할 메인 주소:", mainAddress);
+
+    if (!mainAddress) {
+      console.error("❌ 표시할 주소가 없음!");
+      Alert.alert("오류", "주소 정보를 가져올 수 없습니다. 다시 시도해주세요.");
+      return;
+    }
+
+    // 주소 입력 필드 업데이트
     setAddress(mainAddress);
+    console.log("✅ address 상태 업데이트됨:", mainAddress);
+
+    // 주소 검색 모달 닫기
     setShowAddressSearch(false);
+    console.log("🚪 주소 검색 모달 닫힘");
+
+    // 성공 피드백
+    console.log("🎉 주소 선택 완료! 사용자에게 결과 표시됨");
   };
 
   const handleAddressClose = () => {
+    console.log("❌ 주소 검색 취소 - 모달 닫기");
     setShowAddressSearch(false);
+    console.log("✅ showAddressSearch 상태:", false);
   };
 
   const handleSubmit = () => {
@@ -636,25 +669,148 @@ export default function ScrapAdditionalInfo() {
                 </Box>
               )}
 
-              <HStack space="md">
-                <Input className="flex-1 bg-white/5 border-white/10 rounded-2xl">
-                  <InputField
-                    placeholder="현장 주소를 입력하세요"
-                    value={address}
-                    onChangeText={setAddress}
-                    className="text-white text-base px-4 py-3 font-nanum"
-                  />
-                </Input>
-                <Button
-                  variant="outline"
-                  onPress={handleAddressSearch}
-                  className="px-4"
-                >
-                  <ButtonText style={{ fontFamily: "NanumGothic" }}>
-                    주소 찾기
-                  </ButtonText>
-                </Button>
-              </HStack>
+              <VStack space="sm">
+                <HStack space="md">
+                  <Input className="flex-1 bg-white/5 border-white/10 rounded-2xl">
+                    <InputField
+                      placeholder="주소를 직접 입력하거나 검색 버튼을 이용하세요"
+                      value={address}
+                      onChangeText={(text) => {
+                        setAddress(text);
+                        // 직접 입력 시 selectedAddress 초기화
+                        if (selectedAddress) {
+                          setSelectedAddress(null);
+                        }
+                      }}
+                      className="text-white text-base px-4 py-3 font-nanum"
+                      multiline={false}
+                      returnKeyType="done"
+                    />
+                  </Input>
+                  <Pressable
+                    onPress={handleAddressSearch}
+                    className="bg-purple-600 active:bg-purple-700 px-6 py-4 rounded-2xl flex-row items-center justify-center"
+                    style={{
+                      minWidth: 110,
+                      shadowColor: "#9333EA",
+                      shadowOffset: { width: 0, height: 4 },
+                      shadowOpacity: 0.3,
+                      shadowRadius: 8,
+                      elevation: 5,
+                    }}
+                  >
+                    <Ionicons
+                      name="location"
+                      size={18}
+                      color="#FFFFFF"
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text
+                      className="text-white font-bold text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      주소 찾기
+                    </Text>
+                  </Pressable>
+                </HStack>
+
+                {/* 주소 상태별 미리보기 */}
+                {selectedAddress ? (
+                  // API로 검색된 주소
+                  <Box className="bg-purple-600/10 border border-purple-600/20 rounded-xl p-4">
+                    <HStack className="items-start justify-between">
+                      <VStack className="flex-1 mr-3">
+                        <HStack className="items-center mb-2">
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={16}
+                            color="#A855F7"
+                          />
+                          <Text
+                            className="text-purple-300 text-sm font-medium ml-2"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            검색된 주소
+                          </Text>
+                        </HStack>
+                        <Text
+                          className="text-white text-base leading-5"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          {selectedAddress.roadAddress ||
+                            selectedAddress.address}
+                        </Text>
+                        {selectedAddress.buildingName && (
+                          <Text
+                            className="text-gray-400 text-sm mt-1"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            📍 {selectedAddress.buildingName}
+                          </Text>
+                        )}
+                      </VStack>
+                      <Pressable
+                        onPress={() => {
+                          setAddress("");
+                          setSelectedAddress(null);
+                        }}
+                        className="p-2 active:opacity-60"
+                        style={{ minWidth: 36, minHeight: 36 }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={20}
+                          color="#A855F7"
+                        />
+                      </Pressable>
+                    </HStack>
+                  </Box>
+                ) : address.trim() ? (
+                  // 직접 입력된 주소
+                  <Box className="bg-yellow-600/10 border border-yellow-600/20 rounded-xl p-4">
+                    <HStack className="items-start justify-between">
+                      <VStack className="flex-1 mr-3">
+                        <HStack className="items-center mb-2">
+                          <Ionicons name="create" size={16} color="#FBBF24" />
+                          <Text
+                            className="text-yellow-300 text-sm font-medium ml-2"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            직접 입력된 주소
+                          </Text>
+                        </HStack>
+                        <Text
+                          className="text-white text-base leading-5"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          {address}
+                        </Text>
+                        <Text
+                          className="text-yellow-400/70 text-xs mt-1"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          💡 정확한 주소 검색을 원하시면 주소 찾기 버튼을
+                          이용해주세요
+                        </Text>
+                      </VStack>
+                      <Pressable
+                        onPress={() => {
+                          setAddress("");
+                          setSelectedAddress(null);
+                        }}
+                        className="p-2 active:opacity-60"
+                        style={{ minWidth: 36, minHeight: 36 }}
+                      >
+                        <Ionicons
+                          name="close-circle"
+                          size={20}
+                          color="#FBBF24"
+                        />
+                      </Pressable>
+                    </HStack>
+                  </Box>
+                ) : null}
+              </VStack>
 
               {/* 상세 주소 입력 */}
               <Input className="bg-white/5 border-white/10 rounded-2xl">

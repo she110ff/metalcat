@@ -5,140 +5,405 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>주소 검색</title>
     <style>
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         padding: 0;
-        font-family: system-ui, -apple-system, sans-serif;
-        background-color: #f5f5f5;
-      }
-      .container {
-        max-width: 100%;
-        margin: 0 auto;
-        background: white;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+          "Oxygen", "Ubuntu", "Cantarell", sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
+
+      .container {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        margin: 20px;
+      }
+
       .header {
-        background: #0f0a1a;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 16px;
+        padding: 24px 20px;
         text-align: center;
-        font-weight: bold;
-        font-size: 18px;
+        position: relative;
       }
+
+      .header h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+      }
+
+      .header .subtitle {
+        margin-top: 4px;
+        font-size: 14px;
+        opacity: 0.9;
+        font-weight: 400;
+      }
+
       .search-container {
-        padding: 20px;
+        padding: 32px 24px;
       }
+
       .search-button {
         width: 100%;
-        padding: 16px;
-        background: #9333ea;
+        padding: 16px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-bottom: 24px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      }
+
+      .search-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+
+      .search-button:active {
+        transform: translateY(0);
+      }
+
+      .search-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .info {
+        background: #f8fafc;
+        padding: 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.6;
+        border: 1px solid #e2e8f0;
+      }
+
+      .info h3 {
+        margin: 0 0 12px 0;
+        color: #1e293b;
+        font-size: 16px;
+        font-weight: 600;
+      }
+
+      .info ol {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .info li {
+        margin-bottom: 8px;
+      }
+
+      .info li:last-child {
+        margin-bottom: 0;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: #64748b;
+      }
+
+      .loading .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error {
+        text-align: center;
+        padding: 40px 20px;
+        color: #ef4444;
+      }
+
+      .error .icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+      }
+
+      .retry-button {
+        margin-top: 16px;
+        padding: 12px 24px;
+        background: #ef4444;
         color: white;
         border: none;
         border-radius: 8px;
-        font-size: 16px;
-        font-weight: bold;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
-        margin-bottom: 20px;
+        transition: background-color 0.2s ease;
       }
-      .search-button:hover {
-        background: #7c3aed;
+
+      .retry-button:hover {
+        background: #dc2626;
       }
-      .info {
-        background: #f3f4f6;
-        padding: 16px;
+
+      .status {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 16px;
         border-radius: 8px;
         font-size: 14px;
-        color: #6b7280;
-        line-height: 1.5;
+        font-weight: 500;
+        z-index: 1000;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
       }
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: #6b7280;
+
+      .status.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .status.success {
+        background: #10b981;
+        color: white;
+      }
+
+      .status.error {
+        background: #ef4444;
+        color: white;
+      }
+
+      .status.info {
+        background: #3b82f6;
+        color: white;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="header">주소 검색</div>
+      <div class="header">
+        <h1>주소 검색</h1>
+        <div class="subtitle">정확한 주소를 찾아보세요</div>
+      </div>
+
       <div class="search-container">
-        <button class="search-button" onclick="openDaumPostcode()">
-          주소 검색하기
+        <button
+          class="search-button"
+          onclick="openDaumPostcode()"
+          id="searchBtn"
+        >
+          <span id="searchBtnText">주소 검색하기</span>
         </button>
+
         <div class="info">
-          <strong>사용 방법:</strong><br />
-          1. "주소 검색하기" 버튼을 클릭하세요<br />
-          2. 검색창에서 주소를 입력하세요<br />
-          3. 원하는 주소를 선택하세요<br />
-          4. 선택한 주소가 자동으로 입력됩니다
+          <h3>사용 방법</h3>
+          <ol>
+            <li><strong>주소 검색하기</strong> 버튼을 클릭하세요</li>
+            <li>
+              검색창에서 <strong>도로명, 건물명, 지번</strong>을 입력하세요
+            </li>
+            <li>원하는 주소를 <strong>선택</strong>하세요</li>
+            <li>선택한 주소가 자동으로 입력됩니다</li>
+          </ol>
         </div>
       </div>
     </div>
 
+    <!-- 상태 메시지 -->
+    <div class="status" id="status"></div>
+
     <!-- 다음 주소 검색 API -->
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script>
-      function openDaumPostcode() {
-        new daum.Postcode({
-          oncomplete: function (data) {
-            // 선택된 주소 정보를 React Native로 전달
-            const addressData = {
-              address: data.address,
-              roadAddress: data.roadAddress,
-              jibunAddress: data.jibunAddress,
-              zonecode: data.zonecode,
-              buildingName: data.buildingName || "",
-              apartment: data.apartment || "",
-              bname: data.bname || "",
-              bname1: data.bname1 || "",
-              bname2: data.bname2 || "",
-              sido: data.sido || "",
-              sigungu: data.sigungu || "",
-              sigunguCode: data.sigunguCode || "",
-              roadnameCode: data.roadnameCode || "",
-              roadname: data.roadname || "",
-              userSelectedType: data.userSelectedType || "",
-              userLanguageType: data.userLanguageType || "",
-            };
+      let isLoading = false;
+      let retryCount = 0;
+      const maxRetries = 3;
 
-            // React Native WebView로 데이터 전달
-            if (window.ReactNativeWebView) {
-              window.ReactNativeWebView.postMessage(
-                JSON.stringify(addressData)
-              );
-            } else {
-              console.log("주소 데이터:", addressData);
-            }
-          },
-          onclose: function (state) {
-            // 팝업이 닫힐 때 처리
-            if (state === "FORCE_CLOSE") {
-              // 사용자가 강제로 닫은 경우
+      // 상태 메시지 표시 함수
+      function showStatus(message, type = "info") {
+        const status = document.getElementById("status");
+        status.textContent = message;
+        status.className = `status ${type} show`;
+
+        setTimeout(() => {
+          status.classList.remove("show");
+        }, 3000);
+      }
+
+      // 로딩 상태 설정
+      function setLoading(loading) {
+        isLoading = loading;
+        const btn = document.getElementById("searchBtn");
+        const btnText = document.getElementById("searchBtnText");
+
+        if (loading) {
+          btn.disabled = true;
+          btnText.textContent = "검색창을 여는 중...";
+        } else {
+          btn.disabled = false;
+          btnText.textContent = "주소 검색하기";
+        }
+      }
+
+      // 에러 처리
+      function handleError(error) {
+        console.error("주소 검색 에러:", error);
+        retryCount++;
+
+        if (retryCount < maxRetries) {
+          showStatus(`검색 실패. ${retryCount}초 후 재시도합니다...`, "error");
+          setTimeout(() => {
+            openDaumPostcode();
+          }, retryCount * 1000);
+        } else {
+          showStatus("주소 검색에 실패했습니다. 다시 시도해주세요.", "error");
+          setLoading(false);
+        }
+      }
+
+      function openDaumPostcode() {
+        if (isLoading) return;
+
+        setLoading(true);
+        retryCount = 0;
+
+        try {
+          // React Native에 준비 상태 알림
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(
+              JSON.stringify({
+                action: "ready",
+              })
+            );
+          }
+
+          new daum.Postcode({
+            oncomplete: function (data) {
+              console.log("주소 선택 완료:", data);
+
+              // 선택된 주소 정보를 React Native로 전달
+              const addressData = {
+                address: data.address || "",
+                roadAddress: data.roadAddress || "",
+                jibunAddress: data.jibunAddress || "",
+                zonecode: data.zonecode || "",
+                buildingName: data.buildingName || "",
+                apartment: data.apartment || "",
+                bname: data.bname || "",
+                bname1: data.bname1 || "",
+                bname2: data.bname2 || "",
+                sido: data.sido || "",
+                sigungu: data.sigungu || "",
+                sigunguCode: data.sigunguCode || "",
+                roadnameCode: data.roadnameCode || "",
+                roadname: data.roadname || "",
+                userSelectedType: data.userSelectedType || "",
+                userLanguageType: data.userLanguageType || "",
+              };
+
+              // React Native WebView로 데이터 전달
               if (window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(
-                  JSON.stringify({
-                    action: "close",
-                    reason: "user_cancelled",
-                  })
+                  JSON.stringify(addressData)
                 );
+                showStatus("주소가 성공적으로 선택되었습니다!", "success");
+              } else {
+                console.log("주소 데이터:", addressData);
+                showStatus("주소가 선택되었습니다 (웹 환경)", "success");
               }
-            } else if (state === "COMPLETE_CLOSE") {
-              // 정상적으로 완료된 경우
-              if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(
-                  JSON.stringify({
-                    action: "close",
-                    reason: "completed",
-                  })
-                );
+
+              setLoading(false);
+            },
+            onclose: function (state) {
+              console.log("주소 검색 팝업 닫힘:", state);
+
+              // 팝업이 닫힐 때 처리
+              if (state === "FORCE_CLOSE") {
+                // 사용자가 강제로 닫은 경우
+                if (window.ReactNativeWebView) {
+                  window.ReactNativeWebView.postMessage(
+                    JSON.stringify({
+                      action: "close",
+                      reason: "user_cancelled",
+                    })
+                  );
+                }
+                showStatus("주소 검색이 취소되었습니다.", "info");
+              } else if (state === "COMPLETE_CLOSE") {
+                // 정상적으로 완료된 경우
+                if (window.ReactNativeWebView) {
+                  window.ReactNativeWebView.postMessage(
+                    JSON.stringify({
+                      action: "close",
+                      reason: "completed",
+                    })
+                  );
+                }
               }
-            }
-          },
-        }).open();
+
+              setLoading(false);
+            },
+            onresize: function (size) {
+              // 팝업 크기 변경 시 처리
+              console.log("팝업 크기 변경:", size);
+            },
+            width: "100%",
+            height: "100%",
+            animation: true,
+            hideMapBtn: false,
+            hideEngBtn: false,
+            pleaseReadGuide: 0,
+            submitMode: true,
+            theme: {
+              bgColor: "#FFFFFF",
+              searchBgColor: "#FFFFFF",
+              contentBgColor: "#FFFFFF",
+              pageBgColor: "#FFFFFF",
+              textColor: "#000000",
+              queryTextColor: "#222222",
+              postcodeTextColor: "#FA4256",
+              emphTextColor: "#222222",
+              outlineColor: "#DDDDDD",
+            },
+          }).open();
+        } catch (error) {
+          handleError(error);
+        }
       }
 
       // 페이지 로드 완료 시 React Native에 알림
       window.addEventListener("load", function () {
+        console.log("주소 검색 페이지 로드 완료");
+
         if (window.ReactNativeWebView) {
           window.ReactNativeWebView.postMessage(
             JSON.stringify({
@@ -146,6 +411,23 @@
             })
           );
         }
+
+        showStatus("주소 검색이 준비되었습니다.", "info");
+      });
+
+      // 에러 이벤트 리스너
+      window.addEventListener("error", function (e) {
+        console.error("페이지 에러:", e);
+        handleError(e.error || "알 수 없는 에러가 발생했습니다.");
+      });
+
+      // 네트워크 상태 확인
+      window.addEventListener("online", function () {
+        showStatus("인터넷 연결이 복구되었습니다.", "success");
+      });
+
+      window.addEventListener("offline", function () {
+        showStatus("인터넷 연결이 끊어졌습니다.", "error");
       });
     </script>
   </body>
