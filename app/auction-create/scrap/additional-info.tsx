@@ -22,7 +22,7 @@ import { scrapSalesEnvironmentOptions } from "@/data";
 import {
   DaumAddressSearch,
   DaumAddressResult,
-} from "@/components/DaumAddressSearch";
+} from "../../../components/DaumAddressSearch";
 import {
   ScrapAuctionItem,
   ScrapQuantityInfo,
@@ -634,41 +634,6 @@ export default function ScrapAdditionalInfo() {
                 현장 주소
               </Text>
 
-              {/* 주소 검색 결과 표시 */}
-              {selectedAddress && (
-                <Box className="p-3 rounded-lg bg-green-900/20 border border-green-500/30">
-                  <VStack space="sm">
-                    <HStack className="items-center">
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={16}
-                        color="#10B981"
-                      />
-                      <Text
-                        className="text-green-400 text-sm font-bold ml-2"
-                        style={{ fontFamily: "NanumGothic" }}
-                      >
-                        선택된 주소
-                      </Text>
-                    </HStack>
-                    <Text
-                      className="text-white text-sm"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      {selectedAddress.roadAddress || selectedAddress.address}
-                    </Text>
-                    {selectedAddress.buildingName && (
-                      <Text
-                        className="text-gray-400 text-xs"
-                        style={{ fontFamily: "NanumGothic" }}
-                      >
-                        건물: {selectedAddress.buildingName}
-                      </Text>
-                    )}
-                  </VStack>
-                </Box>
-              )}
-
               <VStack space="sm">
                 <HStack space="md">
                   <Input className="flex-1 bg-white/5 border-white/10 rounded-2xl">
@@ -682,9 +647,11 @@ export default function ScrapAdditionalInfo() {
                           setSelectedAddress(null);
                         }
                       }}
-                      className="text-white text-base px-4 py-3 font-nanum"
+                      className="text-white text-base px-4 py-3"
                       multiline={false}
                       returnKeyType="done"
+                      editable={false}
+                      selectTextOnFocus={true}
                     />
                   </Input>
                   <Pressable
@@ -714,113 +681,18 @@ export default function ScrapAdditionalInfo() {
                   </Pressable>
                 </HStack>
 
-                {/* 주소 상태별 미리보기 */}
-                {selectedAddress ? (
-                  // API로 검색된 주소
-                  <Box className="bg-purple-600/10 border border-purple-600/20 rounded-xl p-4">
-                    <HStack className="items-start justify-between">
-                      <VStack className="flex-1 mr-3">
-                        <HStack className="items-center mb-2">
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={16}
-                            color="#A855F7"
-                          />
-                          <Text
-                            className="text-purple-300 text-sm font-medium ml-2"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            검색된 주소
-                          </Text>
-                        </HStack>
-                        <Text
-                          className="text-white text-base leading-5"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          {selectedAddress.roadAddress ||
-                            selectedAddress.address}
-                        </Text>
-                        {selectedAddress.buildingName && (
-                          <Text
-                            className="text-gray-400 text-sm mt-1"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            📍 {selectedAddress.buildingName}
-                          </Text>
-                        )}
-                      </VStack>
-                      <Pressable
-                        onPress={() => {
-                          setAddress("");
-                          setSelectedAddress(null);
-                        }}
-                        className="p-2 active:opacity-60"
-                        style={{ minWidth: 36, minHeight: 36 }}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color="#A855F7"
-                        />
-                      </Pressable>
-                    </HStack>
-                  </Box>
-                ) : address.trim() ? (
-                  // 직접 입력된 주소
-                  <Box className="bg-yellow-600/10 border border-yellow-600/20 rounded-xl p-4">
-                    <HStack className="items-start justify-between">
-                      <VStack className="flex-1 mr-3">
-                        <HStack className="items-center mb-2">
-                          <Ionicons name="create" size={16} color="#FBBF24" />
-                          <Text
-                            className="text-yellow-300 text-sm font-medium ml-2"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            직접 입력된 주소
-                          </Text>
-                        </HStack>
-                        <Text
-                          className="text-white text-base leading-5"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          {address}
-                        </Text>
-                        <Text
-                          className="text-yellow-400/70 text-xs mt-1"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          💡 정확한 주소 검색을 원하시면 주소 찾기 버튼을
-                          이용해주세요
-                        </Text>
-                      </VStack>
-                      <Pressable
-                        onPress={() => {
-                          setAddress("");
-                          setSelectedAddress(null);
-                        }}
-                        className="p-2 active:opacity-60"
-                        style={{ minWidth: 36, minHeight: 36 }}
-                      >
-                        <Ionicons
-                          name="close-circle"
-                          size={20}
-                          color="#FBBF24"
-                        />
-                      </Pressable>
-                    </HStack>
-                  </Box>
-                ) : null}
+                {/* 상세 주소 */}
+                <Input className="bg-white/5 border-white/10 rounded-2xl">
+                  <InputField
+                    placeholder="상세 주소 (동, 호수, 층수 등)"
+                    value={addressDetail}
+                    onChangeText={setAddressDetail}
+                    className="text-white text-base px-4 py-3"
+                    multiline={false}
+                    returnKeyType="done"
+                  />
+                </Input>
               </VStack>
-
-              {/* 상세 주소 입력 */}
-              <Input className="bg-white/5 border-white/10 rounded-2xl">
-                <InputField
-                  placeholder="상세 주소 (동, 호수 등)"
-                  value={addressDetail}
-                  onChangeText={setAddressDetail}
-                  className="text-white text-base px-4 py-3 font-nanum"
-                />
-              </Input>
             </VStack>
 
             {/* 설명 */}
