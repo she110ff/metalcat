@@ -12,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.metalcatapp.metalcat",
@@ -36,7 +34,22 @@
     },
     "plugins": [
       "expo-router",
-      "expo-font"
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/NanumGothic.otf",
+            "./assets/fonts/NanumGothicBold.otf",
+            "./assets/fonts/SpaceMono-Regular.ttf"
+          ]
+        }
+      ],
+      [
+        "expo-asset",
+        {
+          "assets": ["./assets/images/"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

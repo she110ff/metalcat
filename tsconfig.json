@@ -4,13 +4,7 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@/assets/*": [
-        "../../packages/shared/assets/*",
-        "./assets/*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [

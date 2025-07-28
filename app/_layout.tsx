@@ -64,24 +64,17 @@ const queryClient = new QueryClient({
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    NanumGothic: require("../assets/fonts/NanumGothic.ttf"),
-    NanumGothicBold: require("../assets/fonts/NanumGothicBold.ttf"),
+    NanumGothic: require("../assets/fonts/NanumGothic.otf"),
+    NanumGothicBold: require("../assets/fonts/NanumGothicBold.otf"),
     ...FontAwesome.font,
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
-    if (error) {
-      console.warn("Font loading error:", error);
-      // Don't throw error, just log it
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (loaded) {
+    if (loaded || error) {
       SplashScreen.hideAsync();
     }
-  }, [loaded]);
+  }, [loaded, error]);
 
   // Always render the app, even if fonts aren't loaded
   return <RootLayoutNav />;

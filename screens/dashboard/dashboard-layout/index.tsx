@@ -1,5 +1,9 @@
 import React from "react";
-import { ScrollView, Image } from "react-native";
+import { ScrollView, View, Image } from "react-native";
+
+// 상대 경로로 다시 테스트
+const iconImage = require("../../../assets/images/icon.png");
+const metalcatLogo = require("../../../assets/images/metalcat-logo.png");
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -15,6 +19,8 @@ import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 
 export const Dashboard = () => {
   const router = useRouter();
+
+  // 대시보드 렌더링
 
   const handleMetalPress = (metalName: string) => {
     // 금속별 라우팅 매핑
@@ -35,8 +41,10 @@ export const Dashboard = () => {
 
   return (
     <LinearGradient
-      colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      colors={["#1A0F2A", "#2D1B3D", "#3D2F5A"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <ScrollView
@@ -46,19 +54,41 @@ export const Dashboard = () => {
         >
           <Box className="flex-1 p-4">
             {/* MetalCat Logo Header */}
-            <Box className="items-center">
-              <Image
-                source={require("@/assets/images/metalcat-logo.png")}
+            <Box className="items-center mb-4">
+              <Box
                 style={{
-                  width: 80,
-                  height: 80,
-                  resizeMode: "contain",
+                  width: 120,
+                  height: 120,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginBottom: 10,
                 }}
-              />
+              >
+                <Image
+                  source={iconImage}
+                  style={{
+                    width: 100,
+                    height: 100,
+                  }}
+                  resizeMode="contain"
+                  onError={(error: any) => {
+                    console.error("❌ Image loading failed:", error);
+                    console.error(
+                      "❌ Attempted path: ../../../assets/images/icon.png"
+                    );
+                  }}
+                  onLoad={() => {
+                    console.log("✅ Image loaded successfully!");
+                  }}
+                  onLoadStart={() => {
+                    console.log("🔄 Image loading started...");
+                  }}
+                />
+              </Box>
               <Text
-                className="text-white text-base font-black uppercase text-center"
+                className="text-white text-lg font-black uppercase text-center"
                 style={{
-                  marginTop: -15,
+                  marginTop: 5,
                   fontFamily: "SpaceMono",
                   textShadowColor: "rgba(255, 255, 255, 0.4)",
                   textShadowOffset: { width: 0, height: 2 },

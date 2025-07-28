@@ -1,4 +1,4 @@
-const imageBabel = require("@unitools/babel-plugin-universal-image");
+const imageBabel = require("@unitools/babel-plugin-universal-image"); // 임시 비활성화
 const path = require("path");
 
 module.exports = function (api) {
@@ -16,6 +16,7 @@ module.exports = function (api) {
             "@unitools/image": "@unitools/image-expo",
             "@unitools/router": "@unitools/router-expo",
             "@unitools/link": "@unitools/link-expo",
+            "@": "./",
           },
         },
       ],
