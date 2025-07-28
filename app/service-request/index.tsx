@@ -17,14 +17,10 @@ import {
   FileText,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
-import { DaumAddressSearch } from "@/components/DaumAddressSearch";
-
-interface DaumAddressResult {
-  address: string;
-  roadAddress?: string;
-  zonecode: string;
-  [key: string]: any;
-}
+import {
+  DaumAddressSearch,
+  DaumAddressResult,
+} from "@/components/DaumAddressSearch";
 
 interface PhotoItem {
   id: string;
@@ -113,7 +109,8 @@ export default function ServiceRequest() {
 
   const handleAddressComplete = (result: DaumAddressResult) => {
     setSelectedAddress(result);
-    setAddress(result.roadAddress || result.address);
+    // 도로명주소를 우선으로 사용, 없으면 지번주소 사용
+    setAddress(result.roadAddress || result.jibunAddress || result.address);
     setShowAddressSearch(false);
   };
 

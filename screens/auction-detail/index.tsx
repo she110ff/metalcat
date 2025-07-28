@@ -112,8 +112,7 @@ export const AuctionDetail = () => {
           bidders: auction.bidders || 0,
           description:
             (auction as any).description || "고품질 경매 상품입니다.",
-          location:
-            (auction as any).address?.roadAddress || "서울특별시 강남구",
+          location: (auction as any).address?.address || "서울특별시 강남구",
           seller: "메탈코리아", // 기본값
           startDate: auction.createdAt
             ? new Date(auction.createdAt).toLocaleString("ko-KR")

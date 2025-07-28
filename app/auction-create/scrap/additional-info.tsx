@@ -92,7 +92,8 @@ export default function AdditionalInfoScreen() {
   const handleAddressComplete = (result: DaumAddressResult) => {
     console.log("🎉 주소 선택 완료:", result);
     setSelectedAddress(result);
-    setAddress(result.roadAddress || result.address);
+    // 도로명주소를 우선으로 사용, 없으면 지번주소 사용
+    setAddress(result.roadAddress || result.jibunAddress || result.address);
     setShowAddressSearch(false);
   };
 

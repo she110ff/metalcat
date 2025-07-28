@@ -15,11 +15,9 @@ export type TransactionType = "normal" | "urgent";
 // 주소 정보 타입
 export interface AddressInfo {
   postalCode: string;
-  roadAddress: string;
-  lotAddress: string;
+  addressType: "road" | "lot"; // 도로명주소 또는 지번주소 구분
+  address: string; // 도로명주소 또는 지번주소
   detailAddress: string;
-  city?: string; // 추가: 시/도
-  district?: string; // 추가: 구/군
 }
 
 // 사진 정보 타입
