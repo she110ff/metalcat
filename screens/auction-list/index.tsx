@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
+import { useAuth } from "@/hooks/useAuth";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native";
 import {
@@ -44,10 +45,21 @@ export const AuctionList = () => {
   console.log("🏛️ AuctionList 렌더링 - 순수 React Native 스타일 버전");
 
   const router = useRouter();
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
   console.log("📱 Router 객체:", router);
   console.log("📱 Router canGoBack:", router.canGoBack());
+  console.log("🔐 로그인 상태:", isLoggedIn);
+
   const [showActionMenu, setShowActionMenu] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
+
+  // 로그인이 필요한 화면임을 알리는 효과
+  useEffect(() => {
+    if (!authLoading && !isLoggedIn) {
+      // 로그인이 필요하다는 안내를 표시
+      console.log("⚠️ 경매 화면 접근 - 로그인 필요");
+    }
+  }, [isLoggedIn, authLoading]);
 
   // TanStack Query로 경매 데이터 조회
   const { data: queryAuctions = [], isLoading, error } = useAuctions(); // status 필터 제거하여 모든 경매 표시
@@ -165,6 +177,18 @@ export const AuctionList = () => {
 
   const handleCreateAuction = (auctionType: string) => {
     console.log("🔍 handleCreateAuction 호출됨, 타입:", auctionType);
+
+    // 로그인 체크
+    if (!isLoggedIn) {
+      Alert.alert("로그인 필요", "경매 등록을 위해 로그인이 필요합니다.", [
+        { text: "취소", style: "cancel" },
+        {
+          text: "로그인",
+          onPress: () => router.push("/login"),
+        },
+      ]);
+      return;
+    }
 
     setShowActionMenu(false);
     Animated.timing(animatedValue, {
@@ -366,8 +390,78 @@ export const AuctionList = () => {
                 </View>
               )}
 
+              {/* 로그인 필요 안내 */}
+              {!authLoading && !isLoggedIn && (
+                <View
+                  style={{
+                    paddingVertical: 40,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "rgba(255, 193, 7, 0.1)",
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 193, 7, 0.3)",
+                    marginTop: 20,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 30,
+                      backgroundColor: "rgba(255, 193, 7, 0.2)",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginBottom: 16,
+                    }}
+                  >
+                    <Text style={{ fontSize: 24 }}>🔒</Text>
+                  </View>
+                  <Text
+                    style={{
+                      color: "#FCD34D",
+                      fontSize: 18,
+                      fontWeight: "bold",
+                      marginBottom: 8,
+                      textAlign: "center",
+                    }}
+                  >
+                    로그인이 필요합니다
+                  </Text>
+                  <Text
+                    style={{
+                      color: "rgba(255, 255, 255, 0.7)",
+                      fontSize: 14,
+                      textAlign: "center",
+                      marginBottom: 20,
+                    }}
+                  >
+                    경매 참여 및 등록을 위해{"\n"}로그인해주세요
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push("/login")}
+                    style={{
+                      backgroundColor: "#FCD34D",
+                      paddingHorizontal: 24,
+                      paddingVertical: 12,
+                      borderRadius: 12,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "#000",
+                        fontSize: 16,
+                        fontWeight: "bold",
+                      }}
+                    >
+                      로그인하기
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+
               {/* 경매 목록 */}
-              {!isLoading && !error && (
+              {!isLoading && !error && isLoggedIn && (
                 <View style={{ gap: 16 }}>
                   {auctionItems.map((item) => (
                     <TouchableOpacity

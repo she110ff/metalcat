@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import {
@@ -448,6 +449,13 @@ const accountData: AccountCardType[] = [
 ];
 const MainContent = () => {
   const [showModal, setShowModal] = useState(false);
+  const { logout, user } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.replace("/(tabs)/");
+  };
 
   return (
     <VStack className="h-full w-full mb-16 md:mb-0">
@@ -1531,6 +1539,54 @@ const ModalComponent = ({
   );
 };
 export const Profile = () => {
+  const { isLoggedIn, isLoading, user } = useAuth();
+  const router = useRouter();
+
+  // 로그인이 안 되어 있으면 로그인 안내 화면 표시
+  if (isLoading) {
+    return (
+      <SafeAreaView className="h-full w-full">
+        <Center className="flex-1">
+          <Text>로딩 중...</Text>
+        </Center>
+      </SafeAreaView>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <SafeAreaView className="h-full w-full">
+        <Center className="flex-1 px-6">
+          <VStack space="xl" className="items-center">
+            <Box className="w-20 h-20 rounded-full bg-yellow-400/20 items-center justify-center">
+              <Text style={{ fontSize: 40 }}>🔒</Text>
+            </Box>
+            <VStack space="md" className="items-center">
+              <Heading className="text-2xl text-center">
+                로그인이 필요합니다
+              </Heading>
+              <Text className="text-center text-typography-600">
+                프로필을 확인하고 설정을 변경하려면{"\n"}로그인해주세요
+              </Text>
+            </VStack>
+            <VStack space="md" className="w-full">
+              <Button
+                onPress={() => router.push("/login")}
+                className="bg-primary-600"
+              >
+                <ButtonText>로그인하기</ButtonText>
+              </Button>
+              <Button variant="outline" onPress={() => router.back()}>
+                <ButtonText>돌아가기</ButtonText>
+              </Button>
+            </VStack>
+          </VStack>
+        </Center>
+        <MobileFooter footerIcons={bottomTabsList} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="h-full w-full">
       <DashboardLayout title="Company Name" isSidebarVisible={true}>
