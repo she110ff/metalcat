@@ -20,7 +20,6 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 
 export default function AdditionalInfoScreen() {
   const [title, setTitle] = useState("");
-  const [desiredPrice, setDesiredPrice] = useState("");
   const [transactionType, setTransactionType] = useState<"normal" | "urgent">(
     "normal"
   );
@@ -42,7 +41,6 @@ export default function AdditionalInfoScreen() {
   const checkRequiredFields = () => {
     const isComplete =
       title.trim() !== "" &&
-      desiredPrice.trim() !== "" &&
       address.trim() !== "" &&
       (address ? addressDetail.trim() !== "" : true) &&
       description.trim() !== "";
@@ -58,18 +56,16 @@ export default function AdditionalInfoScreen() {
     setIsFormComplete(complete);
     console.log("📋 폼 완성도 체크:", {
       title: title.trim() !== "",
-      desiredPrice: desiredPrice.trim() !== "",
       address: address.trim() !== "",
       addressDetail: address ? addressDetail.trim() !== "" : true,
       description: description.trim() !== "",
       isComplete: complete,
     });
-  }, [title, desiredPrice, address, addressDetail, description]);
+  }, [title, address, addressDetail, description]);
 
   // 개발용 샘플 데이터 채우기
   const fillSampleData = () => {
     setTitle("고품질 구리파이프 대량 판매");
-    setDesiredPrice("500000");
     setAddress("서울특별시 강남구 테헤란로 123");
     setAddressDetail("메탈캣빌딩 1층");
     setDescription(
@@ -119,7 +115,6 @@ export default function AdditionalInfoScreen() {
       const auctionData = {
         title: title.trim(),
         transactionType,
-        desiredPrice: parseInt(desiredPrice, 10),
         accessibility,
         transportCondition,
         address: address.trim(),
@@ -343,40 +338,6 @@ export default function AdditionalInfoScreen() {
                     </Box>
                   </Pressable>
                 </HStack>
-              </VStack>
-
-              {/* 희망 가격 */}
-              <VStack space="md" className="mt-8">
-                <HStack className="items-center space-x-3">
-                  <Ionicons name="cash" size={20} color="#FCD34D" />
-                  <Text
-                    className="text-yellow-300 text-lg font-bold"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    목표 판매가격
-                  </Text>
-                  <Text className="text-red-400 text-lg font-bold">*</Text>
-                </HStack>
-                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
-                  <InputField
-                    placeholder="원하시는 판매 가격을 입력해주세요"
-                    value={desiredPrice}
-                    onChangeText={(text) => {
-                      // 숫자만 입력 가능
-                      const numericValue = text.replace(/[^0-9]/g, "");
-                      setDesiredPrice(numericValue);
-                    }}
-                    keyboardType="numeric"
-                    className="text-white text-base px-5 py-4"
-                    style={{ fontFamily: "NanumGothic" }}
-                  />
-                </Input>
-                <Text
-                  className="text-gray-400 text-xs px-2"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  💡 시장 가격을 참고하여 합리적인 가격을 설정해보세요
-                </Text>
               </VStack>
 
               {/* 판매 조건 설정 */}
