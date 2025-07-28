@@ -247,8 +247,8 @@ export default function AdditionalInfoScreen() {
                         className="text-blue-300 text-sm leading-5"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        신뢰할 수 있는 거래를 위해 연락처가 관심있는
-                        구매자들에게만 공개됩니다.
+                        신뢰할 수 있는 거래를 위해 연락처가 낙찰된 구매자에게만
+                        공개됩니다.
                       </Text>
                     </VStack>
                   </HStack>

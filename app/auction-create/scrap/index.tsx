@@ -26,7 +26,7 @@ interface PhotoInfo {
 export default function ScrapAuctionCreate() {
   const router = useRouter();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
-  const [weight, setWeight] = useState("");
+  const [weight, setWeight] = useState("1");
   const [photos, setPhotos] = useState<PhotoInfo[]>([
     // 기본 사진 3개 미리 추가
     {
@@ -157,6 +157,18 @@ export default function ScrapAuctionCreate() {
     );
   };
 
+  // 진행하기 버튼 활성화 조건 체크
+  const isNextButtonEnabled = () => {
+    const weightValue = parseFloat(weight);
+    return (
+      selectedProductType !== null &&
+      weight.trim() !== "" &&
+      !isNaN(weightValue) &&
+      weightValue >= 1 &&
+      photos.length >= 3
+    );
+  };
+
   const handleNext = () => {
     console.log("handleNext 호출됨");
     console.log("selectedProductType:", selectedProductType);
@@ -169,6 +181,12 @@ export default function ScrapAuctionCreate() {
     }
     if (!weight.trim()) {
       Alert.alert("알림", "중량을 입력해주세요.");
+      return;
+    }
+
+    const weightValue = parseFloat(weight);
+    if (isNaN(weightValue) || weightValue < 1) {
+      Alert.alert("입력 오류", "중량은 1kg 이상이어야 합니다.");
       return;
     }
     if (photos.length < 3) {
@@ -349,12 +367,20 @@ export default function ScrapAuctionCreate() {
               >
                 <Input>
                   <InputField
-                    placeholder="중량을 입력하세요 (예: 1000)"
+                    placeholder="중량을 입력하세요 (최소 1kg)"
                     value={weight}
                     onChangeText={(text) => {
-                      // 숫자만 입력 가능
-                      const numericValue = text.replace(/[^0-9]/g, "");
-                      setWeight(numericValue);
+                      // 숫자와 소수점만 허용
+                      const numericText = text.replace(/[^0-9.]/g, "");
+                      const numValue = parseFloat(numericText);
+
+                      // 빈 문자열이거나 유효한 숫자인 경우에만 업데이트
+                      if (
+                        numericText === "" ||
+                        (!isNaN(numValue) && numValue >= 0)
+                      ) {
+                        setWeight(numericText);
+                      }
                     }}
                     keyboardType="numeric"
                     style={{
@@ -389,33 +415,31 @@ export default function ScrapAuctionCreate() {
                       />
                       <Pressable
                         onPress={() => handleRemovePhoto(photo.id)}
-                        className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 items-center justify-center"
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: "#000000",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 2,
+                          borderColor: "#FFFFFF",
+                        }}
                       >
-                        <Ionicons name="close" size={16} color="#FFFFFF" />
-                      </Pressable>
-                      {photo.isRepresentative && (
-                        <Box className="absolute bottom-0 left-0 right-0 bg-blue-500 rounded-b-lg p-1">
-                          <Text
-                            className="text-white text-xs text-center font-bold"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            대표
-                          </Text>
-                        </Box>
-                      )}
-                      {!photo.isRepresentative && (
-                        <Pressable
-                          onPress={() => handleSetRepresentative(photo.id)}
-                          className="absolute bottom-0 left-0 right-0 bg-gray-600 rounded-b-lg p-1"
+                        <Text
+                          style={{
+                            color: "#FFFFFF",
+                            fontSize: 16,
+                            fontWeight: "bold",
+                            lineHeight: 18,
+                          }}
                         >
-                          <Text
-                            className="text-white text-xs text-center"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            대표로
-                          </Text>
-                        </Pressable>
-                      )}
+                          ×
+                        </Text>
+                      </Pressable>
                     </Box>
                   ))}
 
@@ -464,18 +488,21 @@ export default function ScrapAuctionCreate() {
             onPress={handleNext}
             className="w-full"
             style={{
-              backgroundColor:
-                selectedProductType && photos.length >= 3
-                  ? "rgba(147, 51, 234, 0.9)"
-                  : "rgba(107, 114, 128, 0.5)",
+              backgroundColor: isNextButtonEnabled()
+                ? "rgba(147, 51, 234, 0.9)"
+                : "rgba(107, 114, 128, 0.5)",
             }}
-            disabled={!selectedProductType || photos.length < 3}
+            disabled={!isNextButtonEnabled()}
           >
             <ButtonText
               className="text-white font-bold"
               style={{ fontFamily: "NanumGothic" }}
             >
-              진행하기 ({photos.length}/3+ 장)
+              {isNextButtonEnabled()
+                ? `진행하기 ✓`
+                : `진행하기 (${selectedProductType ? "✓" : "종류"} | ${
+                    parseFloat(weight) >= 1 ? "✓" : "중량"
+                  } | ${photos.length}/3장)`}
             </ButtonText>
           </Button>
         </Box>

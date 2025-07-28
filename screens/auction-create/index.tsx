@@ -19,7 +19,7 @@ export const AuctionCreate = () => {
   const [formData, setFormData] = useState({
     title: "",
     metalType: (type as string) || "",
-    weight: "",
+    weight: "1",
     purity: "",
     startPrice: "",
     description: "",
@@ -35,6 +35,12 @@ export const AuctionCreate = () => {
       !formData.startPrice
     ) {
       Alert.alert("입력 오류", "필수 항목을 모두 입력해주세요.");
+      return;
+    }
+
+    const weightValue = parseFloat(formData.weight);
+    if (isNaN(weightValue) || weightValue < 1) {
+      Alert.alert("입력 오류", "중량은 1kg 이상이어야 합니다.");
       return;
     }
 
@@ -277,12 +283,22 @@ export const AuctionCreate = () => {
                       }}
                     >
                       <InputField
-                        placeholder="킬로그램 단위로 입력"
+                        placeholder="킬로그램 단위로 입력 (최소 1kg)"
                         placeholderTextColor="rgba(255, 255, 255, 0.4)"
                         value={formData.weight}
-                        onChangeText={(text) =>
-                          setFormData({ ...formData, weight: text })
-                        }
+                        onChangeText={(text) => {
+                          // 숫자와 소수점만 허용
+                          const numericText = text.replace(/[^0-9.]/g, "");
+                          const numValue = parseFloat(numericText);
+
+                          // 빈 문자열이거나 유효한 숫자인 경우에만 업데이트
+                          if (
+                            numericText === "" ||
+                            (!isNaN(numValue) && numValue >= 0)
+                          ) {
+                            setFormData({ ...formData, weight: numericText });
+                          }
+                        }}
                         style={{
                           color: "white",
                           fontSize: 16,
