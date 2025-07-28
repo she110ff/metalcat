@@ -122,7 +122,6 @@ const auctionAPI = {
         id: foundAuction.id,
         title:
           (foundAuction as any).title ||
-          (foundAuction as any).demolitionTitle ||
           "제목 없음",
       });
     }

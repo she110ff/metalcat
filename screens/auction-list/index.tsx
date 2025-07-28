@@ -183,13 +183,10 @@ export const AuctionList = () => {
           id: auction.id,
           title:
             (auction as any).title ||
-            (auction as any).demolitionTitle ||
             (auction as any).productName ||
             "고철 경매",
           metalType: auction.productType?.name || "고철",
-          weight: (auction as any).quantity?.estimatedWeight
-            ? `${(auction as any).quantity.estimatedWeight}kg`
-            : (auction as any).quantity?.quantity
+          weight: (auction as any).quantity?.quantity
             ? `${(auction as any).quantity.quantity}대`
             : "1건",
           currentBid: formatAuctionPrice(auction.currentBid || 0),

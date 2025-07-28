@@ -61,7 +61,7 @@ export const AuctionDetail = () => {
     auction: auction
       ? {
           id: auction.id,
-          title: (auction as any).title || (auction as any).demolitionTitle,
+          title: (auction as any).title,
         }
       : null,
     isLoading,
@@ -167,13 +167,10 @@ export const AuctionDetail = () => {
           id: auction.id,
           title:
             (auction as any).title ||
-            (auction as any).demolitionTitle ||
             (auction as any).productName ||
             "고철 경매",
           metalType: auction.productType?.name || "고철",
-          weight: (auction as any).quantity?.estimatedWeight
-            ? `${(auction as any).quantity.estimatedWeight}kg`
-            : (auction as any).quantity?.quantity
+          weight: (auction as any).quantity?.quantity
             ? `${(auction as any).quantity.quantity}대`
             : "1건",
           purity: "99.5%", // 기본값

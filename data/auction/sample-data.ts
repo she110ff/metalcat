@@ -5,17 +5,10 @@ import {
   DemolitionAuctionItem,
   BidInfo,
   AuctionCategory,
-  ScrapQuantityInfo,
-  MachineryQuantityInfo,
-  MaterialQuantityInfo,
-  DemolitionQuantityInfo,
-  ScrapSalesEnvironment,
-  MachinerySalesEnvironment,
-  MaterialSalesEnvironment,
-  DemolitionSalesEnvironment,
+  QuantityInfo,
+  SalesEnvironment,
   AddressInfo,
   PhotoInfo,
-  MachineryInfo,
 } from "@/data/types/auction";
 import {
   scrapProductTypes,
@@ -38,156 +31,119 @@ export const weightRanges = [
   "1000+",
 ];
 
-// 판매 환경 옵션 (고철용)
-export const scrapSalesEnvironmentOptions = {
+// 공통 판매 환경 옵션 (고철, 중고기계, 중고자재 공통 사용)
+export const salesEnvironmentOptions = {
+  // 배송 방식
   delivery: [
-    { id: "seller", label: "갔다드림", description: "판매자가 배송" },
-    { id: "buyer", label: "실어드림", description: "구매자가 수령" },
-  ],
-  shippingCost: [
-    {
-      id: "seller",
-      label: "운송비 판매자 부담",
-      description: "판매자가 운송비 부담",
-    },
     {
       id: "buyer",
-      label: "운송비 구매자 부담",
-      description: "구매자가 운송비 부담",
+      label: "구매자 직접",
+      description: "구매자가 직접 수령",
+      color: "blue",
+    },
+    {
+      id: "both",
+      label: "협의 가능",
+      description: "상호 협의 후 결정",
+      color: "purple",
+    },
+    {
+      id: "seller",
+      label: "판매자 지원",
+      description: "판매자가 배송 지원",
+      color: "green",
     },
   ],
+
+  // 운송비 부담
+  shippingCost: [
+    {
+      id: "buyer",
+      label: "구매자 부담",
+      description: "구매자가 운송비 부담",
+      color: "blue",
+    },
+    {
+      id: "seller",
+      label: "판매자 부담",
+      description: "판매자가 운송비 부담",
+      color: "green",
+    },
+  ],
+
+  // 현장 접근성
+  accessibility: [
+    {
+      id: "easy",
+      label: "접근 용이",
+      description: "5톤 집게차 진입 가능",
+      color: "green",
+    },
+    {
+      id: "normal",
+      label: "보통",
+      description: "일반 트럭 접근 가능",
+      color: "yellow",
+    },
+    {
+      id: "difficult",
+      label: "제한적",
+      description: "접근성 제한적",
+      color: "red",
+    },
+  ],
+
+  // 적재 조건
+  loading: [
+    {
+      id: "buyer",
+      label: "구매자 직접",
+      description: "구매자가 직접 적재",
+      color: "blue",
+    },
+    {
+      id: "both",
+      label: "협의 가능",
+      description: "상호 협의 후 결정",
+      color: "purple",
+    },
+    {
+      id: "seller",
+      label: "판매자 지원",
+      description: "판매자가 적재 지원",
+      color: "green",
+    },
+  ],
+
+  // 추가 조건 (체크박스 형태)
   additional: [
     {
-      id: "truckAccess",
-      label: "5톤 집게차 진입 가능",
-      description: "5톤 집게차 진입 가능",
+      id: "sacksNeeded",
+      label: "마대 필요",
+      description: "포장용 마대 필요",
     },
-    { id: "sacksNeeded", label: "마대 필요", description: "마대 필요" },
-    { id: "drumNeeded", label: "드럼통 필요", description: "드럼통 필요" },
+    {
+      id: "craneAccess",
+      label: "크레인 접근",
+      description: "크레인 접근 가능",
+    },
+    {
+      id: "forkliftAccess",
+      label: "지게차 접근",
+      description: "지게차 접근 가능",
+    },
     {
       id: "forkliftAvailable",
       label: "지게차 보유",
-      description: "지게차 보유",
+      description: "현장에 지게차 보유",
     },
   ],
 };
 
-// 판매 환경 옵션 (중고 기계용)
-export const machinerySalesEnvironmentOptions = {
-  delivery: [
-    { id: "seller", label: "갔다드림", description: "판매자가 배송" },
-    { id: "buyer", label: "실어드림", description: "구매자가 수령" },
-    { id: "both", label: "상호 협의", description: "협의 후 결정" },
-  ],
-  shippingCost: [
-    {
-      id: "seller",
-      label: "운송비 판매자 부담",
-      description: "판매자가 운송비 부담",
-    },
-    {
-      id: "buyer",
-      label: "운송비 구매자 부담",
-      description: "구매자가 운송비 부담",
-    },
-  ],
-  loading: [
-    { id: "seller", label: "실어드림", description: "판매자가 적재" },
-    { id: "buyer", label: "직접 적재", description: "구매자가 직접 적재" },
-  ],
-  additional: [
-    {
-      id: "truckAccess",
-      label: "5톤 집게차 진입 가능",
-      description: "5톤 집게차 진입 가능",
-    },
-    { id: "drumNeeded", label: "드럼통 필요", description: "드럼통 필요" },
-    { id: "sacksNeeded", label: "마대 필요", description: "마대 필요" },
-    {
-      id: "forkliftAvailable",
-      label: "지게차 보유",
-      description: "지게차 보유",
-    },
-  ],
-};
-
-// 판매 환경 옵션 (중고 자재용)
-export const materialSalesEnvironmentOptions = {
-  delivery: [
-    { id: "seller", label: "갔다드림", description: "판매자가 배송" },
-    { id: "buyer", label: "실어드림", description: "구매자가 수령" },
-    { id: "both", label: "상호 협의", description: "협의 후 결정" },
-  ],
-  shippingCost: [
-    {
-      id: "seller",
-      label: "운송비 판매자 부담",
-      description: "판매자가 운송비 부담",
-    },
-    {
-      id: "buyer",
-      label: "운송비 구매자 부담",
-      description: "구매자가 운송비 부담",
-    },
-  ],
-  loading: [
-    { id: "seller", label: "실어드림", description: "판매자가 적재" },
-    { id: "buyer", label: "직접 적재", description: "구매자가 직접 적재" },
-  ],
-  additional: [
-    {
-      id: "truckAccess",
-      label: "5톤 집게차 진입 가능",
-      description: "5톤 집게차 진입 가능",
-    },
-    { id: "drumNeeded", label: "드럼통 필요", description: "드럼통 필요" },
-    { id: "sacksNeeded", label: "마대 필요", description: "마대 필요" },
-    {
-      id: "forkliftAvailable",
-      label: "지게차 보유",
-      description: "지게차 보유",
-    },
-  ],
-};
-
-// 판매 환경 옵션 (철거 경매용)
-export const demolitionSalesEnvironmentOptions = {
-  delivery: [
-    { id: "seller", label: "갔다드림", description: "판매자가 배송" },
-    { id: "buyer", label: "실어드림", description: "구매자가 수령" },
-    { id: "both", label: "상호 협의", description: "협의 후 결정" },
-  ],
-  shippingCost: [
-    {
-      id: "seller",
-      label: "운송비 판매자 부담",
-      description: "판매자가 운송비 부담",
-    },
-    {
-      id: "buyer",
-      label: "운송비 구매자 부담",
-      description: "구매자가 운송비 부담",
-    },
-  ],
-  loading: [
-    { id: "seller", label: "실어드림", description: "판매자가 적재" },
-    { id: "buyer", label: "직접 적재", description: "구매자가 직접 적재" },
-  ],
-  additional: [
-    {
-      id: "truckAccess",
-      label: "5톤 집게차 진입 가능",
-      description: "5톤 집게차 진입 가능",
-    },
-    { id: "drumNeeded", label: "드럼통 필요", description: "드럼통 필요" },
-    { id: "sacksNeeded", label: "마대 필요", description: "마대 필요" },
-    {
-      id: "forkliftAvailable",
-      label: "지게차 보유",
-      description: "지게차 보유",
-    },
-  ],
-};
+// 기존 호환성을 위한 별칭들 (점진적 제거 예정)
+export const scrapSalesEnvironmentOptions = salesEnvironmentOptions;
+export const machinerySalesEnvironmentOptions = salesEnvironmentOptions;
+export const materialSalesEnvironmentOptions = salesEnvironmentOptions;
 
 // 철거 경매 특화 옵션
 export const demolitionSpecificOptions = {
@@ -526,17 +482,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "normal",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 2500,
+      quantity: 2500,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[3], // 김해시
     description:
@@ -563,17 +518,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "normal",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 2500,
+      quantity: 2500,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "buyer",
       shippingCost: "buyer",
       truckAccess: false,
       loading: "buyer",
       sacksNeeded: true,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: copperPhotos,
     address: sampleAddresses[1], // 판교
     description: "고순도 구리 스크랩입니다. 압축되어 있어 운반이 편리합니다.",
@@ -596,17 +550,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "urgent",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 3200,
+      quantity: 3200,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "seller",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: stainlessPhotos,
     address: sampleAddresses[2], // 부산
     description: "고품질 스테인리스 스틸 스크랩입니다. 긴급 처분합니다.",
@@ -629,17 +582,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "normal",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 950,
+      quantity: 950,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "buyer",
       shippingCost: "buyer",
       truckAccess: false,
       loading: "buyer",
       sacksNeeded: true,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: brassPhotos,
     address: sampleAddresses[0], // 서울
     description: "고품질 황동 스크랩입니다. 깨끗하게 분리되어 있습니다.",
@@ -662,17 +614,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "normal",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 1500,
+      quantity: 1500,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "seller",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos, // 기본 이미지 사용
     address: sampleAddresses[4], // 대구
     description:
@@ -717,17 +668,16 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     transactionType: "urgent",
     auctionCategory: "scrap",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 800,
+      quantity: 800,
       unit: "kg",
-    } as ScrapQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "buyer",
       shippingCost: "buyer",
       truckAccess: false,
       loading: "buyer",
       sacksNeeded: true,
-    } as ScrapSalesEnvironment,
+    } as SalesEnvironment,
     photos: [], // 이미지 없음 (무효 경매)
     address: sampleAddresses[5], // 인천
     description: "고품질 아연 스크랩입니다. 긴급 처분이 필요한 상품입니다.",
@@ -753,38 +703,25 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     productName: "어니",
     manufacturer: "모름",
     modelName: "모델",
+    manufacturingDate: new Date("2018-03-15"),
     productType: machineryProductTypes[4], // 식품/제약기계
-    machineryInfo: {
-      brand: "어니",
-      model: "모델",
-      year: 2018,
-      condition: "good",
-      workingHours: 5000,
-      maintenanceHistory: "정기 점검 완료",
-      manufacturingDate: new Date("2018-03-15"),
-    } as MachineryInfo,
     transactionType: "normal",
     auctionCategory: "machinery",
     quantity: {
       quantity: 1,
       unit: "대",
-    } as MachineryQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "both",
       shippingCost: "buyer",
       truckAccess: true,
       loading: "both",
       sacksNeeded: false,
-      craneAccess: true,
-      forkliftAccess: true,
-      drumNeeded: false,
-      forkliftAvailable: true,
-    } as MachinerySalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[2], // 삼성동
     description: "설명",
     desiredPrice: 1000000,
-    phoneNumberDisclosure: true,
     currentBid: 25000000,
     pricePerUnit: 25000000,
     totalBidAmount: 25000000,
@@ -813,38 +750,25 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     productName: "CNC 선반",
     manufacturer: "두산공작기계",
     modelName: "PUMA 2000",
+    manufacturingDate: new Date("2015-06-20"),
     productType: machineryProductTypes[0], // 공작기계
-    machineryInfo: {
-      brand: "두산공작기계",
-      model: "PUMA 2000",
-      year: 2015,
-      condition: "excellent",
-      workingHours: 3000,
-      maintenanceHistory: "최근 정비 완료",
-      manufacturingDate: new Date("2015-06-20"),
-    } as MachineryInfo,
     transactionType: "urgent",
     auctionCategory: "machinery",
     quantity: {
       quantity: 1,
       unit: "대",
-    } as MachineryQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-      craneAccess: true,
-      forkliftAccess: true,
-      drumNeeded: false,
-      forkliftAvailable: false,
-    } as MachinerySalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[0], // 강남
     description: "2015년식 CNC 선반입니다. 정밀도가 우수하고 상태가 좋습니다.",
     desiredPrice: 15000000,
-    phoneNumberDisclosure: true,
     currentBid: 12000000,
     pricePerUnit: 12000000,
     totalBidAmount: 12000000,
@@ -875,34 +799,23 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     id: "materials1",
     title: "H빔 자재",
     productType: materialsProductTypes[0], // H빔
-    materialInfo: {
-      materialType: "H빔",
-      dimensions: "300x300x10x15",
-      quantity: 5000,
-      condition: "used",
-      packaging: "적재",
-    },
     transactionType: "urgent",
     auctionCategory: "materials",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 5000,
+      quantity: 5000,
       unit: "kg",
-    } as MaterialQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-      craneAccess: true,
-      forkliftAccess: true,
-    } as MaterialSalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[0], // 강남
     description: "건축용 H빔 자재입니다. 긴급 처분이 필요합니다.",
     desiredPrice: 15000000,
-    phoneNumberDisclosure: true,
     currentBid: 15000000,
     pricePerUnit: 3000,
     totalBidAmount: 15000000,
@@ -930,34 +843,23 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     id: "materials2",
     title: "엉",
     productType: materialsProductTypes[1], // 철판
-    materialInfo: {
-      materialType: "철판",
-      dimensions: "2000x1000x6mm",
-      quantity: 100,
-      condition: "like-new",
-      packaging: "적재",
-    },
     transactionType: "normal",
     auctionCategory: "materials",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 2000,
+      quantity: 2000,
       unit: "kg",
-    } as MaterialQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
       truckAccess: true,
       loading: "seller",
       sacksNeeded: false,
-      craneAccess: false,
-      forkliftAccess: true,
-    } as MaterialSalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[1], // 판교
     description: "신품 철판입니다. 건축용으로 적합합니다.",
     desiredPrice: 8000000,
-    phoneNumberDisclosure: true,
     currentBid: 8000000,
     pricePerUnit: 4000,
     totalBidAmount: 8000000,
@@ -985,34 +887,23 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     id: "materials3",
     title: "강관 자재",
     productType: materialsProductTypes[2], // 강관
-    materialInfo: {
-      materialType: "강관",
-      dimensions: "Φ50mm x 6m",
-      quantity: 200,
-      condition: "used",
-      packaging: "적재",
-    },
     transactionType: "normal",
     auctionCategory: "materials",
     quantity: {
-      knowsWeight: true,
-      estimatedWeight: 3000,
+      quantity: 3000,
       unit: "kg",
-    } as MaterialQuantityInfo,
+    } as QuantityInfo,
     salesEnvironment: {
       delivery: "both",
       shippingCost: "seller",
       truckAccess: true,
       loading: "both",
       sacksNeeded: false,
-      craneAccess: true,
-      forkliftAccess: true,
-    } as MaterialSalesEnvironment,
+    } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[3], // 김해시
     description: "중고 강관 자재입니다. 파이프라인 공사용으로 적합합니다.",
     desiredPrice: 12000000,
-    phoneNumberDisclosure: true,
     currentBid: 12000000,
     pricePerUnit: 4000,
     totalBidAmount: 12000000,
@@ -1042,8 +933,7 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
 export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
   {
     id: "demolition1",
-    demolitionTitle: "철거",
-    specialNotes: "어디",
+    title: "철거",
     productType: demolitionProductTypes[0], // 주거용 건축물
     demolitionInfo: {
       buildingPurpose: "residential",
@@ -1062,23 +952,10 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     quantity: {
       quantity: 1,
       unit: "건물",
-    } as DemolitionQuantityInfo,
-    salesEnvironment: {
-      delivery: "seller",
-      shippingCost: "buyer",
-      truckAccess: true,
-      loading: "seller",
-      sacksNeeded: false,
-      craneAccess: true,
-      forkliftAccess: true,
-      dismantlingRequired: true,
-      siteAccess: "24시간",
-    } as DemolitionSalesEnvironment,
+    } as QuantityInfo,
     photos: samplePhotos,
     address: sampleAddresses[0], // 강남
     description: "주거용 건축물 철거입니다. 긴급 처분이 필요합니다.",
-    desiredPrice: 5000000,
-    phoneNumberDisclosure: true,
     currentBid: 4500000,
     pricePerUnit: 4500000,
     totalBidAmount: 4500000,
@@ -1104,8 +981,7 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
   },
   {
     id: "demolition2",
-    demolitionTitle: "상가 철거",
-    specialNotes: "24시간 현장 접근 가능",
+    title: "상가 철거",
     productType: demolitionProductTypes[1], // 상업용 건축물
     demolitionInfo: {
       buildingPurpose: "commercial",
@@ -1124,23 +1000,10 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     quantity: {
       quantity: 1,
       unit: "건물",
-    } as DemolitionQuantityInfo,
-    salesEnvironment: {
-      delivery: "both",
-      shippingCost: "seller",
-      truckAccess: true,
-      loading: "both",
-      sacksNeeded: true,
-      craneAccess: true,
-      forkliftAccess: true,
-      dismantlingRequired: true,
-      siteAccess: "24시간",
-    } as DemolitionSalesEnvironment,
+    } as QuantityInfo,
     photos: samplePhotos,
     address: sampleAddresses[2], // 삼성동
     description: "상업용 건축물 부분 철거입니다. 전문 업체만 신청 가능합니다.",
-    desiredPrice: 15000000,
-    phoneNumberDisclosure: true,
     currentBid: 12000000,
     pricePerUnit: 12000000,
     totalBidAmount: 12000000,
@@ -1166,8 +1029,7 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
   },
   {
     id: "demolition3",
-    demolitionTitle: "공장 철거",
-    specialNotes: "유해물질 처리 필요",
+    title: "공장 철거",
     productType: demolitionProductTypes[2], // 산업용 건축물
     demolitionInfo: {
       buildingPurpose: "industrial",
@@ -1186,23 +1048,10 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     quantity: {
       quantity: 1,
       unit: "건물",
-    } as DemolitionQuantityInfo,
-    salesEnvironment: {
-      delivery: "buyer",
-      shippingCost: "buyer",
-      truckAccess: true,
-      loading: "buyer",
-      sacksNeeded: true,
-      craneAccess: true,
-      forkliftAccess: true,
-      dismantlingRequired: true,
-      siteAccess: "24시간",
-    } as DemolitionSalesEnvironment,
+    } as QuantityInfo,
     photos: samplePhotos,
     address: sampleAddresses[4], // 부산
     description: "산업용 건축물 전면 철거입니다. 유해물질 처리가 포함됩니다.",
-    desiredPrice: 30000000,
-    phoneNumberDisclosure: true,
     currentBid: 25000000,
     pricePerUnit: 25000000,
     totalBidAmount: 25000000,

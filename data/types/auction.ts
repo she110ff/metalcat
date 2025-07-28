@@ -40,7 +40,22 @@ export interface BidInfo {
   isTopBid: boolean;
 }
 
-// ===== 고철 경매 타입 =====
+// 공통 수량 정보 타입
+export interface QuantityInfo {
+  quantity: number;
+  unit: string;
+}
+
+// 공통 판매 환경 타입 (고철, 중고기계, 중고자재에서만 사용)
+export interface SalesEnvironment {
+  delivery: "seller" | "buyer" | "both";
+  shippingCost: "seller" | "buyer";
+  truckAccess: boolean;
+  loading: "seller" | "buyer" | "both";
+  sacksNeeded: boolean;
+}
+
+// ===== 카테고리별 제품 타입 =====
 
 // 제품 종류 타입 (고철)
 export interface ScrapProductType {
@@ -51,25 +66,6 @@ export interface ScrapProductType {
   auctionCategory: "scrap";
 }
 
-// 수량 정보 타입 (고철)
-export interface ScrapQuantityInfo {
-  knowsWeight: boolean;
-  weightRange?: string;
-  estimatedWeight?: number;
-  unit?: string; // kg
-}
-
-// 판매 환경 타입 (고철)
-export interface ScrapSalesEnvironment {
-  delivery: "seller" | "buyer" | "both";
-  shippingCost: "seller" | "buyer";
-  truckAccess: boolean;
-  loading: "seller" | "buyer" | "both";
-  sacksNeeded: boolean;
-}
-
-// ===== 중고 기계 타입 =====
-
 // 기계 종류 타입
 export interface MachineryProductType {
   id: string;
@@ -78,39 +74,6 @@ export interface MachineryProductType {
   description?: string;
   auctionCategory: "machinery";
 }
-
-// 기계 상세 정보 타입
-export interface MachineryInfo {
-  brand?: string;
-  model?: string;
-  year?: number;
-  condition: "excellent" | "good" | "fair" | "poor";
-  workingHours?: number;
-  maintenanceHistory?: string;
-  specifications?: Record<string, any>;
-  manufacturingDate?: Date; // 제조 연월
-}
-
-// 수량 정보 타입 (기계)
-export interface MachineryQuantityInfo {
-  quantity: number;
-  unit: "대" | "세트" | "개";
-}
-
-// 판매 환경 타입 (기계)
-export interface MachinerySalesEnvironment {
-  delivery: "seller" | "buyer" | "both";
-  shippingCost: "seller" | "buyer";
-  truckAccess: boolean;
-  loading: "seller" | "buyer" | "both";
-  sacksNeeded: boolean;
-  craneAccess?: boolean;
-  forkliftAccess?: boolean;
-  drumNeeded?: boolean; // 드럼통 필요
-  forkliftAvailable?: boolean; // 지게차 보유
-}
-
-// ===== 중고 자재 타입 =====
 
 // 자재 종류 타입
 export interface MaterialProductType {
@@ -121,37 +84,6 @@ export interface MaterialProductType {
   auctionCategory: "materials";
 }
 
-// 자재 상세 정보 타입
-export interface MaterialInfo {
-  materialType: string;
-  dimensions?: string;
-  quantity: number;
-  condition: "new" | "like-new" | "used" | "damaged";
-  packaging?: string;
-  specifications?: Record<string, any>;
-}
-
-// 수량 정보 타입 (자재)
-export interface MaterialQuantityInfo {
-  knowsWeight: boolean;
-  estimatedWeight?: number;
-  quantity?: number;
-  unit: "kg" | "개" | "세트";
-}
-
-// 판매 환경 타입 (자재)
-export interface MaterialSalesEnvironment {
-  delivery: "seller" | "buyer" | "both";
-  shippingCost: "seller" | "buyer";
-  truckAccess: boolean;
-  loading: "seller" | "buyer" | "both";
-  sacksNeeded: boolean;
-  craneAccess?: boolean;
-  forkliftAccess?: boolean;
-}
-
-// ===== 철거 타입 =====
-
 // 철거 종류 타입
 export interface DemolitionProductType {
   id: string;
@@ -160,6 +92,8 @@ export interface DemolitionProductType {
   description?: string;
   auctionCategory: "demolition";
 }
+
+// ===== 철거 특화 타입 =====
 
 // 철거 경매 특화 정보
 export interface DemolitionInfo {
@@ -180,25 +114,6 @@ export interface DemolitionInfo {
   demolitionTitle: string; // 경매 타이틀
 }
 
-// 수량 정보 타입 (철거)
-export interface DemolitionQuantityInfo {
-  quantity: number;
-  unit: "건물" | "평" | "㎡";
-}
-
-// 철거 경매 판매 환경
-export interface DemolitionSalesEnvironment {
-  delivery: "seller" | "buyer" | "both";
-  shippingCost: "seller" | "buyer";
-  truckAccess: boolean;
-  loading: "seller" | "buyer" | "both";
-  sacksNeeded: boolean;
-  craneAccess: boolean;
-  forkliftAccess: boolean;
-  dismantlingRequired: boolean; // 철거 필요 여부
-  siteAccess?: string; // 현장 접근 시간 (예: "24시간")
-}
-
 // ===== 통합 타입 =====
 
 // 제품 종류 통합 타입
@@ -208,20 +123,6 @@ export type ProductType =
   | MaterialProductType
   | DemolitionProductType;
 
-// 수량 정보 통합 타입
-export type QuantityInfo =
-  | ScrapQuantityInfo
-  | MachineryQuantityInfo
-  | MaterialQuantityInfo
-  | DemolitionQuantityInfo;
-
-// 판매 환경 통합 타입
-export type SalesEnvironment =
-  | ScrapSalesEnvironment
-  | MachinerySalesEnvironment
-  | MaterialSalesEnvironment
-  | DemolitionSalesEnvironment;
-
 // ===== 경매 등록 폼 타입 =====
 
 // 고철 경매 등록 폼
@@ -230,8 +131,8 @@ export interface ScrapAuctionFormData {
   productType: ScrapProductType;
   transactionType: TransactionType;
   auctionCategory: "scrap";
-  quantity: ScrapQuantityInfo;
-  salesEnvironment: ScrapSalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
@@ -246,17 +147,16 @@ export interface MachineryAuctionFormData {
   productName: string; // 제품명
   manufacturer?: string; // 제조사
   modelName?: string; // 모델명
+  manufacturingDate?: Date; // 제조일
   productType: MachineryProductType;
-  machineryInfo: MachineryInfo;
   transactionType: TransactionType;
   auctionCategory: "machinery";
-  quantity: MachineryQuantityInfo;
-  salesEnvironment: MachinerySalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
   desiredPrice: number; // 희망 가격
-  phoneNumberDisclosure: boolean; // 전화번호 노출 동의
   createdAt: Date;
   status: "draft" | "submitted" | "reviewing" | "approved" | "rejected";
 }
@@ -265,34 +165,28 @@ export interface MachineryAuctionFormData {
 export interface MaterialAuctionFormData {
   title: string;
   productType: MaterialProductType;
-  materialInfo: MaterialInfo;
   transactionType: TransactionType;
   auctionCategory: "materials";
-  quantity: MaterialQuantityInfo;
-  salesEnvironment: MaterialSalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
-  desiredPrice: number; // 희망 가격 (중고 자재도 필요)
-  phoneNumberDisclosure: boolean; // 전화번호 노출 동의 (중고 자재도 필요)
+  desiredPrice: number; // 희망 가격
   createdAt: Date;
   status: "draft" | "submitted" | "reviewing" | "approved" | "rejected";
 }
 
 // 철거 경매 등록 폼
 export interface DemolitionAuctionFormData {
-  demolitionTitle: string; // 경매 타이틀
-  specialNotes?: string; // 특이 사항
+  title: string;
   productType: DemolitionProductType;
   demolitionInfo: DemolitionInfo;
   auctionCategory: "demolition";
-  quantity: DemolitionQuantityInfo;
-  salesEnvironment: DemolitionSalesEnvironment;
+  quantity: QuantityInfo;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
-  desiredPrice: number; // 희망 가격
-  phoneNumberDisclosure: boolean; // 전화번호 노출 동의
   createdAt: Date;
   status: "draft" | "submitted" | "reviewing" | "approved" | "rejected";
 }
@@ -313,8 +207,8 @@ export interface ScrapAuctionItem {
   productType: ScrapProductType;
   transactionType: TransactionType;
   auctionCategory: "scrap";
-  quantity: ScrapQuantityInfo;
-  salesEnvironment: ScrapSalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
@@ -339,17 +233,16 @@ export interface MachineryAuctionItem {
   productName: string;
   manufacturer?: string;
   modelName?: string;
+  manufacturingDate?: Date;
   productType: MachineryProductType;
-  machineryInfo: MachineryInfo;
   transactionType: TransactionType;
   auctionCategory: "machinery";
-  quantity: MachineryQuantityInfo;
-  salesEnvironment: MachinerySalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
   desiredPrice: number;
-  phoneNumberDisclosure: boolean;
   currentBid?: number;
   pricePerUnit?: number;
   totalBidAmount?: number;
@@ -368,16 +261,14 @@ export interface MaterialAuctionItem {
   id: string;
   title: string;
   productType: MaterialProductType;
-  materialInfo: MaterialInfo;
   transactionType: TransactionType;
   auctionCategory: "materials";
-  quantity: MaterialQuantityInfo;
-  salesEnvironment: MaterialSalesEnvironment;
+  quantity: QuantityInfo;
+  salesEnvironment: SalesEnvironment;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
   desiredPrice: number; // 희망 가격
-  phoneNumberDisclosure: boolean; // 전화번호 노출 동의
   currentBid?: number;
   pricePerUnit?: number;
   totalBidAmount?: number;
@@ -394,18 +285,14 @@ export interface MaterialAuctionItem {
 // 철거 경매 아이템
 export interface DemolitionAuctionItem {
   id: string;
-  demolitionTitle: string; // 경매 타이틀
-  specialNotes?: string; // 특이 사항
+  title: string;
   productType: DemolitionProductType;
   demolitionInfo: DemolitionInfo;
   auctionCategory: "demolition";
-  quantity: DemolitionQuantityInfo;
-  salesEnvironment: DemolitionSalesEnvironment;
+  quantity: QuantityInfo;
   photos: PhotoInfo[];
   address: AddressInfo;
   description: string;
-  desiredPrice: number; // 희망 가격
-  phoneNumberDisclosure: boolean; // 전화번호 노출 동의
   currentBid?: number;
   pricePerUnit?: number;
   totalBidAmount?: number;

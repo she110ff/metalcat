@@ -302,42 +302,18 @@ export const getMachineryModelName = (item: MachineryAuctionItem): string => {
   return item.modelName || "미상";
 };
 
+// 중고 기계 제조일 정보 가져오기
+export const getMachineryManufacturingDate = (item: MachineryAuctionItem): string => {
+  if (!item.manufacturingDate) return "미상";
+  
+  const year = item.manufacturingDate.getFullYear();
+  const month = String(item.manufacturingDate.getMonth() + 1).padStart(2, "0");
+  return `${year}년 ${month}월`;
+};
+
 // 고철 특이 사항 가져오기
 export const getScrapSpecialNotes = (item: ScrapAuctionItem): string => {
   return item.specialNotes || "";
-};
-
-// 전화번호 노출 동의 여부 확인 (중고 기계만)
-export const hasPhoneNumberDisclosure = (
-  item: MachineryAuctionItem
-): boolean => {
-  return item.phoneNumberDisclosure;
-};
-
-// 중고 자재 자재 타입 정보 가져오기
-export const getMaterialType = (item: MaterialAuctionItem): string => {
-  return item.materialInfo.materialType;
-};
-
-// 중고 자재 치수 정보 가져오기
-export const getMaterialDimensions = (item: MaterialAuctionItem): string => {
-  return item.materialInfo.dimensions || "미상";
-};
-
-// 중고 자재 포장 정보 가져오기
-export const getMaterialPackaging = (item: MaterialAuctionItem): string => {
-  return item.materialInfo.packaging || "미상";
-};
-
-// 중고 자재 상태 정보 가져오기
-export const getMaterialCondition = (item: MaterialAuctionItem): string => {
-  const conditionMap = {
-    new: "신품",
-    "like-new": "신품급",
-    used: "중고",
-    damaged: "손상",
-  };
-  return conditionMap[item.materialInfo.condition] || "미상";
 };
 
 // 철거 경매 건축물 용도 정보 가져오기
@@ -415,10 +391,10 @@ export const getDemolitionArea = (item: DemolitionAuctionItem): string => {
 export const getDemolitionSpecialNotes = (
   item: DemolitionAuctionItem
 ): string => {
-  return item.specialNotes || item.demolitionInfo.specialNotes || "없음";
+  return item.demolitionInfo.specialNotes || "없음";
 };
 
 // 철거 경매 타이틀 정보 가져오기
 export const getDemolitionTitle = (item: DemolitionAuctionItem): string => {
-  return item.demolitionTitle || item.demolitionInfo.demolitionTitle || "철거";
+  return item.demolitionInfo.demolitionTitle || item.title || "철거";
 };

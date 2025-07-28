@@ -169,8 +169,7 @@ export default function AdditionalInfoScreen() {
         transactionType,
         auctionCategory: "scrap" as const,
         quantity: {
-          knowsWeight: true,
-          estimatedWeight: firstStepData.weight,
+          quantity: firstStepData.weight,
           unit: "kg",
         },
         salesEnvironment: {
