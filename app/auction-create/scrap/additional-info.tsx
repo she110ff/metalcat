@@ -7,6 +7,8 @@ import { Text } from "@/components/ui/text";
 import { Input, InputField } from "@/components/ui/input";
 import { Textarea, TextareaInput } from "@/components/ui/textarea";
 import { Pressable } from "@/components/ui/pressable";
+import { Button } from "@/components/ui/button";
+import { ButtonText } from "@/components/ui/button";
 import {
   DaumAddressSearch,
   DaumAddressResult,
@@ -34,6 +36,48 @@ export default function AdditionalInfoScreen() {
   const [transportCondition, setTransportCondition] = useState<
     "buyer" | "negotiable" | "seller"
   >("buyer");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 필수 입력 항목 완성도 체크
+  const checkRequiredFields = () => {
+    const isComplete =
+      title.trim() !== "" &&
+      desiredPrice.trim() !== "" &&
+      address.trim() !== "" &&
+      (address ? addressDetail.trim() !== "" : true) &&
+      description.trim() !== "";
+
+    return isComplete;
+  };
+
+  const [isFormComplete, setIsFormComplete] = useState(false);
+
+  // 폼 완성도 실시간 체크
+  useEffect(() => {
+    const complete = checkRequiredFields();
+    setIsFormComplete(complete);
+    console.log("📋 폼 완성도 체크:", {
+      title: title.trim() !== "",
+      desiredPrice: desiredPrice.trim() !== "",
+      address: address.trim() !== "",
+      addressDetail: address ? addressDetail.trim() !== "" : true,
+      description: description.trim() !== "",
+      isComplete: complete,
+    });
+  }, [title, desiredPrice, address, addressDetail, description]);
+
+  // 개발용 샘플 데이터 채우기
+  const fillSampleData = () => {
+    setTitle("고품질 구리파이프 대량 판매");
+    setDesiredPrice("500000");
+    setAddress("서울특별시 강남구 테헤란로 123");
+    setAddressDetail("메탈캣빌딩 1층");
+    setDescription(
+      "구리파이프 약 50kg 정도입니다. 상태가 매우 깨끗하고 트럭 접근이 용이합니다. 포장이 필요하지 않으며 즉시 운반 가능합니다."
+    );
+    setAccessibility("easy");
+    setTransportCondition("buyer");
+  };
 
   // 주소 검색 상태 디버깅
   useEffect(() => {
@@ -61,6 +105,56 @@ export default function AdditionalInfoScreen() {
     setShowAddressSearch(false);
   };
 
+  // 경매 등록 처리
+  const handleSubmit = async () => {
+    if (!checkRequiredFields()) {
+      Alert.alert("입력 확인", "모든 필수 항목을 입력해주세요.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // 경매 데이터 구성
+      const auctionData = {
+        title: title.trim(),
+        transactionType,
+        desiredPrice: parseInt(desiredPrice, 10),
+        accessibility,
+        transportCondition,
+        address: address.trim(),
+        addressDetail: addressDetail.trim(),
+        description: description.trim(),
+        selectedAddress,
+        createdAt: new Date().toISOString(),
+      };
+
+      console.log("💾 경매 데이터 저장:", auctionData);
+
+      // 실제로는 API 호출이나 로컬 스토리지 저장
+      // await saveAuctionData(auctionData);
+
+      // 성공 메시지
+      Alert.alert("등록 완료", "경매가 성공적으로 등록되었습니다!", [
+        {
+          text: "확인",
+          onPress: () => {
+            // 경매 목록 화면으로 이동
+            router.push("/(tabs)/auction");
+          },
+        },
+      ]);
+    } catch (error) {
+      console.error("❌ 경매 등록 오류:", error);
+      Alert.alert(
+        "오류",
+        "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
@@ -74,15 +168,54 @@ export default function AdditionalInfoScreen() {
         >
           <View className="flex-1 px-6 py-6">
             {/* 헤더 */}
-            <HStack className="items-center space-x-3 mb-8">
-              <Ionicons name="add-circle" size={28} color="#FCD34D" />
-              <Text
-                className="text-white text-2xl font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                경매 등록 완성하기
-              </Text>
+            <HStack className="items-center justify-between mb-8">
+              <HStack className="items-center space-x-3">
+                <Ionicons name="add-circle" size={28} color="#FCD34D" />
+                <Text
+                  className="text-white text-2xl font-bold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  경매 등록 완성하기
+                </Text>
+              </HStack>
+
+              {/* 개발용 샘플 데이터 버튼 */}
+              {__DEV__ && (
+                <Pressable
+                  onPress={fillSampleData}
+                  className="bg-blue-600/20 border border-blue-500/30 rounded-lg px-3 py-2"
+                >
+                  <Text
+                    className="text-blue-300 text-xs font-semibold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    샘플 데이터
+                  </Text>
+                </Pressable>
+              )}
             </HStack>
+
+            {/* 필수 입력 안내 */}
+            <Box className="bg-red-600/10 border border-red-500/30 rounded-2xl p-4 mb-6">
+              <HStack className="items-center space-x-3">
+                <Ionicons name="alert-circle" size={20} color="#F87171" />
+                <VStack className="flex-1" space="xs">
+                  <Text
+                    className="text-red-300 font-bold text-base"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    모든 항목 입력 필수
+                  </Text>
+                  <Text
+                    className="text-red-200 text-sm leading-5"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    높은 품질의 경매를 위해 모든 항목을 빠짐없이 입력해주세요.
+                    완성도 높은 정보가 더 좋은 거래 결과를 만듭니다.
+                  </Text>
+                </VStack>
+              </HStack>
+            </Box>
 
             <VStack space="xl" className="flex-1">
               {/* 전화번호 노출 안내 */}
@@ -132,6 +265,7 @@ export default function AdditionalInfoScreen() {
                   >
                     매력적인 제목 작성
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
                 <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
@@ -154,6 +288,7 @@ export default function AdditionalInfoScreen() {
                   >
                     경매 진행 방식
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
                 <HStack space="md">
                   <Pressable
@@ -220,6 +355,7 @@ export default function AdditionalInfoScreen() {
                   >
                     목표 판매가격
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
                 <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
@@ -253,16 +389,20 @@ export default function AdditionalInfoScreen() {
                   >
                     판매 조건 설정
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
 
                 {/* 현장 접근성 */}
                 <VStack space="sm">
-                  <Text
-                    className="text-white font-semibold text-base"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    현장 접근성
-                  </Text>
+                  <HStack className="items-center space-x-2">
+                    <Text
+                      className="text-white font-semibold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      현장 접근성
+                    </Text>
+                    <Text className="text-red-400 text-sm font-bold">*</Text>
+                  </HStack>
                   <HStack space="md">
                     <Pressable
                       onPress={() => setAccessibility("easy")}
@@ -326,12 +466,15 @@ export default function AdditionalInfoScreen() {
 
                 {/* 운반 조건 */}
                 <VStack space="sm">
-                  <Text
-                    className="text-white font-semibold text-base"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    운반 조건
-                  </Text>
+                  <HStack className="items-center space-x-2">
+                    <Text
+                      className="text-white font-semibold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      운반 조건
+                    </Text>
+                    <Text className="text-red-400 text-sm font-bold">*</Text>
+                  </HStack>
                   <HStack space="md">
                     <Pressable
                       onPress={() => setTransportCondition("buyer")}
@@ -404,6 +547,7 @@ export default function AdditionalInfoScreen() {
                   >
                     판매 현장 위치
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
 
                 {/* 주소 선택 */}
@@ -423,12 +567,15 @@ export default function AdditionalInfoScreen() {
                 {/* 상세 주소 입력 (주소가 선택되었을 때만 표시) */}
                 {address && (
                   <VStack space="sm">
-                    <Text
-                      className="text-gray-300 text-sm"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      상세 주소
-                    </Text>
+                    <HStack className="items-center space-x-2">
+                      <Text
+                        className="text-gray-300 text-sm"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        상세 주소
+                      </Text>
+                      <Text className="text-red-400 text-sm font-bold">*</Text>
+                    </HStack>
                     <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                       <InputField
                         placeholder="상세 주소를 입력하세요 (동, 호수, 층수 등)"
@@ -452,6 +599,7 @@ export default function AdditionalInfoScreen() {
                   >
                     상세 정보 안내
                   </Text>
+                  <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
 
                 {/* 안내 텍스트 추가 */}
@@ -500,6 +648,116 @@ export default function AdditionalInfoScreen() {
             </VStack>
           </View>
         </ScrollView>
+
+        {/* 하단 완성도 및 등록 버튼 */}
+        <Box className="px-6 py-4 bg-black/20 border-t border-white/10">
+          {/* 완성도 표시 */}
+          <VStack space="md">
+            <HStack className="items-center justify-between">
+              <VStack className="flex-1" space="xs">
+                <Text
+                  className="text-white text-sm font-semibold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  필수 항목 완성도
+                </Text>
+                <Text
+                  className={`text-xs ${
+                    isFormComplete ? "text-green-400" : "text-orange-400"
+                  }`}
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  {isFormComplete
+                    ? "✅ 모든 항목이 완성되었습니다"
+                    : "📝 필수 항목을 모두 입력해주세요"}
+                </Text>
+              </VStack>
+
+              {/* 완성도 퍼센트 */}
+              <Box
+                className={`px-3 py-1 rounded-full ${
+                  isFormComplete
+                    ? "bg-green-600/20 border border-green-500/30"
+                    : "bg-orange-600/20 border border-orange-500/30"
+                }`}
+              >
+                <Text
+                  className={`text-sm font-bold ${
+                    isFormComplete ? "text-green-400" : "text-orange-400"
+                  }`}
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  {isFormComplete ? "100%" : "진행중"}
+                </Text>
+              </Box>
+            </HStack>
+
+            {/* 경매 등록 버튼 (완성시에만 표시) */}
+            {isFormComplete && (
+              <Button
+                onPress={handleSubmit}
+                disabled={isSubmitting}
+                className={`w-full rounded-2xl min-h-16 ${
+                  isSubmitting
+                    ? "bg-gray-500/50"
+                    : "bg-gradient-to-r from-purple-600 to-blue-600"
+                }`}
+                style={{
+                  shadowColor: "#9333EA",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 8,
+                }}
+              >
+                <HStack className="items-center space-x-3">
+                  {isSubmitting ? (
+                    <Ionicons name="sync" size={24} color="#FFFFFF" />
+                  ) : (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#FFFFFF"
+                    />
+                  )}
+                  <ButtonText
+                    className="text-white font-bold text-lg"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    {isSubmitting ? "등록 중..." : "🔨 경매 등록하기"}
+                  </ButtonText>
+                </HStack>
+              </Button>
+            )}
+
+            {/* 미완성시 안내 메시지 */}
+            {!isFormComplete && (
+              <Box className="bg-orange-600/10 border border-orange-500/30 rounded-xl p-4">
+                <HStack className="items-center space-x-3">
+                  <Ionicons
+                    name="information-circle"
+                    size={20}
+                    color="#FB923C"
+                  />
+                  <VStack className="flex-1" space="xs">
+                    <Text
+                      className="text-orange-300 font-semibold text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      아직 완성되지 않았어요
+                    </Text>
+                    <Text
+                      className="text-orange-200 text-xs"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      모든 필수 항목을 입력하면 경매 등록 버튼이 나타납니다
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            )}
+          </VStack>
+        </Box>
 
         {/* 다음 주소 검색 컴포넌트 */}
         <DaumAddressSearch
