@@ -14,6 +14,4 @@ config.resolver.nodeModulesPaths = [path.resolve(projectRoot, "node_modules")];
 // Add font file extensions to asset extensions
 config.resolver.assetExts.push("ttf", "otf", "woff", "woff2");
 
-// module.exports = config;
-
 module.exports = withNativeWind(config, { input: "./global.css" });
