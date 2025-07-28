@@ -1,17 +1,26 @@
 import React, { useState } from "react";
-import { ScrollView, Animated, ActivityIndicator } from "react-native";
-import { Box } from "@/components/ui/box";
-import { VStack } from "@/components/ui/vstack";
-import { HStack } from "@/components/ui/hstack";
-import { Text } from "@/components/ui/text";
-import { Pressable } from "@/components/ui/pressable";
-import { Button } from "@/components/ui/button";
-import { ButtonText } from "@/components/ui/button";
+import {
+  View,
+  Text,
+  ScrollView,
+  Animated,
+  ActivityIndicator,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { SafeAreaView } from "react-native";
+import {
+  Gavel,
+  Plus,
+  Clock,
+  Users,
+  Hammer,
+  Settings,
+  Package,
+  AlertCircle,
+} from "lucide-react-native";
 import { useAuctions } from "@/hooks/useAuctions";
 import {
   formatAuctionPrice,
@@ -31,6 +40,8 @@ interface AuctionItem {
 }
 
 export const AuctionList = () => {
+  console.log("🏛️ AuctionList 렌더링 - 순수 React Native 스타일 버전");
+
   const router = useRouter();
   const [showActionMenu, setShowActionMenu] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
@@ -103,10 +114,20 @@ export const AuctionList = () => {
         }));
 
   const auctionTypes = [
-    { id: "scrap", name: "고철", icon: "construct", enabled: true },
-    { id: "machinery", name: "중고기계", icon: "settings", enabled: false },
-    { id: "materials", name: "중고자재", icon: "cube", enabled: false },
-    { id: "demolition", name: "철거", icon: "hammer", enabled: false },
+    { id: "scrap", name: "고철", IconComponent: Hammer, enabled: true },
+    {
+      id: "machinery",
+      name: "중고기계",
+      IconComponent: Settings,
+      enabled: false,
+    },
+    {
+      id: "materials",
+      name: "중고자재",
+      IconComponent: Package,
+      enabled: false,
+    },
+    { id: "demolition", name: "철거", IconComponent: Gavel, enabled: false },
   ];
 
   const getStatusColor = (status: string) => {
@@ -177,138 +198,254 @@ export const AuctionList = () => {
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      className="flex-1"
+      style={{ flex: 1 }}
     >
-      <SafeAreaView className="flex-1">
+      <SafeAreaView style={{ flex: 1 }}>
         <ScrollView
-          className="flex-1"
+          style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 110 }}
         >
-          <VStack className="flex-1 p-6" space="xl">
+          <View style={{ flex: 1, padding: 24 }}>
             {/* Header */}
-            <VStack space="lg">
-              <VStack className="items-center">
+            <View
+              style={{ alignItems: "center", marginBottom: 40, marginTop: 20 }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 16,
+                }}
+              >
+                <Gavel size={32} color="#FCD34D" strokeWidth={2.5} />
                 <Text
-                  className="text-white text-2xl font-black uppercase text-center"
                   style={{
                     fontFamily: "SpaceMono",
+                    fontSize: 28,
+                    fontWeight: "900",
+                    color: "#F8FAFC",
+                    letterSpacing: 6,
+                    marginLeft: 12,
                     textShadowColor: "rgba(255, 255, 255, 0.4)",
                     textShadowOffset: { width: 0, height: 2 },
                     textShadowRadius: 4,
-                    letterSpacing: 6,
-                    fontWeight: "900",
-                    color: "#F8FAFC",
                   }}
                 >
                   AUCTION
                 </Text>
-              </VStack>
-            </VStack>
+              </View>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 16,
+                  textAlign: "center",
+                  fontWeight: "600",
+                }}
+              >
+                금속 스크랩 경매 플랫폼
+              </Text>
+            </View>
 
             {/* Auction List */}
-            <VStack space="lg" className="mt-10">
+            <View style={{ marginTop: 24 }}>
               <Text
-                className="text-yellow-300 text-xl font-black tracking-[2px] uppercase"
-                style={{ fontFamily: "NanumGothic" }}
+                style={{
+                  color: "#FCD34D",
+                  fontSize: 20,
+                  fontWeight: "bold",
+                  letterSpacing: 2,
+                  marginBottom: 20,
+                }}
               >
                 진행중인 경매
               </Text>
 
-              <VStack space="md">
-                {/* 로딩 상태 */}
-                {isLoading && (
-                  <Box className="py-8 items-center justify-center">
-                    <ActivityIndicator size="large" color="#9333EA" />
-                    <Text
-                      className="text-white text-base mt-4"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      경매 목록을 불러오는 중...
-                    </Text>
-                  </Box>
-                )}
+              {/* 로딩 상태 */}
+              {isLoading && (
+                <View
+                  style={{
+                    paddingVertical: 32,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <ActivityIndicator size="large" color="#9333EA" />
+                  <Text
+                    style={{
+                      color: "white",
+                      fontSize: 16,
+                      marginTop: 16,
+                    }}
+                  >
+                    경매 목록을 불러오는 중...
+                  </Text>
+                </View>
+              )}
 
-                {/* 에러 상태 */}
-                {error && (
-                  <Box className="py-8 items-center justify-center">
-                    <Ionicons name="alert-circle" size={48} color="#EF4444" />
-                    <Text
-                      className="text-red-400 text-base mt-4 text-center"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      경매 목록을 불러오는데 실패했습니다.
-                    </Text>
-                  </Box>
-                )}
+              {/* 에러 상태 */}
+              {error && (
+                <View
+                  style={{
+                    paddingVertical: 32,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <AlertCircle size={48} color="#EF4444" strokeWidth={2} />
+                  <Text
+                    style={{
+                      color: "#EF4444",
+                      fontSize: 16,
+                      marginTop: 16,
+                      textAlign: "center",
+                    }}
+                  >
+                    경매 목록을 불러오는데 실패했습니다.
+                  </Text>
+                </View>
+              )}
 
-                {/* 경매 목록 */}
-                {!isLoading &&
-                  !error &&
-                  auctionItems.map((item) => (
-                    <Pressable
+              {/* 경매 목록 */}
+              {!isLoading && !error && (
+                <View style={{ gap: 16 }}>
+                  {auctionItems.map((item) => (
+                    <TouchableOpacity
                       key={item.id}
                       onPress={() => handleAuctionPress(item.id)}
+                      activeOpacity={0.7}
                     >
-                      <Box
-                        className="rounded-2xl p-4"
+                      <View
                         style={{
                           backgroundColor: "rgba(255, 255, 255, 0.04)",
                           borderWidth: 1,
                           borderColor: "rgba(255, 255, 255, 0.08)",
-                          shadowColor: "#000",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.4,
-                          shadowRadius: 8,
-                          elevation: 8,
+                          borderRadius: 16,
+                          padding: 16,
                         }}
                       >
-                        <VStack space="md">
-                          <HStack className="items-center justify-between">
-                            <VStack className="flex-1">
-                              <Text className="text-white font-semibold text-base tracking-wide">
+                        <View style={{ gap: 12 }}>
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <View style={{ flex: 1 }}>
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontWeight: "600",
+                                  fontSize: 16,
+                                  marginBottom: 4,
+                                }}
+                              >
                                 {item.title}
                               </Text>
-                              <Text className="text-white/60 text-sm">
+                              <Text
+                                style={{
+                                  color: "rgba(255,255,255,0.6)",
+                                  fontSize: 14,
+                                }}
+                              >
                                 {item.metalType} • {item.weight}
                               </Text>
-                            </VStack>
+                            </View>
 
-                            <VStack className="items-end">
-                              <Text className="text-white font-bold text-lg tracking-wide">
+                            <View style={{ alignItems: "flex-end" }}>
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontWeight: "bold",
+                                  fontSize: 18,
+                                }}
+                              >
                                 {item.currentBid}
                               </Text>
-                              <Text className="text-white/60 text-xs">
-                                {item.bidders}명 참여
-                              </Text>
-                            </VStack>
-                          </HStack>
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  marginTop: 2,
+                                }}
+                              >
+                                <Users
+                                  size={12}
+                                  color="rgba(255,255,255,0.6)"
+                                  strokeWidth={2}
+                                />
+                                <Text
+                                  style={{
+                                    color: "rgba(255,255,255,0.6)",
+                                    fontSize: 12,
+                                    marginLeft: 4,
+                                  }}
+                                >
+                                  {item.bidders}명 참여
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
 
-                          <HStack className="items-center justify-between mt-2">
-                            <Box
-                              className="px-2 py-1 rounded-lg"
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <View
                               style={{
                                 backgroundColor: getStatusColor(item.status),
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
+                                borderRadius: 8,
                               }}
                             >
-                              <Text className="text-white font-semibold text-xs tracking-wide">
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontWeight: "600",
+                                  fontSize: 12,
+                                }}
+                              >
                                 {getStatusText(item.status)}
                               </Text>
-                            </Box>
+                            </View>
 
-                            <Text className="text-white/60 text-sm">
-                              {item.status === "ended"
-                                ? "종료됨"
-                                : item.endTime}
-                            </Text>
-                          </HStack>
-                        </VStack>
-                      </Box>
-                    </Pressable>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                              }}
+                            >
+                              <Clock
+                                size={14}
+                                color="rgba(255,255,255,0.6)"
+                                strokeWidth={2}
+                              />
+                              <Text
+                                style={{
+                                  color: "rgba(255,255,255,0.6)",
+                                  fontSize: 14,
+                                  marginLeft: 4,
+                                }}
+                              >
+                                {item.status === "ended"
+                                  ? "종료됨"
+                                  : item.endTime}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
                   ))}
-              </VStack>
-            </VStack>
-          </VStack>
+                </View>
+              )}
+            </View>
+          </View>
         </ScrollView>
 
         {/* Floating Action Menu */}
@@ -336,7 +473,7 @@ export const AuctionList = () => {
             }}
             pointerEvents="box-none"
           >
-            <VStack space="md">
+            <View style={{ gap: 12 }}>
               {auctionTypes.reverse().map((type, index) => (
                 <Animated.View
                   key={type.id}
@@ -353,7 +490,7 @@ export const AuctionList = () => {
                   }}
                   pointerEvents="box-none"
                 >
-                  <Pressable
+                  <TouchableOpacity
                     onPress={() => type.enabled && handleCreateAuction(type.id)}
                     style={{
                       flexDirection: "row",
@@ -368,17 +505,12 @@ export const AuctionList = () => {
                       borderColor: type.enabled
                         ? "rgba(147, 51, 234, 0.3)"
                         : "rgba(107, 114, 128, 0.3)",
-                      shadowColor: type.enabled ? "#9333EA" : "#6B7280",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: type.enabled ? 0.4 : 0.2,
-                      shadowRadius: 12,
-                      elevation: type.enabled ? 8 : 4,
                       minWidth: 160,
                       opacity: type.enabled ? 1 : 0.5,
                     }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    activeOpacity={0.7}
                   >
-                    <Box
+                    <View
                       style={{
                         width: 32,
                         height: 32,
@@ -395,31 +527,31 @@ export const AuctionList = () => {
                         marginRight: 12,
                       }}
                     >
-                      <Ionicons
-                        name={type.icon as any}
+                      <type.IconComponent
                         size={18}
                         color={type.enabled ? "#9333EA" : "#6B7280"}
+                        strokeWidth={2}
                       />
-                    </Box>
+                    </View>
                     <Text
-                      className="font-semibold text-sm tracking-wide"
                       style={{
                         color: type.enabled ? "#FFFFFF" : "#6B7280",
-                        fontFamily: "NanumGothic",
+                        fontWeight: "600",
+                        fontSize: 14,
                       }}
                     >
                       {type.name}
                       {!type.enabled && " (준비중)"}
                     </Text>
-                  </Pressable>
+                  </TouchableOpacity>
                 </Animated.View>
               ))}
-            </VStack>
+            </View>
           </Animated.View>
         )}
 
         {/* Floating Action Button */}
-        <Pressable
+        <TouchableOpacity
           onPress={toggleActionMenu}
           style={{
             position: "absolute",
@@ -429,11 +561,6 @@ export const AuctionList = () => {
             height: 56,
             borderRadius: 28,
             backgroundColor: "rgba(147, 51, 234, 0.9)",
-            shadowColor: "#9333EA",
-            shadowOffset: { width: 0, height: 8 },
-            shadowOpacity: 0.4,
-            shadowRadius: 16,
-            elevation: 12,
             justifyContent: "center",
             alignItems: "center",
             transform: [
@@ -442,13 +569,14 @@ export const AuctionList = () => {
               },
             ],
           }}
+          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={28} color="#FFFFFF" />
-        </Pressable>
+          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+        </TouchableOpacity>
 
         {/* Backdrop */}
         {showActionMenu && (
-          <Pressable
+          <TouchableOpacity
             onPress={toggleActionMenu}
             style={{
               position: "absolute",
@@ -458,7 +586,7 @@ export const AuctionList = () => {
               bottom: 0,
               backgroundColor: "rgba(0, 0, 0, 0.2)",
             }}
-            pointerEvents="box-none"
+            activeOpacity={1}
           />
         )}
       </SafeAreaView>
