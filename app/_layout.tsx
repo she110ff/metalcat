@@ -8,7 +8,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { LogBox, TouchableOpacity, Text } from "react-native";
+import { LogBox, TouchableOpacity, Text, Platform } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QueryDebugger } from "@/components/QueryDebugger";
 
@@ -43,10 +43,31 @@ export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync().catch((err) => {
-  console.warn("SplashScreen.preventAutoHideAsync failed:", err);
-});
+// ✅ 안전한 SplashScreen 초기화
+const initializeSplashScreen = async () => {
+  try {
+    // 웹 환경에서는 SplashScreen API 없음
+    if (Platform.OS === "web") {
+      console.log("🌐 웹 환경: SplashScreen 스킵");
+      return;
+    }
+
+    // SplashScreen API 존재 여부 확인
+    if (!SplashScreen.preventAutoHideAsync) {
+      console.warn("⚠️ SplashScreen API 사용 불가");
+      return;
+    }
+
+    // 자동 숨김 방지 (안전하게 처리)
+    await SplashScreen.preventAutoHideAsync();
+    console.log("✅ SplashScreen 자동 숨김 방지 설정 완료");
+  } catch (error) {
+    console.warn("SplashScreen 초기화 실패 (앱은 정상 동작):", error);
+  }
+};
+
+// 초기화 실행
+initializeSplashScreen();
 
 // Create a client
 const queryClient = new QueryClient({
@@ -71,18 +92,37 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
+  // ✅ 안전한 SplashScreen 숨김 처리
   useEffect(() => {
     if (loaded || error) {
-      SplashScreen.hideAsync().catch((err) => {
-        console.warn("SplashScreen.hideAsync failed:", err);
-      });
+      hideSplashScreenSafely();
     }
   }, [loaded, error]);
 
   // Always render the app, even if fonts aren't loaded
   return <RootLayoutNav />;
 }
+
+// ✅ 안전한 SplashScreen 숨김 함수
+const hideSplashScreenSafely = async () => {
+  try {
+    // 웹 환경에서는 스킵
+    if (Platform.OS === "web") {
+      return;
+    }
+
+    // API 존재 여부 확인
+    if (!SplashScreen.hideAsync) {
+      console.warn("SplashScreen.hideAsync API 사용 불가");
+      return;
+    }
+
+    await SplashScreen.hideAsync();
+    console.log("✅ SplashScreen 숨김 완료");
+  } catch (error) {
+    console.warn("SplashScreen 숨김 실패 (앱은 정상 동작):", error);
+  }
+};
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
