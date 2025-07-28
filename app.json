@@ -1,40 +1,36 @@
 {
   "expo": {
-    "name": "expo-app",
-    "slug": "expo-app",
+    "name": "MetalCat",
+    "slug": "metalcat-first",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "metalcat",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.gluestack.expoapp"
+      "bundleIdentifier": "com.metalcatapp.metalcat",
+      "deploymentTarget": "13.4"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.gluestack.expoapp"
+      "package": "com.metalcatapp.metalcat"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font"
-    ],
+    "plugins": ["expo-router", "expo-font"],
     "experiments": {
       "typedRoutes": true
     },
@@ -43,15 +39,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "148098d1-7e19-4326-9814-dd661a192776"
+        "projectId": "19829544-dd83-47d5-8c48-ffcdc913c8b1"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/148098d1-7e19-4326-9814-dd661a192776"
+      "url": "https://u.expo.dev/19829544-dd83-47d5-8c48-ffcdc913c8b1"
     },
-    "owner": "gluestack"
+    "owner": "metalcatapp"
   }
 }

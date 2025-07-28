@@ -1,22 +1,69 @@
 {
-  "cli": {
-    "version": ">= 7.0.0"
-  },
   "build": {
+    "base": {
+      "node": "20.18.3",
+      "env": {
+        "EXPO_PUBLIC_UPDATE_CODE": "2"
+      },
+      "android": {
+        "image": "latest",
+
+        "env": {
+          "PLATFORM": "android"
+        }
+      },
+      "ios": {
+        "image": "macos-sonoma-14.5-xcode-15.4",
+        "env": {
+          "PLATFORM": "ios"
+        }
+      },
+      "channel": "base"
+    },
     "development": {
+      "extends": "base",
+      "channel": "development",
       "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development"
+      "env": {
+        "EXPO_PUBLIC_ENV": "development"
+      },
+      "android": {
+        "distribution": "internal",
+        "withoutCredentials": true
+      },
+      "ios": {
+        "simulator": true
+      }
     },
     "preview": {
+      "extends": "base",
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_ENV": "preview"
+      },
       "distribution": "internal",
-      "channel": "preview"
+      "android": {
+        "buildType": "apk"
+      }
     },
     "production": {
-      "channel": "production"
+      "extends": "base",
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_ENV": "production"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "youngsoo.jung@bosagora.io",
+        "ascAppId": "6743196870",
+        "appleTeamId": "ARJ557D83Z"
+      }
+    }
+  },
+  "cli": {
+    "promptToConfigurePushNotifications": false
   }
 }
