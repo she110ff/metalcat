@@ -7,18 +7,59 @@ import { Text } from "@/components/ui/text";
 import { Input, InputField } from "@/components/ui/input";
 import { Textarea, TextareaInput } from "@/components/ui/textarea";
 import { Pressable } from "@/components/ui/pressable";
-import { Button } from "@/components/ui/button";
-import { ButtonText } from "@/components/ui/button";
+import { Button, ButtonText } from "@/components/ui/button";
 import {
   DaumAddressSearch,
   DaumAddressResult,
 } from "@/components/DaumAddressSearch";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
+import { useCreateAuction } from "@/hooks/useAuctions";
+import {
+  ScrapAuctionItem,
+  PhotoInfo,
+  ScrapProductType,
+} from "@/data/types/auction";
+
+// 첫 번째 단계에서 전달받은 데이터 타입
+interface FirstStepData {
+  productType: ScrapProductType;
+  weight: number;
+  photos: PhotoInfo[];
+}
 
 export default function AdditionalInfoScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const createAuctionMutation = useCreateAuction();
+
+  // 첫 번째 단계 데이터 파싱
+  const [firstStepData, setFirstStepData] = useState<FirstStepData | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (params.firstStepData) {
+      try {
+        const parsedData = JSON.parse(params.firstStepData as string);
+        setFirstStepData(parsedData);
+        console.log("📥 첫 번째 단계 데이터 수신:", parsedData);
+      } catch (error) {
+        console.error("❌ 첫 번째 단계 데이터 파싱 오류:", error);
+        Alert.alert("오류", "이전 단계 데이터를 불러올 수 없습니다.", [
+          { text: "이전으로", onPress: () => router.back() },
+        ]);
+      }
+    } else {
+      // 첫 번째 단계 데이터가 없으면 처음으로 리다이렉트
+      Alert.alert("알림", "고철 종류와 중량을 먼저 입력해주세요.", [
+        { text: "확인", onPress: () => router.push("/auction-create/scrap") },
+      ]);
+    }
+  }, [params.firstStepData]);
+
   const [title, setTitle] = useState("");
   const [transactionType, setTransactionType] = useState<"normal" | "urgent">(
     "normal"
@@ -109,34 +150,80 @@ export default function AdditionalInfoScreen() {
       return;
     }
 
+    if (!firstStepData) {
+      Alert.alert(
+        "오류",
+        "첫 번째 단계 데이터가 없습니다. 처음부터 다시 시작해주세요.",
+        [{ text: "확인", onPress: () => router.push("/auction-create/scrap") }]
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // 경매 데이터 구성
-      const auctionData = {
+      // 전체 경매 데이터 구성 (첫 번째 + 두 번째 단계 데이터 통합)
+      const completeAuctionData: Partial<ScrapAuctionItem> = {
         title: title.trim(),
+        productType: firstStepData.productType,
         transactionType,
-        accessibility,
-        transportCondition,
-        address: address.trim(),
-        addressDetail: addressDetail.trim(),
+        auctionCategory: "scrap" as const,
+        quantity: {
+          knowsWeight: true,
+          estimatedWeight: firstStepData.weight,
+          unit: "kg",
+        },
+        salesEnvironment: {
+          delivery: "buyer", // 기본값 설정
+          shippingCost: "buyer",
+          truckAccess: accessibility === "easy",
+          loading: "buyer",
+          sacksNeeded: false,
+        },
+        photos: firstStepData.photos,
+        address: {
+          postalCode: selectedAddress?.zonecode || "",
+          addressType: selectedAddress?.roadAddress ? "road" : "lot",
+          address: address.trim(),
+          detailAddress: addressDetail.trim(),
+        },
         description: description.trim(),
-        selectedAddress,
-        createdAt: new Date().toISOString(),
+        specialNotes: `접근성: ${accessibility}, 운반조건: ${transportCondition}`,
+        currentBid: 0,
+        status: "active" as const,
+        bidders: 0,
+        viewCount: 0,
+        bids: [],
+        userId: "user_1", // 실제로는 현재 로그인한 사용자 ID
       };
 
-      console.log("💾 경매 데이터 저장:", auctionData);
+      console.log("💾 완전한 경매 데이터 저장:", completeAuctionData);
 
-      // 실제로는 API 호출이나 로컬 스토리지 저장
-      // await saveAuctionData(auctionData);
+      // ✅ 실제 데이터 저장 로직 연결
+      const createdAuction = await createAuctionMutation.mutateAsync(
+        completeAuctionData
+      );
+
+      console.log("🎉 경매 등록 성공:", {
+        id: createdAuction.id,
+        title: (createdAuction as any).title,
+      });
 
       // 성공 메시지
       Alert.alert("등록 완료", "경매가 성공적으로 등록되었습니다!", [
         {
-          text: "확인",
+          text: "목록 보기",
           onPress: () => {
             // 경매 목록 화면으로 이동
             router.push("/(tabs)/auction");
+          },
+        },
+        {
+          text: "상세 보기",
+          style: "default",
+          onPress: () => {
+            // 등록한 경매 상세 화면으로 이동
+            router.push(`/auction-detail/${createdAuction.id}`);
           },
         },
       ]);
@@ -144,7 +231,9 @@ export default function AdditionalInfoScreen() {
       console.error("❌ 경매 등록 오류:", error);
       Alert.alert(
         "오류",
-        "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
+        `경매 등록 중 문제가 발생했습니다.\n${
+          error instanceof Error ? error.message : "알 수 없는 오류"
+        }`
       );
     } finally {
       setIsSubmitting(false);
@@ -163,36 +252,95 @@ export default function AdditionalInfoScreen() {
           contentContainerStyle={{ paddingBottom: 100 }}
         >
           <View className="flex-1 px-6 py-6">
-            {/* 헤더 */}
-            <HStack className="items-center justify-between mb-8">
-              <HStack className="items-center space-x-3">
-                <Ionicons name="add-circle" size={28} color="#FCD34D" />
+            {/* Header */}
+            <VStack space="lg">
+              <HStack className="items-center justify-between px-4 py-3">
+                {/* 모바일 표준 뒤로가기 버튼 */}
+                <Pressable
+                  onPress={handleBack}
+                  className="active:opacity-60"
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                  }}
+                >
+                  <HStack className="items-center" space="xs">
+                    <Ionicons
+                      name={
+                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
+                      }
+                      size={Platform.OS === "ios" ? 28 : 24}
+                      color="#FFFFFF"
+                      style={{
+                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                      }}
+                    />
+                    {Platform.OS === "ios" && (
+                      <Text className="text-white text-base font-medium">
+                        뒤로
+                      </Text>
+                    )}
+                  </HStack>
+                </Pressable>
+
                 <Text
-                  className="text-white text-2xl font-bold"
+                  className="text-white text-xl font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
-                  경매 등록 완성하기
+                  고철 경매 등록
                 </Text>
-              </HStack>
 
-              {/* 개발용 샘플 데이터 버튼 */}
-              {__DEV__ && (
-                <Pressable
-                  onPress={fillSampleData}
-                  className="bg-blue-600/20 border border-blue-500/30 rounded-lg px-3 py-2"
-                >
+                {/* 오른쪽 여백 (대칭을 위해) */}
+                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
+              </HStack>
+            </VStack>
+
+            {/* 첫 번째 단계 데이터 표시 */}
+            {firstStepData && (
+              <Box
+                className="p-4 rounded-xl"
+                style={{
+                  backgroundColor: "rgba(147, 51, 234, 0.1)",
+                  borderWidth: 1,
+                  borderColor: "rgba(147, 51, 234, 0.3)",
+                }}
+              >
+                <VStack space="sm">
                   <Text
-                    className="text-blue-300 text-xs font-semibold"
+                    className="text-purple-300 text-sm font-bold"
                     style={{ fontFamily: "NanumGothic" }}
                   >
-                    샘플 데이터
+                    ✓ 선택한 정보
                   </Text>
-                </Pressable>
-              )}
-            </HStack>
+                  <HStack className="justify-between">
+                    <Text
+                      className="text-white"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      고철 종류: {firstStepData.productType.name}
+                    </Text>
+                    <Text
+                      className="text-white"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      중량: {firstStepData.weight}kg
+                    </Text>
+                  </HStack>
+                  <Text
+                    className="text-white text-xs"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    사진: {firstStepData.photos.length}장 등록됨
+                  </Text>
+                </VStack>
+              </Box>
+            )}
 
             {/* 필수 입력 안내 */}
-            <Box className="bg-red-600/10 border border-red-500/30 rounded-2xl p-4 mb-6">
+            <Box className="bg-red-600/10 border border-red-500/30 rounded-2xl p-4 mb-6 mt-8">
               <HStack className="items-center space-x-3">
                 <Ionicons name="alert-circle" size={20} color="#F87171" />
                 <VStack className="flex-1" space="xs">

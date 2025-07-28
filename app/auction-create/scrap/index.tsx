@@ -195,8 +195,23 @@ export default function ScrapAuctionCreate() {
     }
 
     console.log("다음 화면으로 이동 시도");
+
+    // 첫 번째 단계 데이터를 쿼리 파라미터로 전달
+    const firstStepData = {
+      productType: selectedProductType,
+      weight: weightValue,
+      photos: photos,
+    };
+
+    // URL params를 통해 데이터 전달
+    const params = new URLSearchParams({
+      firstStepData: JSON.stringify(firstStepData),
+    });
+
     // 다음 화면으로 이동 (추가 정보 입력)
-    router.push("/auction-create/scrap/additional-info" as any);
+    router.push(
+      `/auction-create/scrap/additional-info?${params.toString()}` as any
+    );
   };
 
   return (

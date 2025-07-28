@@ -104,7 +104,30 @@ const auctionAPI = {
   getAuctionById: async (id: string): Promise<AuctionItem | null> => {
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    return localAuctionData.find((auction) => auction.id === id) || null;
+    console.log("🔍 경매 상세 조회 요청:", {
+      requestedId: id,
+      totalAuctions: localAuctionData.length,
+      availableIds: localAuctionData.map((a) => a.id).slice(0, 5), // 처음 5개만
+    });
+
+    const foundAuction = localAuctionData.find((auction) => auction.id === id);
+
+    if (!foundAuction) {
+      console.log("❌ 경매를 찾을 수 없음:", {
+        requestedId: id,
+        allIds: localAuctionData.map((a) => a.id),
+      });
+    } else {
+      console.log("✅ 경매 찾음:", {
+        id: foundAuction.id,
+        title:
+          (foundAuction as any).title ||
+          (foundAuction as any).demolitionTitle ||
+          "제목 없음",
+      });
+    }
+
+    return foundAuction || null;
   },
 
   // 경매 생성
@@ -349,8 +372,74 @@ export const useCreateBid = () => {
         location: string;
       };
     }) => auctionAPI.createBid(auctionId, bidData),
+    // ✅ 낙관적 업데이트 추가
+    onMutate: async ({ auctionId, bidData }) => {
+      // 진행 중인 쿼리들을 취소
+      await queryClient.cancelQueries({
+        queryKey: auctionKeys.detail(auctionId),
+      });
+      await queryClient.cancelQueries({ queryKey: auctionKeys.lists() });
+
+      // 이전 데이터를 백업
+      const previousAuctionDetail = queryClient.getQueryData(
+        auctionKeys.detail(auctionId)
+      );
+      const previousAuctionsList = queryClient.getQueryData(
+        auctionKeys.lists()
+      );
+
+      // 낙관적으로 경매 상세 업데이트
+      queryClient.setQueryData(auctionKeys.detail(auctionId), (old: any) => {
+        if (!old) return old;
+
+        const newBid = {
+          id: `optimistic_bid_${Date.now()}`,
+          userId: bidData.userId,
+          userName: bidData.userName,
+          amount: bidData.amount,
+          location: bidData.location,
+          bidTime: new Date(),
+          isTopBid: true,
+        };
+
+        // 기존 입찰들의 isTopBid를 false로 변경
+        const updatedBids = (old.bids || []).map((bid: any) => ({
+          ...bid,
+          isTopBid: false,
+        }));
+
+        return {
+          ...old,
+          currentBid: bidData.amount,
+          bidders: new Set([
+            ...updatedBids.map((bid: any) => bid.userId),
+            bidData.userId,
+          ]).size,
+          bids: [newBid, ...updatedBids],
+        };
+      });
+
+      // 낙관적으로 경매 목록 업데이트
+      queryClient.setQueryData(auctionKeys.lists(), (old: any) => {
+        if (!old) return old;
+
+        return old.map((auction: any) => {
+          if (auction.id === auctionId) {
+            return {
+              ...auction,
+              currentBid: bidData.amount,
+              bidders: auction.bidders + 1, // 간단하게 +1
+            };
+          }
+          return auction;
+        });
+      });
+
+      // 롤백을 위한 이전 데이터 반환
+      return { previousAuctionDetail, previousAuctionsList };
+    },
     onSuccess: (newBid, { auctionId }) => {
-      // 경매 상세 캐시 무효화
+      // 성공 시 서버 데이터로 새로고침
       queryClient.invalidateQueries({
         queryKey: auctionKeys.detail(auctionId),
       });
@@ -361,8 +450,22 @@ export const useCreateBid = () => {
       // 경매 목록 캐시 무효화 (현재 입찰가 업데이트)
       queryClient.invalidateQueries({ queryKey: auctionKeys.lists() });
     },
-    onError: (error) => {
+    onError: (error, { auctionId }, context) => {
       console.error("입찰 실패:", error);
+
+      // 에러 시 이전 상태로 롤백
+      if (context?.previousAuctionDetail) {
+        queryClient.setQueryData(
+          auctionKeys.detail(auctionId),
+          context.previousAuctionDetail
+        );
+      }
+      if (context?.previousAuctionsList) {
+        queryClient.setQueryData(
+          auctionKeys.lists(),
+          context.previousAuctionsList
+        );
+      }
     },
   });
 };

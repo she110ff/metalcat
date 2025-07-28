@@ -7,6 +7,8 @@ import {
   Dimensions,
   Image,
   Platform,
+  View,
+  TouchableOpacity,
 } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -44,6 +46,8 @@ export const AuctionDetail = () => {
   const [bidAmount, setBidAmount] = useState("");
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
+  console.log("🔍 경매 상세 화면 진입, ID:", id);
+
   // TanStack Query로 경매 상세 데이터 조회
   const { data: auction, isLoading, error } = useAuction(id as string);
 
@@ -52,6 +56,75 @@ export const AuctionDetail = () => {
 
   // 입찰 생성 뮤테이션
   const createBidMutation = useCreateBid();
+
+  console.log("📊 경매 데이터 조회 결과:", {
+    auction: auction
+      ? {
+          id: auction.id,
+          title: (auction as any).title || (auction as any).demolitionTitle,
+        }
+      : null,
+    isLoading,
+    error: error?.message,
+    requestedId: id,
+  });
+
+  // 경매를 찾을 수 없는 경우 에러 화면 표시
+  if (!isLoading && !auction && id) {
+    return (
+      <LinearGradient
+        colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              padding: 20,
+            }}
+          >
+            <Text
+              style={{
+                color: "#EF4444",
+                fontSize: 24,
+                fontWeight: "bold",
+                marginBottom: 16,
+              }}
+            >
+              경매를 찾을 수 없습니다
+            </Text>
+            <Text
+              style={{
+                color: "#FFFFFF",
+                fontSize: 16,
+                textAlign: "center",
+                marginBottom: 32,
+              }}
+            >
+              요청한 경매 ID: {id}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/auction")}
+              style={{
+                backgroundColor: "#9333EA",
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 12,
+              }}
+            >
+              <Text
+                style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "bold" }}
+              >
+                경매 목록으로 돌아가기
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   // 시간 차이 계산 함수
   const getTimeAgo = (date: Date) => {
