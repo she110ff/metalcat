@@ -1,48 +1,58 @@
-import React, { useState } from "react";
-import { ScrollView, Image, Alert, Platform } from "react-native";
-import { Box } from "@/components/ui/box";
+import React, { useState, useEffect } from "react";
+import {
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Image,
+  Platform,
+  ActionSheetIOS,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button } from "@/components/ui/button";
-import { ButtonText } from "@/components/ui/button";
+import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
-import { Input } from "@/components/ui/input";
-import { InputField } from "@/components/ui/input";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "@/components/ui/safe-area-view";
+import { Button, ButtonText } from "@/components/ui/button";
+import { Input, InputField } from "@/components/ui/input";
 import { Ionicons } from "@expo/vector-icons";
-import { scrapProductTypes } from "@/data";
+import { Plus } from "lucide-react-native";
+import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
+import { scrapProductTypes } from "@/data";
+import { PhotoInfo, ScrapProductType } from "@/data/types";
 
-interface PhotoInfo {
-  id: string;
-  uri: string;
-  isRepresentative: boolean;
-}
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 export default function ScrapAuctionCreate() {
   const router = useRouter();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
   const [weight, setWeight] = useState("1");
+  // ✅ 기본 사진들 추가 (고철 경매용 샘플 이미지)
   const [photos, setPhotos] = useState<PhotoInfo[]>([
-    // 기본 사진 3개 미리 추가
     {
       id: "default_1",
       uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
       isRepresentative: true,
+      type: "full",
     },
     {
       id: "default_2",
       uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
       isRepresentative: false,
+      type: "full",
     },
     {
       id: "default_3",
       uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
       isRepresentative: false,
+      type: "full",
     },
   ]);
 
@@ -77,6 +87,31 @@ export default function ScrapAuctionCreate() {
     }
   };
 
+  // ✅ 개선된 이미지 선택 옵션
+  const showImagePickerOptions = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["취소", "카메라", "갤러리"],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleTakePhoto();
+          } else if (buttonIndex === 2) {
+            handleLoadPhoto();
+          }
+        }
+      );
+    } else {
+      Alert.alert("사진 선택", "사진을 어떻게 추가하시겠습니까?", [
+        { text: "취소", style: "cancel" },
+        { text: "카메라", onPress: handleTakePhoto },
+        { text: "갤러리", onPress: handleLoadPhoto },
+      ]);
+    }
+  };
+
   const handleTakePhoto = async () => {
     const hasPermissions = await requestPermissions();
     if (!hasPermissions) return;
@@ -94,6 +129,7 @@ export default function ScrapAuctionCreate() {
           id: `photo_${Date.now()}`,
           uri: result.assets[0].uri,
           isRepresentative: photos.length === 0, // 첫 번째 사진을 대표 사진으로
+          type: "full",
         };
 
         setPhotos((prev) => [...prev, newPhoto]);
@@ -122,6 +158,7 @@ export default function ScrapAuctionCreate() {
           id: `photo_${Date.now()}_${index}`,
           uri: asset.uri,
           isRepresentative: photos.length === 0 && index === 0, // 첫 번째 사진을 대표 사진으로
+          type: "full",
         }));
 
         setPhotos((prev) => [...prev, ...newPhotos]);
@@ -465,40 +502,37 @@ export default function ScrapAuctionCreate() {
                     </Box>
                   ))}
 
-                  {/* 사진 추가 버튼 */}
+                  {/* ✅ 개선된 사진 추가 버튼 */}
                   {photos.length < 5 && (
                     <Pressable
-                      onPress={handleLoadPhoto}
-                      className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-400 items-center justify-center"
+                      onPress={showImagePickerOptions}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed items-center justify-center"
+                      style={{
+                        borderColor: "rgba(156, 163, 175, 0.5)",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      }}
                     >
-                      <Ionicons name="images" size={24} color="#6B7280" />
+                      <VStack className="items-center" space="xs">
+                        <Plus size={20} color="#9CA3AF" strokeWidth={2} />
+                        <Text
+                          className="text-gray-400 text-xs"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          추가
+                        </Text>
+                      </VStack>
                     </Pressable>
                   )}
                 </HStack>
 
+                {/* ✅ 사진 등록 안내 메시지만 유지, 사진 찍기 버튼 제거 */}
                 <Text
-                  className="text-gray-400 text-sm"
+                  className="text-gray-400 text-sm text-center"
                   style={{ fontFamily: "NanumGothic" }}
                 >
-                  사진은 최소 3장 이상 · 최대 5장 까지 등록 가능합니다.
-                  {photos.length > 0 && ` (현재 ${photos.length}장)`}
+                  사진 추가 버튼을 눌러 카메라 또는 갤러리에서 선택하세요
                 </Text>
               </VStack>
-
-              {/* 사진 등록 버튼 */}
-              <Button
-                variant="outline"
-                onPress={handleTakePhoto}
-                className="w-full"
-              >
-                <Ionicons name="camera" size={20} color="#9333EA" />
-                <ButtonText
-                  className="ml-2"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  사진 찍기
-                </ButtonText>
-              </Button>
             </VStack>
           </VStack>
         </ScrollView>

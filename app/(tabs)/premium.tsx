@@ -69,7 +69,7 @@ export default function Premium() {
                   fontWeight: "600",
                 }}
               >
-                프리미엄 금속 감정 서비스
+                프리미엄 금속 서비스
               </Text>
             </VStack>
 
@@ -157,7 +157,7 @@ export default function Premium() {
                       className="text-white/80 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
                     >
-                      상세 감정서 제공
+                      현장 방문 무료
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
@@ -185,7 +185,7 @@ export default function Premium() {
                     shadowRadius: 16,
                     elevation: 8,
                   }}
-                  onPress={() => router.push("/service-request")}
+                  onPress={() => router.push("/service-request?type=appraisal")}
                 >
                   <Text className="text-black text-center text-base font-bold">
                     서비스 요청
@@ -278,7 +278,7 @@ export default function Premium() {
                     shadowRadius: 16,
                     elevation: 8,
                   }}
-                  onPress={() => router.push("/service-request")}
+                  onPress={() => router.push("/service-request?type=purchase")}
                 >
                   <Text className="text-white text-center text-base font-bold">
                     서비스 요청

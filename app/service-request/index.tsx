@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, View, Alert, Image, TextInput } from "react-native";
+import {
+  ScrollView,
+  View,
+  Alert,
+  Image,
+  TextInput,
+  Platform,
+  ActionSheetIOS,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
@@ -8,13 +16,14 @@ import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import {
   ArrowLeft,
   Camera,
   MapPin,
   Phone,
   FileText,
+  Plus,
 } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -25,15 +34,41 @@ import {
 interface PhotoItem {
   id: string;
   uri: string;
-  isRepresentative: boolean;
 }
 
 export default function ServiceRequest() {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  // ✅ URL 파라미터에서 타입을 읽어와 자동 설정
+  const getInitialServiceType = (): "appraisal" | "purchase" => {
+    const typeParam = params.type as string;
+    if (typeParam === "purchase") {
+      return "purchase";
+    }
+    return "appraisal"; // 기본값
+  };
+
   const [serviceType, setServiceType] = useState<"appraisal" | "purchase">(
-    "appraisal"
+    getInitialServiceType()
   );
-  const [photos, setPhotos] = useState<PhotoItem[]>([]);
+
+  // ✅ 기본 사진들 추가 (서비스 요청용 샘플 이미지)
+  const [photos, setPhotos] = useState<PhotoItem[]>([
+    {
+      id: "default_service_1",
+      uri: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop",
+    },
+    {
+      id: "default_service_2",
+      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+    },
+    {
+      id: "default_service_3",
+      uri: "https://images.unsplash.com/photo-1583501563110-53c5b33a096d?w=400&h=300&fit=crop",
+    },
+  ]);
+
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
@@ -63,7 +98,64 @@ export default function ServiceRequest() {
     setIsFormComplete(complete);
   }, [photos, phoneNumber, address, addressDetail, description]);
 
-  // 이미지 선택
+  // ✅ 개선된 이미지 선택 옵션
+  const showImagePickerOptions = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["취소", "카메라", "갤러리"],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) {
+            handleTakePhoto();
+          } else if (buttonIndex === 2) {
+            handlePickImage();
+          }
+        }
+      );
+    } else {
+      Alert.alert("사진 선택", "사진을 어떻게 추가하시겠습니까?", [
+        { text: "취소", style: "cancel" },
+        { text: "카메라", onPress: handleTakePhoto },
+        { text: "갤러리", onPress: handlePickImage },
+      ]);
+    }
+  };
+
+  // ✅ 카메라로 사진 촬영
+  const handleTakePhoto = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
+
+      if (permissionResult.granted === false) {
+        Alert.alert("권한 필요", "카메라 접근 권한이 필요합니다.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const newPhoto: PhotoItem = {
+          id: `camera_${Date.now()}`,
+          uri: asset.uri,
+        };
+        setPhotos((prev) => [...prev, newPhoto]);
+      }
+    } catch (error) {
+      console.error("카메라 촬영 오류:", error);
+      Alert.alert("오류", "사진을 촬영하는 중 문제가 발생했습니다.");
+    }
+  };
+
+  // ✅ 갤러리에서 이미지 선택
   const handlePickImage = async () => {
     try {
       const permissionResult =
@@ -85,9 +177,8 @@ export default function ServiceRequest() {
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         const newPhoto: PhotoItem = {
-          id: Date.now().toString(),
+          id: `gallery_${Date.now()}`,
           uri: asset.uri,
-          isRepresentative: photos.length === 0,
         };
         setPhotos((prev) => [...prev, newPhoto]);
       }
@@ -97,7 +188,7 @@ export default function ServiceRequest() {
     }
   };
 
-  // 이미지 제거
+  // ✅ 간소화된 이미지 제거
   const handleRemovePhoto = (photoId: string) => {
     setPhotos((prev) => prev.filter((photo) => photo.id !== photoId));
   };
@@ -255,41 +346,102 @@ export default function ServiceRequest() {
                 >
                   사진 등록
                 </Text>
+                <Text
+                  className="text-white/60 text-sm ml-2"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  ({photos.length}/5)
+                </Text>
               </HStack>
 
-              <HStack space="md" className="flex-wrap">
-                {photos.map((photo) => (
-                  <Box key={photo.id} className="relative">
-                    <Image
-                      source={{ uri: photo.uri }}
-                      className="w-20 h-20 rounded-lg"
-                      style={{ resizeMode: "cover" }}
-                    />
+              {/* ✅ 개선된 사진 그리드 */}
+              <VStack space="md">
+                <HStack space="md" className="flex-wrap">
+                  {photos.map((photo, index) => (
+                    <Box key={photo.id} className="relative">
+                      <Image
+                        source={{ uri: photo.uri }}
+                        className="w-20 h-20 rounded-lg"
+                        style={{ resizeMode: "cover" }}
+                        onError={(error) => {
+                          console.warn("이미지 로딩 실패:", photo.uri, error);
+                        }}
+                        // ✅ 로딩 실패 시 기본 배경색 표시
+                        defaultSource={{
+                          uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        }}
+                      />
+
+                      {/* ✅ 개선된 삭제 버튼 */}
+                      <Pressable
+                        onPress={() => handleRemovePhoto(photo.id)}
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: "#000000",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 2,
+                          borderColor: "#FFFFFF",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: "#FFFFFF",
+                            fontSize: 16,
+                            fontWeight: "bold",
+                            lineHeight: 18,
+                          }}
+                        >
+                          ×
+                        </Text>
+                      </Pressable>
+                    </Box>
+                  ))}
+
+                  {/* ✅ 개선된 사진 추가 버튼 */}
+                  {photos.length < 5 && (
                     <Pressable
-                      onPress={() => handleRemovePhoto(photo.id)}
-                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500 items-center justify-center"
+                      onPress={showImagePickerOptions}
+                      className="w-20 h-20 rounded-lg border-2 border-dashed items-center justify-center"
+                      style={{
+                        borderColor: "rgba(156, 163, 175, 0.5)",
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      }}
                     >
-                      <Ionicons name="close" size={16} color="#FFFFFF" />
+                      <VStack className="items-center" space="xs">
+                        <Plus size={20} color="#9CA3AF" strokeWidth={2} />
+                        <Text
+                          className="text-gray-400 text-xs"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          추가
+                        </Text>
+                      </VStack>
                     </Pressable>
-                  </Box>
-                ))}
+                  )}
+                </HStack>
 
-                {photos.length < 5 && (
-                  <Pressable
-                    onPress={handlePickImage}
-                    className="w-20 h-20 rounded-lg border-2 border-dashed border-white/30 items-center justify-center bg-white/5"
+                {/* ✅ 개선된 안내 메시지 */}
+                <VStack space="xs">
+                  <Text
+                    className="text-white/60 text-sm"
+                    style={{ fontFamily: "NanumGothic" }}
                   >
-                    <Ionicons name="camera" size={24} color="#9CA3AF" />
-                  </Pressable>
-                )}
-              </HStack>
-
-              <Text
-                className="text-white/60 text-sm"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                최대 5장까지 등록 가능합니다
-              </Text>
+                    • 최대 5장까지 등록 가능합니다
+                  </Text>
+                  <Text
+                    className="text-white/60 text-sm"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    • 금속 종류와 상태가 잘 보이는 사진을 등록해주세요
+                  </Text>
+                </VStack>
+              </VStack>
             </VStack>
 
             {/* 전화번호 */}
