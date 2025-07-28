@@ -1,5 +1,11 @@
 import { Tabs } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  TrendingUp,
+  Calculator,
+  Gavel,
+  Crown,
+  User,
+} from "lucide-react-native";
 
 export default function TabLayout() {
   return (
@@ -30,14 +36,17 @@ export default function TabLayout() {
           fontSize: 12,
           fontWeight: "600",
         },
+        tabBarIconStyle: {
+          marginBottom: -5,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: "시세",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="trending-up" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <TrendingUp size={22} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -45,8 +54,8 @@ export default function TabLayout() {
         name="calculator"
         options={{
           title: "계산기",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="calculator" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Calculator size={22} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -54,8 +63,8 @@ export default function TabLayout() {
         name="auction"
         options={{
           title: "경매",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="hammer" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Gavel size={22} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -63,8 +72,8 @@ export default function TabLayout() {
         name="premium"
         options={{
           title: "특수금속",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="star" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Crown size={22} color={color} strokeWidth={2.5} />
           ),
         }}
       />
@@ -72,8 +81,8 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "프로필",
-          tabBarIcon: ({ size, color }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <User size={22} color={color} strokeWidth={2.5} />
           ),
         }}
       />
