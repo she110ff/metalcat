@@ -55,11 +55,11 @@ export const Dashboard = () => {
           <Box className="flex-1 px-4 pt-6">
             {/* MetalCat Logo Header - Improved spacing and accessibility */}
             <Box className="items-center mb-8">
-              <Box className="w-30 h-30 justify-center items-center mb-3">
+              <Box className="items-center justify-center">
                 {/* MetalCat 로고 - Enhanced with animation */}
                 <Image
                   source={require("@/assets/images/metalcat_logo.png")}
-                  className="w-25 h-25 animate-fade-in"
+                  className="w-32 h-32 animate-fade-in"
                   resizeMode="contain"
                   accessible={true}
                   accessibilityLabel="MetalCat 로고"
@@ -73,7 +73,7 @@ export const Dashboard = () => {
                 />
               </Box>
               <Text
-                className="text-slate-50 text-xl font-black uppercase text-center mt-2 tracking-[6px] font-mono animate-fade-in"
+                className="text-slate-50 text-xl uppercase text-center font-mono animate-fade-in -mt-4 tracking-[2px]"
                 accessible={true}
                 accessibilityLabel="메탈캣 - 금속 거래 플랫폼"
                 accessibilityRole="header"

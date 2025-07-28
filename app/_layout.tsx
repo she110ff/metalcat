@@ -44,7 +44,9 @@ export const unstable_settings = {
 };
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch((err) => {
+  console.warn("SplashScreen.preventAutoHideAsync failed:", err);
+});
 
 // Create a client
 const queryClient = new QueryClient({
@@ -72,7 +74,9 @@ export default function RootLayout() {
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (loaded || error) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch((err) => {
+        console.warn("SplashScreen.hideAsync failed:", err);
+      });
     }
   }, [loaded, error]);
 
