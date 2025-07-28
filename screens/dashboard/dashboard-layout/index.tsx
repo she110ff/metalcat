@@ -1,9 +1,7 @@
 import React from "react";
-import { ScrollView, View, Image } from "react-native";
+import { ScrollView, View, Text as RNText, Image } from "react-native";
 
-// 상대 경로로 다시 테스트
-const iconImage = require("../../../assets/images/icon.png");
-const metalcatLogo = require("../../../assets/images/metalcat-logo.png");
+// MetalCat Dashboard Layout
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -19,6 +17,8 @@ import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 
 export const Dashboard = () => {
   const router = useRouter();
+
+  // Dashboard 컴포넌트 렌더링
 
   // 대시보드 렌더링
 
@@ -64,24 +64,22 @@ export const Dashboard = () => {
                   marginBottom: 10,
                 }}
               >
+                {/* MetalCat 로고 - 최종 개선된 설정 */}
                 <Image
-                  source={iconImage}
+                  source={require("@/assets/images/metalcat_logo.png")}
                   style={{
                     width: 100,
                     height: 100,
                   }}
                   resizeMode="contain"
-                  onError={(error: any) => {
-                    console.error("❌ Image loading failed:", error);
+                  onError={(error) => {
                     console.error(
-                      "❌ Attempted path: ../../../assets/images/icon.png"
+                      "✅ Metro + Babel + TS 설정 개선 후 로고 로딩:",
+                      error
                     );
                   }}
                   onLoad={() => {
-                    console.log("✅ Image loaded successfully!");
-                  }}
-                  onLoadStart={() => {
-                    console.log("🔄 Image loading started...");
+                    console.log("🎉 성공! MetalCat 로고가 로드되었습니다!");
                   }}
                 />
               </Box>

@@ -1,6 +1,3 @@
-const imageBabel = require("@unitools/babel-plugin-universal-image"); // 임시 비활성화
-const path = require("path");
-
 module.exports = function (api) {
   api.cache(true);
   return {
@@ -13,11 +10,24 @@ module.exports = function (api) {
         "module-resolver",
         {
           alias: {
-            "@unitools/image": "@unitools/image-expo",
-            "@unitools/router": "@unitools/router-expo",
-            "@unitools/link": "@unitools/link-expo",
             "@": "./",
           },
+          extensions: [
+            ".js",
+            ".jsx",
+            ".ts",
+            ".tsx",
+            ".android.js",
+            ".android.tsx",
+            ".ios.js",
+            ".ios.tsx",
+            ".web.js",
+            ".web.tsx",
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".gif",
+          ],
         },
       ],
       "react-native-reanimated/plugin",
