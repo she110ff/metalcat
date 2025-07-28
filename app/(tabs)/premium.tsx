@@ -1,19 +1,22 @@
 import React from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { ScrollView } from "react-native";
+import { ScrollView, View } from "react-native";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
+import { Crown } from "lucide-react-native";
 
 export default function Premium() {
   return (
     <LinearGradient
-      colors={["#0A0A0A", "#1A1A1A", "#2A2A2A", "#1A1A1A"]}
-      className="flex-1"
+      colors={["#1A0F2A", "#2D1B3D", "#3D2F5A"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         <ScrollView
@@ -23,67 +26,49 @@ export default function Premium() {
         >
           <VStack className="flex-1 p-6" space="xl">
             {/* Header Section */}
-            <VStack className="items-center">
-              <Text
-                className="text-white text-2xl font-black uppercase text-center"
+            <VStack
+              className="items-center"
+              style={{ marginBottom: 40, marginTop: 20 }}
+            >
+              <View
                 style={{
-                  fontFamily: "SpaceMono",
-                  textShadowColor: "rgba(255, 255, 255, 0.4)",
-                  textShadowOffset: { width: 0, height: 2 },
-                  textShadowRadius: 4,
-                  letterSpacing: 6,
-                  fontWeight: "900",
-                  color: "#F8FAFC",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 16,
                 }}
               >
-                PREMIUM
+                <Crown size={32} color="#FCD34D" strokeWidth={2.5} />
+                <Text
+                  style={{
+                    fontFamily: "SpaceMono",
+                    fontSize: 28,
+                    fontWeight: "900",
+                    color: "#F8FAFC",
+                    letterSpacing: 6,
+                    marginLeft: 12,
+                    lineHeight: 36,
+                    paddingTop: 4,
+                    textShadowColor: "rgba(255, 255, 255, 0.4)",
+                    textShadowOffset: { width: 0, height: 2 },
+                    textShadowRadius: 4,
+                    textAlignVertical: "center",
+                    includeFontPadding: false,
+                  }}
+                >
+                  PREMIUM
+                </Text>
+              </View>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 16,
+                  textAlign: "center",
+                  fontWeight: "600",
+                }}
+              >
+                프리미엄 금속 감정 서비스
               </Text>
             </VStack>
-
-            {/* Service Type Buttons */}
-            <HStack space="md" className="mt-10">
-              <Pressable
-                className="flex-1 rounded-2xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 193, 7, 0.15)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 193, 7, 0.3)",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 16,
-                  elevation: 8,
-                }}
-              >
-                <Text
-                  className="text-yellow-400 text-sm font-bold text-center tracking-wide"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  서비스 목록
-                </Text>
-              </Pressable>
-
-              <Pressable
-                className="flex-1 rounded-2xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.1)",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 8 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 16,
-                  elevation: 8,
-                }}
-              >
-                <Text
-                  className="text-white/70 text-sm font-semibold text-center tracking-wide"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  신청 내역
-                </Text>
-              </Pressable>
-            </HStack>
 
             {/* Premium Appraisal Service */}
             <Box
@@ -100,18 +85,6 @@ export default function Premium() {
               }}
             >
               <VStack space="md">
-                <HStack className="items-center" space="sm">
-                  <Box className="w-8 h-8 rounded-xl bg-yellow-400/20 items-center justify-center">
-                    <Ionicons name="star" size={16} color="#FFC107" />
-                  </Box>
-                  <Text
-                    className="text-yellow-400 text-sm font-bold"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    인기
-                  </Text>
-                </HStack>
-
                 <VStack space="sm">
                   <Text
                     className="text-white text-xl font-bold"
@@ -133,13 +106,13 @@ export default function Premium() {
                       className="text-green-400 text-2xl font-black"
                       style={{ fontFamily: "NanumGothic" }}
                     >
-                      150,000원
+                      무료
                     </Text>
                     <Text
                       className="text-white/50 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
                     >
-                      2-3시간
+                      1-2일
                     </Text>
                   </HStack>
                 </VStack>
@@ -211,96 +184,6 @@ export default function Premium() {
                   }}
                 >
                   <Text className="text-black text-center text-base font-bold">
-                    서비스 요청
-                  </Text>
-                </Pressable>
-              </VStack>
-            </Box>
-
-            {/* Premium Analysis Service */}
-            <Box
-              className="rounded-3xl p-6"
-              style={{
-                backgroundColor: "rgba(34, 139, 139, 0.15)",
-                borderWidth: 1,
-                borderColor: "rgba(34, 139, 139, 0.3)",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 12 },
-                shadowOpacity: 0.4,
-                shadowRadius: 24,
-                elevation: 12,
-              }}
-            >
-              <VStack space="md">
-                <VStack space="sm">
-                  <Text className="text-white text-xl font-bold">
-                    정밀 성분 분석
-                  </Text>
-                  <Text className="text-white/60 text-sm">
-                    첨단 장비를 통한 금속 성분 정밀 분석 서비스
-                  </Text>
-                </VStack>
-
-                <VStack space="xs">
-                  <HStack className="justify-between items-center">
-                    <Text className="text-green-400 text-2xl font-black">
-                      80,000원
-                    </Text>
-                    <Text className="text-white/50 text-sm">1-2일</Text>
-                  </HStack>
-                </VStack>
-
-                <VStack space="xs">
-                  <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
-                    <Text className="text-white/80 text-sm">
-                      XRF 분석기 활용
-                    </Text>
-                  </HStack>
-                  <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
-                    <Text className="text-white/80 text-sm">99.9% 정확도</Text>
-                  </HStack>
-                  <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
-                    <Text className="text-white/80 text-sm">
-                      상세 분석 리포트
-                    </Text>
-                  </HStack>
-                  <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
-                    <Text className="text-white/80 text-sm">인증서 발급</Text>
-                  </HStack>
-                </VStack>
-
-                <Pressable
-                  className="rounded-2xl p-4 mt-2"
-                  style={{
-                    backgroundColor: "#20B2AA",
-                    shadowColor: "#20B2AA",
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 16,
-                    elevation: 8,
-                  }}
-                >
-                  <Text className="text-white text-center text-base font-bold">
                     서비스 요청
                   </Text>
                 </Pressable>
