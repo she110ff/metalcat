@@ -1,239 +1,64 @@
-import React, { useState } from "react";
-import { ScrollView, Alert, Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import { ScrollView, Alert, Platform, View } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Button } from "@/components/ui/button";
-import { ButtonText } from "@/components/ui/button";
+import { Input, InputField } from "@/components/ui/input";
+import { Textarea, TextareaInput } from "@/components/ui/textarea";
 import { Pressable } from "@/components/ui/pressable";
-import { Input } from "@/components/ui/input";
-import { InputField } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { TextareaInput } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { CheckboxIndicator } from "@/components/ui/checkbox";
-import { CheckboxIcon } from "@/components/ui/checkbox";
-import { useRouter } from "expo-router";
-import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { Ionicons } from "@expo/vector-icons";
-import { scrapSalesEnvironmentOptions } from "@/data";
 import {
   DaumAddressSearch,
   DaumAddressResult,
-} from "../../../components/DaumAddressSearch";
-import {
-  ScrapAuctionItem,
-  ScrapQuantityInfo,
-  ScrapSalesEnvironment,
-  AddressInfo,
-  PhotoInfo,
-} from "@/data/types/auction";
-import { useCreateAuction } from "@/hooks/useAuctions";
+} from "@/components/DaumAddressSearch";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { SafeAreaView } from "@/components/ui/safe-area-view";
 
-export default function ScrapAdditionalInfo() {
-  const router = useRouter();
-  const createAuctionMutation = useCreateAuction();
+export default function AdditionalInfoScreen() {
   const [title, setTitle] = useState("");
+  const [desiredPrice, setDesiredPrice] = useState("");
   const [transactionType, setTransactionType] = useState<"normal" | "urgent">(
     "normal"
   );
-  const [desiredPrice, setDesiredPrice] = useState("");
-  const [phoneNumberDisclosure, setPhoneNumberDisclosure] = useState(false);
-  const [salesEnvironment, setSalesEnvironment] = useState({
-    delivery: [] as string[],
-    shippingCost: [] as string[],
-    additional: [] as string[],
-  });
+  const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
-  const [description, setDescription] = useState("");
-  const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [selectedAddress, setSelectedAddress] =
     useState<DaumAddressResult | null>(null);
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
+  const [accessibility, setAccessibility] = useState<
+    "easy" | "normal" | "difficult"
+  >("normal");
+  const [transportCondition, setTransportCondition] = useState<
+    "buyer" | "negotiable" | "seller"
+  >("buyer");
+
+  // 주소 검색 상태 디버깅
+  useEffect(() => {
+    console.log("🎯 주소 검색 상태 변경됨:", showAddressSearch);
+  }, [showAddressSearch]);
 
   const handleBack = () => {
     router.back();
   };
 
-  const handleAddressSearch = () => {
-    console.log("🔍 주소 검색 시작 - 모달 열기");
+  const openAddressModal = () => {
+    console.log("🏠 다음 주소 검색 열기");
     setShowAddressSearch(true);
-    console.log("✅ showAddressSearch 상태:", true);
   };
 
   const handleAddressComplete = (result: DaumAddressResult) => {
-    console.log("🎯 주소 검색 완료 - 받은 데이터:");
-    console.log("📋 전체 결과:", result);
-    console.log("📍 기본 주소:", result.address);
-    console.log("🛣️ 도로명 주소:", result.roadAddress);
-    console.log("📮 우편번호:", result.zonecode);
-    console.log("🏢 건물명:", result.buildingName);
-    console.log("🌍 시도:", result.sido);
-    console.log("🏘️ 시군구:", result.sigungu);
-    console.log("📌 법정동:", result.bname);
-
-    // 선택된 주소 객체 저장
+    console.log("🎉 주소 선택 완료:", result);
     setSelectedAddress(result);
-    console.log("✅ selectedAddress 상태 업데이트됨");
-
-    // 표시할 주소 결정 (도로명 주소 우선, 없으면 기본 주소)
-    const mainAddress = result.roadAddress || result.address;
-    console.log("🏠 표시할 메인 주소:", mainAddress);
-
-    if (!mainAddress) {
-      console.error("❌ 표시할 주소가 없음!");
-      Alert.alert("오류", "주소 정보를 가져올 수 없습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    // 주소 입력 필드 업데이트
-    setAddress(mainAddress);
-    console.log("✅ address 상태 업데이트됨:", mainAddress);
-
-    // 주소 검색 모달 닫기
+    setAddress(result.roadAddress || result.address);
     setShowAddressSearch(false);
-    console.log("🚪 주소 검색 모달 닫힘");
-
-    // 성공 피드백
-    console.log("🎉 주소 선택 완료! 사용자에게 결과 표시됨");
   };
 
   const handleAddressClose = () => {
-    console.log("❌ 주소 검색 취소 - 모달 닫기");
+    console.log("🚪 주소 검색 닫기");
     setShowAddressSearch(false);
-    console.log("✅ showAddressSearch 상태:", false);
-  };
-
-  const handleSubmit = () => {
-    if (!title.trim()) {
-      Alert.alert("알림", "글 제목을 입력해주세요.");
-      return;
-    }
-
-    if (!desiredPrice.trim()) {
-      Alert.alert("알림", "희망 가격을 입력해주세요.");
-      return;
-    }
-    if (!phoneNumberDisclosure) {
-      Alert.alert("알림", "전화번호 노출에 동의해주세요.");
-      return;
-    }
-    if (!address.trim()) {
-      Alert.alert("알림", "현장 주소를 입력해주세요.");
-      return;
-    }
-
-    try {
-      // 주소 정보 구성
-      const addressInfo: AddressInfo = {
-        postalCode: selectedAddress?.zonecode || "",
-        roadAddress: selectedAddress?.roadAddress || address,
-        lotAddress: selectedAddress?.jibunAddress || "",
-        detailAddress: addressDetail,
-        city: selectedAddress?.sido || "",
-        district: selectedAddress?.sigungu || "",
-      };
-
-      // 사진 정보 구성 (기본 사진 3개)
-      const photoInfo: PhotoInfo[] = [
-        {
-          id: "default_1",
-          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
-          isRepresentative: true,
-          type: "full",
-        },
-        {
-          id: "default_2",
-          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
-          isRepresentative: false,
-          type: "closeup",
-        },
-        {
-          id: "default_3",
-          uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
-          isRepresentative: false,
-          type: "detail",
-        },
-      ];
-
-      // 수량 정보 구성 (기본값 사용)
-      const quantityInfo: ScrapQuantityInfo = {
-        knowsWeight: false,
-        estimatedWeight: 1000,
-        unit: "kg",
-      };
-
-      // 판매 환경 정보 구성
-      const salesEnvironmentInfo: ScrapSalesEnvironment = {
-        delivery:
-          salesEnvironment.delivery.length > 0
-            ? (salesEnvironment.delivery[0] as "seller" | "buyer")
-            : "seller",
-        shippingCost:
-          salesEnvironment.shippingCost.length > 0
-            ? (salesEnvironment.shippingCost[0] as "seller" | "buyer")
-            : "buyer",
-        truckAccess: salesEnvironment.additional.includes("truckAccess"),
-        loading: "seller", // 기본값
-        sacksNeeded: salesEnvironment.additional.includes("sacksNeeded"),
-      };
-
-      // 새로운 경매 데이터 생성
-      const newAuctionData = {
-        title: title,
-        productType: {
-          id: "copper",
-          name: "구리",
-          category: "copper",
-          description: "구리 스크랩",
-          auctionCategory: "scrap" as const,
-        }, // 기본값
-        transactionType: transactionType,
-        auctionCategory: "scrap" as const,
-        quantity: quantityInfo,
-        salesEnvironment: salesEnvironmentInfo,
-        photos: photoInfo,
-        address: addressInfo,
-        description: description || "고철 경매입니다.",
-        desiredPrice: parseInt(desiredPrice, 10),
-        phoneNumberDisclosure: phoneNumberDisclosure,
-        userId: "current_user", // 실제로는 로그인된 사용자 ID
-        endTime: new Date(
-          Date.now() +
-            (transactionType === "urgent" ? 3 : 7) * 24 * 60 * 60 * 1000
-        ), // 거래종류에 따라 종료일 설정
-      };
-
-      // TanStack Query를 사용하여 경매 데이터 저장
-      createAuctionMutation.mutate(newAuctionData, {
-        onSuccess: (savedAuction) => {
-          Alert.alert("등록 완료", "고철 경매가 성공적으로 등록되었습니다!", [
-            {
-              text: "확인",
-              onPress: () => {
-                // 메인 화면으로 이동
-                router.push("/auction" as any);
-              },
-            },
-          ]);
-        },
-        onError: (error) => {
-          console.error("경매 등록 에러:", error);
-          Alert.alert(
-            "오류",
-            "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
-          );
-        },
-      });
-    } catch (error) {
-      console.error("경매 등록 에러:", error);
-      Alert.alert(
-        "오류",
-        "경매 등록 중 문제가 발생했습니다. 다시 시도해주세요."
-      );
-    }
   };
 
   return (
@@ -245,505 +70,444 @@ export default function ScrapAdditionalInfo() {
         <ScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 100 }}
         >
-          <VStack className="flex-1 p-6" space="xl">
-            {/* Header */}
-            <VStack space="lg">
-              <HStack className="items-center justify-between px-4 py-3">
-                {/* 모바일 표준 뒤로가기 버튼 */}
-                <Pressable
-                  onPress={handleBack}
-                  className="active:opacity-60"
-                  style={{
-                    minWidth: 44,
-                    minHeight: 44,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    marginLeft: -8,
-                  }}
-                >
-                  <HStack className="items-center" space="xs">
-                    <Ionicons
-                      name={
-                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
-                      }
-                      size={Platform.OS === "ios" ? 28 : 24}
-                      color="#FFFFFF"
-                      style={{
-                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
-                      }}
-                    />
-                    {Platform.OS === "ios" && (
-                      <Text className="text-white text-base font-medium">
-                        뒤로
-                      </Text>
-                    )}
-                  </HStack>
-                </Pressable>
-
-                <Text
-                  className="text-white text-xl font-bold"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  추가 정보 입력
-                </Text>
-
-                {/* 오른쪽 여백 (대칭을 위해) */}
-                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
-              </HStack>
-            </VStack>
-
-            {/* 전화번호 노출 동의 */}
-            <VStack space="md">
+          <View className="flex-1 px-6 py-6">
+            {/* 헤더 */}
+            <HStack className="items-center space-x-3 mb-8">
+              <Ionicons name="add-circle" size={28} color="#FCD34D" />
               <Text
-                className="text-yellow-300 text-lg font-bold"
+                className="text-white text-2xl font-bold"
                 style={{ fontFamily: "NanumGothic" }}
               >
-                전화번호 노출 안내
+                경매 등록 완성하기
               </Text>
-              <Text
-                className="text-gray-300 text-sm"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                중고 거래에서는 전화번호가 반드시 노출 되야 합니다
-              </Text>
+            </HStack>
 
-              <Pressable
-                onPress={() => setPhoneNumberDisclosure(!phoneNumberDisclosure)}
-              >
-                <HStack className="items-center space-x-3">
-                  <Box
-                    className={`w-5 h-5 rounded border-2 items-center justify-center ${
-                      phoneNumberDisclosure
-                        ? "border-purple-600 bg-purple-600"
-                        : "border-white/30 bg-transparent"
-                    }`}
-                  >
-                    {phoneNumberDisclosure && (
-                      <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    )}
-                  </Box>
-                  <Text
-                    className="text-white text-base"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    네 전화 번호 노출하는 것에 동의합니다
-                  </Text>
-                </HStack>
-              </Pressable>
-            </VStack>
-
-            {/* 글 제목 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                글 제목
-              </Text>
-              <Input className="bg-white/5 border-white/10 rounded-2xl">
-                <InputField
-                  placeholder="글 제목을 입력하세요"
-                  value={title}
-                  onChangeText={setTitle}
-                  className="text-white text-base px-4 py-3 font-nanum"
-                />
-              </Input>
-            </VStack>
-
-            {/* 거래 종류 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                거래 종류
-              </Text>
-              <HStack space="md">
-                <Pressable
-                  onPress={() => setTransactionType("normal")}
-                  className="flex-1"
-                >
-                  <Box
-                    className={`rounded-xl p-4 items-center border ${
-                      transactionType === "normal"
-                        ? "bg-purple-600/20 border-purple-500/50"
-                        : "bg-white/5 border-white/10"
-                    }`}
-                  >
-                    <Text
-                      className="text-white font-bold text-base"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      일반 경매
-                    </Text>
-                    <Text
-                      className="text-gray-400 text-sm mt-1"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      7일간 진행
-                    </Text>
-                  </Box>
-                </Pressable>
-
-                <Pressable
-                  onPress={() => setTransactionType("urgent")}
-                  className="flex-1"
-                >
-                  <Box
-                    className={`rounded-xl p-4 items-center border ${
-                      transactionType === "urgent"
-                        ? "bg-red-500/20 border-red-500/50"
-                        : "bg-white/5 border-white/10"
-                    }`}
-                  >
-                    <Text
-                      className="text-white font-bold text-base"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      긴급 경매
-                    </Text>
-                    <Text
-                      className="text-gray-400 text-sm mt-1"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      3일간 진행
-                    </Text>
-                  </Box>
-                </Pressable>
-              </HStack>
-            </VStack>
-
-            {/* 희망 가격 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                희망 가격 설정 (원)
-              </Text>
-              <Input className="bg-white/5 border-white/10 rounded-2xl">
-                <InputField
-                  placeholder="희망 가격을 입력하세요 (예: 1000000)"
-                  value={desiredPrice}
-                  onChangeText={(text) => {
-                    // 숫자만 입력 가능
-                    const numericValue = text.replace(/[^0-9]/g, "");
-                    setDesiredPrice(numericValue);
-                  }}
-                  keyboardType="numeric"
-                  className="text-white text-base px-4 py-3 font-nanum"
-                />
-              </Input>
-            </VStack>
-
-            {/* 판매 환경 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                고철 판매 환경
-              </Text>
-              <Text
-                className="text-gray-300 text-sm"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                해당하는 것을 전부 선택해 주세요.
-              </Text>
-
+            <VStack space="xl" className="flex-1">
+              {/* 전화번호 노출 안내 */}
               <VStack space="md">
-                {/* 배송 방식 */}
-                <VStack space="sm">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="call" size={20} color="#FCD34D" />
                   <Text
-                    className="text-white text-base font-bold"
+                    className="text-yellow-300 text-lg font-bold"
                     style={{ fontFamily: "NanumGothic" }}
                   >
-                    배송 방식
+                    안전한 거래 연결
                   </Text>
-                  {scrapSalesEnvironmentOptions.delivery.map((option) => (
-                    <Pressable
-                      key={option.id}
-                      onPress={() => {
-                        const isSelected = salesEnvironment.delivery.includes(
-                          option.id
-                        );
-                        setSalesEnvironment({
-                          ...salesEnvironment,
-                          delivery: isSelected
-                            ? salesEnvironment.delivery.filter(
-                                (id) => id !== option.id
-                              )
-                            : [...salesEnvironment.delivery, option.id],
-                        });
-                      }}
-                    >
-                      <HStack className="items-center space-x-3">
-                        <Box
-                          className={`w-4 h-4 border-2 items-center justify-center ${
-                            salesEnvironment.delivery.includes(option.id)
-                              ? "border-purple-600 bg-purple-600"
-                              : "border-white/30 bg-transparent"
-                          }`}
-                        >
-                          {salesEnvironment.delivery.includes(option.id) && (
-                            <Ionicons
-                              name="checkmark"
-                              size={12}
-                              color="#FFFFFF"
-                            />
-                          )}
-                        </Box>
-                        <VStack className="flex-1">
-                          <Text
-                            className="text-white text-base"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            {option.label}
-                          </Text>
-                          <Text
-                            className="text-gray-400 text-sm"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            {option.description}
-                          </Text>
-                        </VStack>
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
-
-                {/* 운송비 부담 */}
-                <VStack space="sm">
-                  <Text
-                    className="text-white text-base font-bold"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    운송비 부담
-                  </Text>
-                  {scrapSalesEnvironmentOptions.shippingCost.map((option) => (
-                    <Pressable
-                      key={option.id}
-                      onPress={() => {
-                        const isSelected =
-                          salesEnvironment.shippingCost.includes(option.id);
-                        setSalesEnvironment({
-                          ...salesEnvironment,
-                          shippingCost: isSelected
-                            ? salesEnvironment.shippingCost.filter(
-                                (id) => id !== option.id
-                              )
-                            : [...salesEnvironment.shippingCost, option.id],
-                        });
-                      }}
-                    >
-                      <HStack className="items-center space-x-3">
-                        <Box
-                          className={`w-4 h-4 border-2 items-center justify-center ${
-                            salesEnvironment.shippingCost.includes(option.id)
-                              ? "border-purple-600 bg-purple-600"
-                              : "border-white/30 bg-transparent"
-                          }`}
-                        >
-                          {salesEnvironment.shippingCost.includes(
-                            option.id
-                          ) && (
-                            <Ionicons
-                              name="checkmark"
-                              size={12}
-                              color="#FFFFFF"
-                            />
-                          )}
-                        </Box>
-                        <Text
-                          className="text-white text-base"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          {option.label}
-                        </Text>
-                      </HStack>
-                    </Pressable>
-                  ))}
-                </VStack>
-
-                {/* 추가 옵션 */}
-                <VStack space="sm">
-                  <Text
-                    className="text-white text-base font-bold"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    추가 옵션
-                  </Text>
-                  <Box className="flex-row flex-wrap">
-                    {scrapSalesEnvironmentOptions.additional.map((option) => (
-                      <Pressable
-                        key={option.id}
-                        onPress={() => {
-                          const isSelected =
-                            salesEnvironment.additional.includes(option.id);
-                          setSalesEnvironment({
-                            ...salesEnvironment,
-                            additional: isSelected
-                              ? salesEnvironment.additional.filter(
-                                  (id) => id !== option.id
-                                )
-                              : [...salesEnvironment.additional, option.id],
-                          });
-                        }}
-                        className="w-1/2 pr-2 mb-2"
-                      >
-                        <HStack className="items-center space-x-2">
-                          <Box
-                            className={`w-4 h-4 border-2 items-center justify-center ${
-                              salesEnvironment.additional.includes(option.id)
-                                ? "border-purple-600 bg-purple-600"
-                                : "border-white/30 bg-transparent"
-                            }`}
-                          >
-                            {salesEnvironment.additional.includes(
-                              option.id
-                            ) && (
-                              <Ionicons
-                                name="checkmark"
-                                size={12}
-                                color="#FFFFFF"
-                              />
-                            )}
-                          </Box>
-                          <Text
-                            className="text-white text-sm flex-1"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            {option.label}
-                          </Text>
-                        </HStack>
-                      </Pressable>
-                    ))}
-                  </Box>
-                </VStack>
-              </VStack>
-            </VStack>
-
-            {/* 현장 주소 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                현장 주소
-              </Text>
-
-              <VStack space="sm">
-                <HStack space="md">
-                  <Input className="flex-1 bg-white/5 border-white/10 rounded-2xl">
-                    <InputField
-                      placeholder="주소를 직접 입력하거나 검색 버튼을 이용하세요"
-                      value={address}
-                      onChangeText={(text) => {
-                        setAddress(text);
-                        // 직접 입력 시 selectedAddress 초기화
-                        if (selectedAddress) {
-                          setSelectedAddress(null);
-                        }
-                      }}
-                      className="text-white text-base px-4 py-3"
-                      multiline={false}
-                      returnKeyType="done"
-                      editable={false}
-                      selectTextOnFocus={true}
-                    />
-                  </Input>
-                  <Pressable
-                    onPress={handleAddressSearch}
-                    className="bg-purple-600 active:bg-purple-700 px-6 py-4 rounded-2xl flex-row items-center justify-center"
-                    style={{
-                      minWidth: 110,
-                      shadowColor: "#9333EA",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.3,
-                      shadowRadius: 8,
-                      elevation: 5,
-                    }}
-                  >
-                    <Ionicons
-                      name="location"
-                      size={18}
-                      color="#FFFFFF"
-                      style={{ marginRight: 6 }}
-                    />
-                    <Text
-                      className="text-white font-bold text-sm"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      주소 찾기
-                    </Text>
-                  </Pressable>
                 </HStack>
+                <Box className="bg-blue-600/20 border border-blue-500/30 rounded-2xl p-5">
+                  <HStack className="items-center space-x-3">
+                    <Ionicons
+                      name="information-circle"
+                      size={24}
+                      color="#60A5FA"
+                    />
+                    <VStack className="flex-1" space="xs">
+                      <Text
+                        className="text-blue-200 font-bold text-base"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        구매자와 직접 소통 가능
+                      </Text>
+                      <Text
+                        className="text-blue-300 text-sm leading-5"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        신뢰할 수 있는 거래를 위해 연락처가 관심있는
+                        구매자들에게만 공개됩니다.
+                      </Text>
+                    </VStack>
+                  </HStack>
+                </Box>
+              </VStack>
 
-                {/* 상세 주소 */}
-                <Input className="bg-white/5 border-white/10 rounded-2xl">
+              {/* 글 제목 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="create" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    매력적인 제목 작성
+                  </Text>
+                </HStack>
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
-                    placeholder="상세 주소 (동, 호수, 층수 등)"
-                    value={addressDetail}
-                    onChangeText={setAddressDetail}
-                    className="text-white text-base px-4 py-3"
-                    multiline={false}
-                    returnKeyType="done"
+                    placeholder="구매자의 관심을 끌 수 있는 제목을 작성해보세요"
+                    value={title}
+                    onChangeText={setTitle}
+                    className="text-white text-base px-5 py-4"
+                    style={{ fontFamily: "NanumGothic" }}
                   />
                 </Input>
               </VStack>
-            </VStack>
 
-            {/* 설명 */}
-            <VStack space="md">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                설명
-              </Text>
-              <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-24">
-                <TextareaInput
-                  placeholder="고철에 대한 상세 설명을 입력하세요"
-                  value={description}
-                  onChangeText={setDescription}
-                  numberOfLines={4}
-                  className="text-white text-base px-4 py-3 font-nanum"
-                />
-              </Textarea>
+              {/* 거래 종류 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="time" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    경매 진행 방식
+                  </Text>
+                </HStack>
+                <HStack space="md">
+                  <Pressable
+                    onPress={() => setTransactionType("normal")}
+                    className="flex-1"
+                  >
+                    <Box
+                      className={`rounded-2xl p-5 items-center border-2 min-h-20 justify-center ${
+                        transactionType === "normal"
+                          ? "bg-purple-600/20 border-purple-500"
+                          : "bg-white/5 border-white/20"
+                      }`}
+                    >
+                      <Text
+                        className="text-white font-bold text-base mb-1"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        표준 경매
+                      </Text>
+                      <Text
+                        className="text-gray-400 text-sm"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        충분한 검토 시간
+                      </Text>
+                    </Box>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setTransactionType("urgent")}
+                    className="flex-1"
+                  >
+                    <Box
+                      className={`rounded-2xl p-5 items-center border-2 min-h-20 justify-center ${
+                        transactionType === "urgent"
+                          ? "bg-red-500/20 border-red-500"
+                          : "bg-white/5 border-white/20"
+                      }`}
+                    >
+                      <Text
+                        className="text-white font-bold text-base mb-1"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        빠른 경매
+                      </Text>
+                      <Text
+                        className="text-gray-400 text-sm"
+                        style={{ fontFamily: "NanumGothic" }}
+                      >
+                        신속한 거래 완료
+                      </Text>
+                    </Box>
+                  </Pressable>
+                </HStack>
+              </VStack>
+
+              {/* 희망 가격 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="cash" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    목표 판매가격
+                  </Text>
+                </HStack>
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                  <InputField
+                    placeholder="원하시는 판매 가격을 입력해주세요"
+                    value={desiredPrice}
+                    onChangeText={(text) => {
+                      // 숫자만 입력 가능
+                      const numericValue = text.replace(/[^0-9]/g, "");
+                      setDesiredPrice(numericValue);
+                    }}
+                    keyboardType="numeric"
+                    className="text-white text-base px-5 py-4"
+                    style={{ fontFamily: "NanumGothic" }}
+                  />
+                </Input>
+                <Text
+                  className="text-gray-400 text-xs px-2"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  💡 시장 가격을 참고하여 합리적인 가격을 설정해보세요
+                </Text>
+              </VStack>
+
+              {/* 판매 조건 설정 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="settings" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    판매 조건 설정
+                  </Text>
+                </HStack>
+
+                {/* 현장 접근성 */}
+                <VStack space="sm">
+                  <Text
+                    className="text-white font-semibold text-base"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    현장 접근성
+                  </Text>
+                  <HStack space="md">
+                    <Pressable
+                      onPress={() => setAccessibility("easy")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          accessibility === "easy"
+                            ? "bg-green-600/20 border-green-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          접근 용이
+                        </Text>
+                      </Box>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setAccessibility("normal")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          accessibility === "normal"
+                            ? "bg-yellow-600/20 border-yellow-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          보통
+                        </Text>
+                      </Box>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setAccessibility("difficult")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          accessibility === "difficult"
+                            ? "bg-red-600/20 border-red-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          제한적
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  </HStack>
+                </VStack>
+
+                {/* 운반 조건 */}
+                <VStack space="sm">
+                  <Text
+                    className="text-white font-semibold text-base"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    운반 조건
+                  </Text>
+                  <HStack space="md">
+                    <Pressable
+                      onPress={() => setTransportCondition("buyer")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          transportCondition === "buyer"
+                            ? "bg-blue-600/20 border-blue-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          구매자 직접
+                        </Text>
+                      </Box>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setTransportCondition("negotiable")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          transportCondition === "negotiable"
+                            ? "bg-purple-600/20 border-purple-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          협의 가능
+                        </Text>
+                      </Box>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setTransportCondition("seller")}
+                      className="flex-1"
+                    >
+                      <Box
+                        className={`rounded-xl p-4 items-center border ${
+                          transportCondition === "seller"
+                            ? "bg-green-600/20 border-green-500"
+                            : "bg-white/5 border-white/20"
+                        }`}
+                      >
+                        <Text
+                          className="text-white font-medium text-sm"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          판매자 지원
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  </HStack>
+                </VStack>
+              </VStack>
+
+              {/* 판매 현장 위치 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="location" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    판매 현장 위치
+                  </Text>
+                </HStack>
+
+                {/* 주소 선택 */}
+                <Pressable onPress={openAddressModal}>
+                  <Box className="bg-white/5 border border-white/10 rounded-2xl p-5 min-h-14 justify-center">
+                    <Text
+                      className={`text-base ${
+                        address ? "text-white" : "text-gray-400"
+                      }`}
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      {address || "정확한 현장 주소를 선택해주세요"}
+                    </Text>
+                  </Box>
+                </Pressable>
+
+                {/* 상세 주소 입력 (주소가 선택되었을 때만 표시) */}
+                {address && (
+                  <VStack space="sm">
+                    <Text
+                      className="text-gray-300 text-sm"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      상세 주소
+                    </Text>
+                    <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                      <InputField
+                        placeholder="상세 주소를 입력하세요 (동, 호수, 층수 등)"
+                        value={addressDetail}
+                        onChangeText={setAddressDetail}
+                        className="text-white text-base px-5 py-4"
+                        style={{ fontFamily: "NanumGothic" }}
+                      />
+                    </Input>
+                  </VStack>
+                )}
+              </VStack>
+
+              {/* 상세 정보 안내 */}
+              <VStack space="md" className="mt-8">
+                <HStack className="items-center space-x-3">
+                  <Ionicons name="document-text" size={20} color="#FCD34D" />
+                  <Text
+                    className="text-yellow-300 text-lg font-bold"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    상세 정보 안내
+                  </Text>
+                </HStack>
+
+                {/* 안내 텍스트 추가 */}
+                <Text
+                  className="text-gray-300 text-sm px-2"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  💡 구체적인 정보를 작성하면 더 많은 관심을 받을 수 있어요
+                </Text>
+
+                <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-32">
+                  <TextareaInput
+                    placeholder="예시: 구리파이프 50kg, 깨끗한 상태, 트럭 접근 가능, 포장 불필요 등..."
+                    value={description}
+                    onChangeText={setDescription}
+                    className="text-white text-base px-5 py-4"
+                    style={{
+                      fontFamily: "NanumGothic",
+                      color: "#FFFFFF",
+                      textAlignVertical: "top",
+                    }}
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={6}
+                  />
+                </Textarea>
+
+                {/* 작성 가이드 추가 */}
+                <VStack space="xs" className="bg-gray-800/50 rounded-xl p-4">
+                  <Text
+                    className="text-blue-300 font-semibold text-sm"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    📝 작성 가이드
+                  </Text>
+                  <Text
+                    className="text-gray-300 text-xs leading-5"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    • 고철 종류와 상태를 구체적으로 설명{"\n"}• 대략적인 무게나
+                    수량 정보{"\n"}• 현장 접근성 및 특별한 조건{"\n"}• 포장
+                    상태나 분리 여부
+                  </Text>
+                </VStack>
+              </VStack>
             </VStack>
-          </VStack>
+          </View>
         </ScrollView>
 
-        {/* 하단 등록 버튼 */}
-        <Box className="p-6">
-          <Button
-            variant="solid"
-            onPress={handleSubmit}
-            disabled={createAuctionMutation.isPending}
-            className={`w-full rounded-2xl min-h-14 ${
-              createAuctionMutation.isPending
-                ? "bg-gray-500/50"
-                : "bg-purple-600/90"
-            }`}
-          >
-            <ButtonText
-              className="text-white font-bold"
-              style={{ fontFamily: "NanumGothic" }}
-            >
-              {createAuctionMutation.isPending ? "등록 중..." : "경매 등록"}
-            </ButtonText>
-          </Button>
-        </Box>
+        {/* 다음 주소 검색 컴포넌트 */}
+        <DaumAddressSearch
+          visible={showAddressSearch}
+          onComplete={handleAddressComplete}
+          onClose={handleAddressClose}
+        />
       </SafeAreaView>
-
-      {/* 주소 검색 모달 */}
-      <DaumAddressSearch
-        visible={showAddressSearch}
-        onComplete={handleAddressComplete}
-        onClose={handleAddressClose}
-      />
     </LinearGradient>
   );
 }
