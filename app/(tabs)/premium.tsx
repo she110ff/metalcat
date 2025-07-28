@@ -9,8 +9,11 @@ import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { Crown } from "lucide-react-native";
+import { useRouter } from "expo-router";
 
 export default function Premium() {
+  const router = useRouter();
+
   return (
     <LinearGradient
       colors={["#1A0F2A", "#2D1B3D", "#3D2F5A"]}
@@ -182,6 +185,7 @@ export default function Premium() {
                     shadowRadius: 16,
                     elevation: 8,
                   }}
+                  onPress={() => router.push("/service-request")}
                 >
                   <Text className="text-black text-center text-base font-bold">
                     서비스 요청
@@ -274,6 +278,7 @@ export default function Premium() {
                     shadowRadius: 16,
                     elevation: 8,
                   }}
+                  onPress={() => router.push("/service-request")}
                 >
                   <Text className="text-white text-center text-base font-bold">
                     서비스 요청
