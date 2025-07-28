@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { MetalPriceData, MetalDetailData } from "../types/metal-price";
 import { convertUsdPerTonToKrwPerKg } from "../utils/metal-price-utils";
 
@@ -24,9 +23,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+0.76%",
     changeType: "positive" as const,
-    iconName: "airplane" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(99, 102, 241, 0.9)", // 인디고 - 항공기용 알루미늄
   },
   {
     metalName: "납",
@@ -34,9 +32,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+0.14%",
     changeType: "positive" as const,
-    iconName: "battery-charging" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(34, 197, 94, 0.9)", // 그린 - 배터리용 납
   },
   {
     metalName: "아연",
@@ -44,9 +41,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+0.48%",
     changeType: "positive" as const,
-    iconName: "shield" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(59, 130, 246, 0.9)", // 블루 - 아연 도금/보호막
   },
   {
     metalName: "구리",
@@ -54,9 +50,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+0.70%",
     changeType: "positive" as const,
-    iconName: "flash" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(251, 146, 60, 0.9)", // 오렌지 - 구리 전선색상
   },
   {
     metalName: "주석",
@@ -64,9 +59,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+1.12%",
     changeType: "positive" as const,
-    iconName: "construct" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(156, 163, 175, 0.9)", // 그레이 - 주석 캔 색상
   },
   {
     metalName: "니켈",
@@ -74,9 +68,8 @@ export const lmePricesData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+1.96%",
     changeType: "positive" as const,
-    iconName: "magnet" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(66, 66, 66, 0.9)",
+    bgColor: "rgba(168, 85, 247, 0.9)", // 퍼플 - 니켈 동전 색상
   },
 ];
 
@@ -96,9 +89,8 @@ export const domesticScrapData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+1.6%",
     changeType: "positive" as const,
-    iconName: "car" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(34, 197, 94, 0.9)",
+    bgColor: "rgba(239, 68, 68, 0.9)", // 레드 - 자동차 고철
   },
   {
     metalName: "경량고철",
@@ -106,9 +98,8 @@ export const domesticScrapData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+1.8%",
     changeType: "positive" as const,
-    iconName: "bicycle" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(34, 197, 94, 0.9)",
+    bgColor: "rgba(34, 197, 94, 0.9)", // 그린 - 자전거 등 경량
   },
   {
     metalName: "특수고철",
@@ -116,9 +107,8 @@ export const domesticScrapData: MetalPriceData[] = [
     unit: "원/KG",
     changePercent: "+3.6%",
     changeType: "positive" as const,
-    iconName: "rocket" as keyof typeof Ionicons.glyphMap,
     iconColor: "#FFFFFF",
-    bgColor: "rgba(34, 197, 94, 0.9)",
+    bgColor: "rgba(147, 51, 234, 0.9)", // 퍼플 - 특수 합금
   },
 ];
 

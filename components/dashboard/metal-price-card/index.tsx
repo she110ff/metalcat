@@ -4,9 +4,36 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Plane,
+  Battery,
+  Shield,
+  Cable,
+  Package,
+  Coins,
+  Car,
+  Bike,
+  Rocket,
+} from "lucide-react-native";
 import { MetalPriceCardProps } from "@/data";
 import { formatMetalPrice } from "@/data/utils/metal-price-utils";
+
+// 금속별 아이콘 매핑
+const getMetalIcon = (metalName: string) => {
+  const iconMap: { [key: string]: React.ComponentType<any> } = {
+    알루미늄: Plane, // 항공기용 알루미늄
+    납: Battery, // 배터리용 납
+    아연: Shield, // 아연 도금/보호막
+    구리: Cable, // 구리 전선/케이블
+    주석: Package, // 주석 캔/포장재
+    니켈: Coins, // 니켈 동전
+    중량고철: Car, // 자동차 고철
+    경량고철: Bike, // 자전거 등 경량 고철
+    특수고철: Rocket, // 특수 합금 고철
+  };
+
+  return iconMap[metalName] || Package;
+};
 
 export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
   metalName,
@@ -22,26 +49,24 @@ export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
   const changeColor =
     changeType === "positive" ? "text-green-400" : "text-red-400";
 
+  const IconComponent = getMetalIcon(metalName);
+
   return (
-    <Pressable className="flex-1" onPress={onPress}>
-      <Box
-        className="rounded-2xl p-4"
-        style={{
-          backgroundColor: "rgba(255, 255, 255, 0.04)",
-          borderWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.08)",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
-          elevation: 8,
-          height: 80,
-        }}
-      >
+    <Pressable
+      className="flex-1 active:scale-[0.98] transform transition-transform duration-150"
+      onPress={onPress}
+      accessible={true}
+      accessibilityLabel={`${metalName} 가격 정보, ${
+        typeof price === "number" ? formatMetalPrice(price) : price
+      }${unit}, 변동률 ${changePercent}`}
+      accessibilityRole="button"
+      accessibilityHint="금속 상세 정보를 보려면 탭하세요"
+    >
+      <Box className="rounded-2xl p-4 bg-white/4 border border-white/8 shadow-lg hover:bg-white/6 transition-colors duration-200 animate-slide-up">
         <HStack className="items-center justify-between">
           <HStack className="items-center">
             <Box
-              className="w-12 h-12 rounded-xl items-center justify-center mr-3"
+              className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-lg"
               style={{
                 backgroundColor: bgColor,
                 shadowColor: bgColor,
@@ -51,32 +76,22 @@ export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
                 elevation: 8,
               }}
             >
-              <Ionicons name={iconName} size={20} color={iconColor} />
+              <IconComponent size={20} color={iconColor} strokeWidth={2.5} />
             </Box>
             <VStack className="items-start" space="xs">
-              <Text
-                className="text-white font-bold text-base tracking-wide"
-                style={{ fontFamily: "NanumGothic" }}
-              >
+              <Text className="text-slate-50 font-bold text-base tracking-wide font-nanum-bold">
                 {metalName}
               </Text>
               <HStack className="items-baseline">
-                <Text
-                  className="text-white font-black text-xs tracking-wide"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
+                <Text className="text-slate-50 font-black text-xs tracking-wide font-mono">
                   {typeof price === "number" ? formatMetalPrice(price) : price}
                 </Text>
-                <Text
-                  className="text-white/50 text-xs uppercase tracking-[1px] ml-1"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
+                <Text className="text-slate-400 text-3xs uppercase tracking-[1px] ml-1 font-nanum">
                   {unit}
                 </Text>
               </HStack>
               <Text
-                className={`${changeColor} text-xs font-bold uppercase tracking-[1px]`}
-                style={{ fontFamily: "NanumGothic" }}
+                className={`${changeColor} text-xs font-bold uppercase tracking-[1px] font-nanum animate-pulse-slow`}
               >
                 {changePercent}
               </Text>

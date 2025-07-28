@@ -1,12 +1,10 @@
-import { Ionicons } from "@expo/vector-icons";
-
 export interface MetalPriceCardProps {
   metalName: string;
   price: string | number;
   unit: string;
   changePercent: string;
   changeType: "positive" | "negative";
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
   iconColor: string;
   bgColor: string;
   onPress?: () => void;
@@ -18,7 +16,7 @@ export interface MetalPriceData {
   unit: string;
   changePercent: string;
   changeType: "positive" | "negative";
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
   iconColor: string;
   bgColor: string;
 }
@@ -47,7 +45,7 @@ export interface MetalDetailData {
     volatility: number;
     totalChange: number;
   };
-  iconName: keyof typeof Ionicons.glyphMap;
+  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
   iconColor: string;
   bgColor: string;
 }
