@@ -1,4 +1,3 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import {
   DarkTheme,
   DefaultTheme,
@@ -89,7 +88,7 @@ export default function RootLayout() {
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     NanumGothic: require("../assets/fonts/NanumGothic.otf"),
     NanumGothicBold: require("../assets/fonts/NanumGothicBold.otf"),
-    ...FontAwesome.font,
+    // FontAwesome.font 제거 - 실제로 사용되지 않으며 Asset Registry 오류 원인
   });
 
   // ✅ 안전한 SplashScreen 숨김 처리
