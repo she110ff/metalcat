@@ -14,8 +14,11 @@ import {
 export const auctionKeys = {
   all: ["auctions"] as const,
   lists: () => [...auctionKeys.all, "list"] as const,
-  list: (filters?: { category?: AuctionCategory; status?: string }) =>
-    [...auctionKeys.lists(), filters] as const,
+  list: (filters?: {
+    category?: AuctionCategory;
+    status?: string;
+    sortBy?: "createdAt" | "endTime";
+  }) => [...auctionKeys.lists(), filters] as const,
   details: () => [...auctionKeys.all, "detail"] as const,
   detail: (id: string) => [...auctionKeys.details(), id] as const,
   myAuctions: (userId: string) => [...auctionKeys.all, "my", userId] as const,
@@ -45,6 +48,7 @@ const auctionAPI = {
   getAuctions: async (filters?: {
     category?: AuctionCategory;
     status?: string;
+    sortBy?: "createdAt" | "endTime";
   }): Promise<AuctionItem[]> => {
     // 네트워크 지연 시뮬레이션
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -60,18 +64,39 @@ const auctionAPI = {
       );
     }
 
+    // 상태 필터 처리
     if (filters?.status) {
-      filtered = filtered.filter(
-        (auction) => auction.status === filters.status
-      );
+      if (filters.status === "active") {
+        // 진행중: active 또는 ending 상태
+        filtered = filtered.filter(
+          (auction) =>
+            auction.status === "active" || auction.status === "ending"
+        );
+      } else {
+        // 기타 상태 (ended 등)
+        filtered = filtered.filter(
+          (auction) => auction.status === filters.status
+        );
+      }
     }
 
+    // 정렬 처리
     return filtered.sort((a, b) => {
-      const dateA =
-        typeof a.createdAt === "string" ? new Date(a.createdAt) : a.createdAt;
-      const dateB =
-        typeof b.createdAt === "string" ? new Date(b.createdAt) : b.createdAt;
-      return dateB.getTime() - dateA.getTime();
+      if (filters?.sortBy === "endTime") {
+        // 마감시간 순 (가장 빨리 끝나는 것부터)
+        const dateA =
+          typeof a.endTime === "string" ? new Date(a.endTime) : a.endTime;
+        const dateB =
+          typeof b.endTime === "string" ? new Date(b.endTime) : b.endTime;
+        return dateA.getTime() - dateB.getTime();
+      } else {
+        // 기본: 등록일 순 (최신부터)
+        const dateA =
+          typeof a.createdAt === "string" ? new Date(a.createdAt) : a.createdAt;
+        const dateB =
+          typeof b.createdAt === "string" ? new Date(b.createdAt) : b.createdAt;
+        return dateB.getTime() - dateA.getTime();
+      }
     });
   },
 
@@ -228,6 +253,7 @@ const auctionAPI = {
 export const useAuctions = (filters?: {
   category?: AuctionCategory;
   status?: string;
+  sortBy?: "createdAt" | "endTime";
 }) => {
   return useQuery({
     queryKey: auctionKeys.list(filters),

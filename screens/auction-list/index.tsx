@@ -22,6 +22,14 @@ import {
   Settings,
   Package,
   AlertCircle,
+  Calendar,
+  Timer,
+  Play,
+  CheckCircle,
+  Filter,
+  Grid3X3,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react-native";
 import { useAuctions } from "@/hooks/useAuctions";
 import {
@@ -29,6 +37,7 @@ import {
   getRemainingTime,
   getAuctionStatusColor,
 } from "@/data";
+import { AuctionCategory } from "@/data/types/auction";
 
 interface AuctionItem {
   id: string;
@@ -39,6 +48,16 @@ interface AuctionItem {
   endTime: string;
   status: "active" | "ending" | "ended";
   bidders: number;
+  endTimeMinutes?: number; // 정렬용 선택적 속성
+}
+
+type SortFilter = "createdAt" | "endTime";
+type StatusFilter = "active" | "ended" | "all";
+
+interface AuctionFilters {
+  category?: AuctionCategory;
+  status?: string;
+  sortBy?: SortFilter;
 }
 
 export const AuctionList = () => {
@@ -51,7 +70,11 @@ export const AuctionList = () => {
   console.log("🔐 로그인 상태:", isLoggedIn);
 
   const [showActionMenu, setShowActionMenu] = useState(false);
+  const [selectedSort, setSelectedSort] = useState<SortFilter>("createdAt");
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
+  const filterAnimatedValue = useState(new Animated.Value(0))[0];
 
   // 로그인이 필요한 화면임을 알리는 효과
   useEffect(() => {
@@ -61,8 +84,27 @@ export const AuctionList = () => {
     }
   }, [isLoggedIn, authLoading]);
 
+  // 마감시간 정렬 시 상태 자동 조정
+  useEffect(() => {
+    if (selectedSort === "endTime" && selectedStatus === "all") {
+      setSelectedStatus("active");
+    }
+  }, [selectedSort, selectedStatus]);
+
   // TanStack Query로 경매 데이터 조회
-  const { data: queryAuctions = [], isLoading, error } = useAuctions(); // status 필터 제거하여 모든 경매 표시
+  const getEffectiveStatus = () => {
+    // 마감시간 정렬 시에는 진행중인 경매만 보여줌
+    if (selectedSort === "endTime") {
+      return "active";
+    }
+    return selectedStatus !== "all" ? selectedStatus : undefined;
+  };
+
+  const filters: AuctionFilters = {
+    sortBy: selectedSort,
+    ...(getEffectiveStatus() && { status: getEffectiveStatus() }),
+  };
+  const { data: queryAuctions = [], isLoading, error } = useAuctions(filters);
 
   // TanStack Query 데이터를 사용하되, 로딩 중이거나 에러가 있으면 기본 데이터 사용
   const auctionItems =
@@ -77,6 +119,7 @@ export const AuctionList = () => {
             endTime: "2시간 30분",
             status: "active",
             bidders: 8,
+            endTimeMinutes: 150, // 정렬용
           },
           {
             id: "2",
@@ -87,6 +130,7 @@ export const AuctionList = () => {
             endTime: "5시간 15분",
             status: "active",
             bidders: 12,
+            endTimeMinutes: 315, // 정렬용
           },
           {
             id: "3",
@@ -97,6 +141,7 @@ export const AuctionList = () => {
             endTime: "1시간 45분",
             status: "ending",
             bidders: 15,
+            endTimeMinutes: 105, // 정렬용
           },
           {
             id: "4",
@@ -107,8 +152,33 @@ export const AuctionList = () => {
             endTime: "종료됨",
             status: "ended",
             bidders: 6,
+            endTimeMinutes: -1, // 정렬용 (종료됨)
           },
         ]
+          .filter((item) => {
+            // 마감시간 정렬 시 종료된 경매 제외
+            if (selectedSort === "endTime" && item.status === "ended") {
+              return false;
+            }
+
+            // 상태 필터 적용
+            const effectiveStatus = getEffectiveStatus();
+            if (effectiveStatus === "active") {
+              return item.status === "active" || item.status === "ending";
+            } else if (effectiveStatus === "ended") {
+              return item.status === "ended";
+            }
+
+            return true;
+          })
+          .sort((a, b) => {
+            // 마감시간 정렬
+            if (selectedSort === "endTime") {
+              return (a.endTimeMinutes || 0) - (b.endTimeMinutes || 0);
+            }
+            // 기본 등록일 정렬 (ID 순서로 가정)
+            return parseInt(a.id) - parseInt(b.id);
+          })
       : queryAuctions.map((auction) => ({
           id: auction.id,
           title:
@@ -145,6 +215,42 @@ export const AuctionList = () => {
     { id: "demolition", name: "철거", IconComponent: Gavel, enabled: false },
   ];
 
+  const sortOptions = [
+    {
+      id: "createdAt" as SortFilter,
+      name: "등록일",
+      IconComponent: Calendar,
+      description: "최신 등록순",
+    },
+    {
+      id: "endTime" as SortFilter,
+      name: "마감시간",
+      IconComponent: Timer,
+      description: "마감 임박순",
+    },
+  ];
+
+  const statusOptions = [
+    {
+      id: "all" as StatusFilter,
+      name: "전체",
+      IconComponent: Grid3X3,
+      description: "모든 경매",
+    },
+    {
+      id: "active" as StatusFilter,
+      name: "진행중",
+      IconComponent: Play,
+      description: "진행중인 경매만",
+    },
+    {
+      id: "ended" as StatusFilter,
+      name: "종료",
+      IconComponent: CheckCircle,
+      description: "종료된 경매만",
+    },
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -173,6 +279,53 @@ export const AuctionList = () => {
 
   const handleAuctionPress = (auctionId: string) => {
     router.push(`/auction-detail/${auctionId}` as any);
+  };
+
+  const handleSortChange = (sortId: SortFilter) => {
+    setSelectedSort(sortId);
+  };
+
+  const handleStatusChange = (statusId: StatusFilter) => {
+    // 마감시간 정렬 중에는 전체나 종료 선택 불가
+    if (
+      selectedSort === "endTime" &&
+      (statusId === "all" || statusId === "ended")
+    ) {
+      return;
+    }
+    setSelectedStatus(statusId);
+  };
+
+  // 현재 선택된 상태를 실제 표시되는 상태로 변환
+  const getDisplayStatus = () => {
+    if (selectedSort === "endTime") {
+      return "active";
+    }
+    return selectedStatus;
+  };
+
+  // 필터 토글 함수
+  const toggleFilter = () => {
+    const toValue = isFilterExpanded ? 0 : 1;
+    setIsFilterExpanded(!isFilterExpanded);
+
+    Animated.timing(filterAnimatedValue, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  // 현재 필터 상태를 간략하게 표시하는 텍스트
+  const getFilterSummary = () => {
+    const sortText = selectedSort === "createdAt" ? "등록일순" : "마감시간순";
+    const statusText =
+      getDisplayStatus() === "all"
+        ? "전체"
+        : getDisplayStatus() === "active"
+        ? "진행중"
+        : "종료";
+    return `${sortText} · ${statusText}`;
   };
 
   const handleCreateAuction = (auctionType: string) => {
@@ -293,13 +446,13 @@ export const AuctionList = () => {
           <View style={{ flex: 1, padding: 24 }}>
             {/* Header */}
             <View
-              style={{ alignItems: "center", marginBottom: 40, marginTop: 20 }}
+              style={{ alignItems: "center", marginBottom: 32, marginTop: 20 }}
             >
               <View
                 style={{
                   flexDirection: "row",
                   alignItems: "center",
-                  marginBottom: 16,
+                  marginBottom: 6,
                 }}
               >
                 <Gavel size={32} color="#FCD34D" strokeWidth={2.5} />
@@ -327,24 +480,241 @@ export const AuctionList = () => {
                   fontWeight: "600",
                 }}
               >
-                금속 스크랩 경매 플랫폼
+                쉽고 빠른 경매 플랫폼
               </Text>
+            </View>
+
+            {/* Filter Section */}
+            <View style={{ marginBottom: isFilterExpanded ? 1 : 0 }}>
+              {/* Filter Header - Always Visible */}
+              <TouchableOpacity
+                onPress={toggleFilter}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 16,
+                  paddingHorizontal: 4,
+                  paddingVertical: 8,
+                }}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    flex: 1,
+                  }}
+                >
+                  <Filter size={18} color="#FCD34D" strokeWidth={2} />
+                  <Text
+                    style={{
+                      color: "#FCD34D",
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      marginLeft: 8,
+                    }}
+                  >
+                    필터
+                  </Text>
+
+                  {/* Collapsed State Summary */}
+                  {!isFilterExpanded && (
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.6)",
+                        fontSize: 14,
+                        marginLeft: 12,
+                        flex: 1,
+                      }}
+                    >
+                      {getFilterSummary()}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Toggle Icon */}
+                {isFilterExpanded ? (
+                  <ChevronUp size={20} color="#FCD34D" strokeWidth={2} />
+                ) : (
+                  <ChevronDown size={20} color="#FCD34D" strokeWidth={2} />
+                )}
+              </TouchableOpacity>
+
+              {/* Expandable Filter Content */}
+              <Animated.View
+                style={{
+                  height: filterAnimatedValue.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, 160], // 높이를 160으로 증가하여 버튼 잘림 방지
+                  }),
+                  opacity: filterAnimatedValue,
+                  overflow: "hidden",
+                }}
+              >
+                {/* Sort Filter Group */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      fontSize: 13,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    정렬
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 4, gap: 8 }}
+                  >
+                    {sortOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option.id}
+                        onPress={() => handleSortChange(option.id)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          backgroundColor:
+                            selectedSort === option.id
+                              ? "rgba(147, 51, 234, 0.3)"
+                              : "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor:
+                            selectedSort === option.id
+                              ? "rgba(147, 51, 234, 0.6)"
+                              : "rgba(255, 255, 255, 0.08)",
+                          borderRadius: 8,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <option.IconComponent
+                          size={14}
+                          color={
+                            selectedSort === option.id
+                              ? "#9333EA"
+                              : "rgba(255,255,255,0.7)"
+                          }
+                          strokeWidth={2}
+                        />
+                        <Text
+                          style={{
+                            color:
+                              selectedSort === option.id
+                                ? "#9333EA"
+                                : "rgba(255,255,255,0.7)",
+                            fontSize: 13,
+                            fontWeight: "600",
+                            marginLeft: 6,
+                          }}
+                        >
+                          {option.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Status Filter Group */}
+                <View style={{ marginBottom: 8 }}>
+                  <Text
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      fontSize: 13,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    상태{" "}
+                    {selectedSort === "endTime" && (
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.5)", fontSize: 11 }}
+                      >
+                        (마감시간 정렬 시 진행중만 표시)
+                      </Text>
+                    )}
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{
+                      paddingHorizontal: 4,
+                      gap: 8,
+                      paddingBottom: 8,
+                    }}
+                  >
+                    {statusOptions.map((option) => {
+                      const isDisabled =
+                        selectedSort === "endTime" &&
+                        (option.id === "all" || option.id === "ended");
+                      const isSelected = getDisplayStatus() === option.id;
+
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          onPress={() => handleStatusChange(option.id)}
+                          disabled={isDisabled}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            backgroundColor: isSelected
+                              ? "rgba(147, 51, 234, 0.3)"
+                              : isDisabled
+                              ? "rgba(255, 255, 255, 0.02)"
+                              : "rgba(255, 255, 255, 0.04)",
+                            borderWidth: 1,
+                            borderColor: isSelected
+                              ? "rgba(147, 51, 234, 0.6)"
+                              : isDisabled
+                              ? "rgba(255, 255, 255, 0.04)"
+                              : "rgba(255, 255, 255, 0.08)",
+                            borderRadius: 8,
+                            paddingHorizontal: 12,
+                            paddingVertical: 8,
+                            opacity: isDisabled ? 0.4 : 1,
+                          }}
+                          activeOpacity={isDisabled ? 1 : 0.7}
+                        >
+                          <option.IconComponent
+                            size={14}
+                            color={
+                              isSelected
+                                ? "#9333EA"
+                                : isDisabled
+                                ? "rgba(255,255,255,0.3)"
+                                : "rgba(255,255,255,0.7)"
+                            }
+                            strokeWidth={2}
+                          />
+                          <Text
+                            style={{
+                              color: isSelected
+                                ? "#9333EA"
+                                : isDisabled
+                                ? "rgba(255,255,255,0.3)"
+                                : "rgba(255,255,255,0.7)",
+                              fontSize: 13,
+                              fontWeight: "600",
+                              marginLeft: 6,
+                            }}
+                          >
+                            {option.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </Animated.View>
             </View>
 
             {/* Auction List */}
             <View style={{ marginTop: 24 }}>
-              <Text
-                style={{
-                  color: "#FCD34D",
-                  fontSize: 20,
-                  fontWeight: "bold",
-                  letterSpacing: 2,
-                  marginBottom: 20,
-                }}
-              >
-                진행중인 경매
-              </Text>
-
               {/* 로딩 상태 */}
               {isLoading && (
                 <View
