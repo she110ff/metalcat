@@ -32,6 +32,8 @@ interface CalculationResult {
 }
 
 export const Calculator = () => {
+  console.log("🧮 Calculator component rendering with NativeWind test...");
+
   const [selectedMetal, setSelectedMetal] = useState("구리");
   const [weight, setWeight] = useState("");
   const [purity, setPurity] = useState("99");
@@ -93,7 +95,7 @@ export const Calculator = () => {
           contentContainerStyle={{ paddingBottom: 110 }}
         >
           <VStack className="flex-1 p-6" space="xl">
-            {/* Header */}
+            {/* Header - NativeWind className 테스트 */}
             <VStack className="items-center">
               <Text
                 className="text-white text-2xl font-black uppercase text-center"
@@ -105,15 +107,24 @@ export const Calculator = () => {
                   letterSpacing: 6,
                   fontWeight: "900",
                   color: "#F8FAFC",
+                  marginTop: 20,
                 }}
               >
                 CALCULATOR
               </Text>
+              {/* NativeWind 테스트용 박스 */}
+              <VStack className="bg-red-500 p-4 rounded-lg mt-4">
+                <Text className="text-white text-center font-bold">
+                  NativeWind 테스트 - 빨간 박스가 보이면 className 작동!
+                </Text>
+              </VStack>
             </VStack>
             {/* Metal Selection */}
             <Box
-              className="rounded-3xl p-6 mt-10"
               style={{
+                borderRadius: 24,
+                padding: 24,
+                marginTop: 40,
                 backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
                 borderColor: "rgba(255, 255, 255, 0.08)",
