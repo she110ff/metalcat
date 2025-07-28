@@ -4,9 +4,6 @@ export interface MetalPriceCardProps {
   unit: string;
   changePercent: string;
   changeType: "positive" | "negative";
-  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
-  iconColor: string;
-  bgColor: string;
   onPress?: () => void;
 }
 
@@ -16,9 +13,6 @@ export interface MetalPriceData {
   unit: string;
   changePercent: string;
   changeType: "positive" | "negative";
-  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
-  iconColor: string;
-  bgColor: string;
 }
 
 // 니켈 일별 가격 데이터를 위한 새로운 인터페이스
@@ -45,7 +39,4 @@ export interface MetalDetailData {
     volatility: number;
     totalChange: number;
   };
-  iconName?: string; // 이제 선택적이고 내부적으로 결정됨
-  iconColor: string;
-  bgColor: string;
 }

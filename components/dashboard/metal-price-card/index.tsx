@@ -35,21 +35,36 @@ const getMetalIcon = (metalName: string) => {
   return iconMap[metalName] || Package;
 };
 
+// 금속별 색상 클래스 매핑
+const getMetalColorClass = (metalName: string) => {
+  const colorClassMap: { [key: string]: string } = {
+    알루미늄: "bg-indigo-600 shadow-indigo-500/60", // 인디고 - 항공기용 알루미늄
+    납: "bg-green-500 shadow-green-500/60", // 그린 - 배터리용 납
+    아연: "bg-blue-500 shadow-blue-500/60", // 블루 - 아연 도금/보호막
+    구리: "bg-orange-400 shadow-orange-500/60", // 오렌지 - 구리 전선색상
+    주석: "bg-gray-400 shadow-gray-500/60", // 그레이 - 주석 캔 색상
+    니켈: "bg-purple-500 shadow-purple-500/60", // 퍼플 - 니켈 동전 색상
+    중량고철: "bg-red-500 shadow-red-500/60", // 레드 - 자동차 고철
+    경량고철: "bg-green-500 shadow-green-500/60", // 그린 - 자전거 등 경량
+    특수고철: "bg-purple-600 shadow-purple-500/60", // 퍼플 - 특수 합금
+  };
+
+  return colorClassMap[metalName] || "bg-gray-500 shadow-gray-500/60";
+};
+
 export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
   metalName,
   price,
   unit,
   changePercent,
   changeType,
-  iconName,
-  iconColor,
-  bgColor,
   onPress,
 }) => {
   const changeColor =
     changeType === "positive" ? "text-green-400" : "text-red-400";
 
   const IconComponent = getMetalIcon(metalName);
+  const metalColorClass = getMetalColorClass(metalName);
 
   return (
     <Pressable
@@ -66,17 +81,9 @@ export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
         <HStack className="items-center justify-between">
           <HStack className="items-center">
             <Box
-              className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-lg"
-              style={{
-                backgroundColor: bgColor,
-                shadowColor: bgColor,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.6,
-                shadowRadius: 8,
-                elevation: 8,
-              }}
+              className={`w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-lg ${metalColorClass}`}
             >
-              <IconComponent size={20} color={iconColor} strokeWidth={2.5} />
+              <IconComponent size={20} color="#FFFFFF" strokeWidth={2.5} />
             </Box>
             <VStack className="items-start" space="xs">
               <Text className="text-slate-50 font-bold text-base tracking-wide font-nanum-bold">
