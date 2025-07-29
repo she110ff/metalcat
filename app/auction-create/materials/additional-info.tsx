@@ -266,17 +266,43 @@ export default function MaterialsAdditionalInfoScreen() {
     >
       <SafeAreaView className="flex-1">
         {/* 헤더 */}
-        <HStack className="items-center justify-between px-6 py-4">
-          <Pressable onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        <HStack className="items-center justify-between px-4 py-3">
+          {/* 모바일 표준 뒤로가기 버튼 */}
+          <Pressable
+            onPress={handleBack}
+            className="active:opacity-60"
+            style={{
+              minWidth: 44,
+              minHeight: 44,
+              alignItems: "center",
+              justifyContent: "center",
+              marginLeft: -8,
+            }}
+          >
+            <HStack className="items-center" space="xs">
+              <Ionicons
+                name={Platform.OS === "ios" ? "chevron-back" : "arrow-back"}
+                size={Platform.OS === "ios" ? 28 : 24}
+                color="#FFFFFF"
+                style={{
+                  fontWeight: Platform.OS === "ios" ? "600" : "normal",
+                }}
+              />
+              {Platform.OS === "ios" && (
+                <Text className="text-white text-base font-medium">뒤로</Text>
+              )}
+            </HStack>
           </Pressable>
+
           <Text
-            className="text-white text-lg font-bold"
+            className="text-white text-xl font-bold"
             style={{ fontFamily: "NanumGothic" }}
           >
             중고자재 추가 정보
           </Text>
-          <Box style={{ width: 24 }} />
+
+          {/* 오른쪽 여백 (대칭을 위해) */}
+          <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
         </HStack>
 
         {/* 다음 주소 검색 모달 */}

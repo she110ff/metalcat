@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Image,
-  Platform,
-  ActionSheetIOS,
-} from "react-native";
+import { Alert, ScrollView, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
@@ -17,17 +10,10 @@ import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { Ionicons } from "@expo/vector-icons";
-import { Plus } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
 import { machineryProductTypes } from "@/data";
-import { PhotoInfo, MachineryProductType } from "@/data/types";
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+import { MachineryProductType } from "@/data/types";
+import { PhotoPicker, PhotoInfo } from "@/components/PhotoPicker";
 
 export default function MachineryAuctionCreate() {
   const router = useRouter();
@@ -61,24 +47,6 @@ export default function MachineryAuctionCreate() {
     },
   ]);
 
-  // 권한 요청 함수
-  const requestPermissions = async () => {
-    const { status: cameraStatus } =
-      await ImagePicker.requestCameraPermissionsAsync();
-    const { status: libraryStatus } =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (cameraStatus !== "granted" || libraryStatus !== "granted") {
-      Alert.alert(
-        "권한 필요",
-        "카메라와 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
-        [{ text: "확인" }]
-      );
-      return false;
-    }
-    return true;
-  };
-
   const handleBack = () => {
     router.back();
   };
@@ -90,103 +58,6 @@ export default function MachineryAuctionCreate() {
     } else {
       setSelectedProductType(productType);
     }
-  };
-
-  // 이미지 선택 옵션
-  const showImagePickerOptions = () => {
-    if (Platform.OS === "ios") {
-      ActionSheetIOS.showActionSheetWithOptions(
-        {
-          options: ["취소", "카메라", "갤러리"],
-          cancelButtonIndex: 0,
-        },
-        (buttonIndex) => {
-          if (buttonIndex === 1) {
-            handleTakePhoto();
-          } else if (buttonIndex === 2) {
-            handleLoadPhoto();
-          }
-        }
-      );
-    } else {
-      Alert.alert("사진 선택", "사진을 어떻게 추가하시겠습니까?", [
-        { text: "취소", style: "cancel" },
-        { text: "카메라", onPress: handleTakePhoto },
-        { text: "갤러리", onPress: handleLoadPhoto },
-      ]);
-    }
-  };
-
-  const handleTakePhoto = async () => {
-    const hasPermissions = await requestPermissions();
-    if (!hasPermissions) return;
-
-    try {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-      });
-
-      if (!result.canceled && result.assets?.[0]) {
-        const newPhoto: PhotoInfo = {
-          id: `photo_${Date.now()}`,
-          uri: result.assets[0].uri,
-          isRepresentative: photos.length === 0,
-          type: "full",
-        };
-
-        setPhotos((prev) => [...prev, newPhoto]);
-      }
-    } catch (error) {
-      console.error("카메라 에러:", error);
-      Alert.alert("오류", "카메라를 실행하는데 문제가 발생했습니다.");
-    }
-  };
-
-  const handleLoadPhoto = async () => {
-    const hasPermissions = await requestPermissions();
-    if (!hasPermissions) return;
-
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: true,
-        allowsEditing: false,
-        quality: 0.8,
-        selectionLimit: 5 - photos.length,
-      });
-
-      if (!result.canceled && result.assets) {
-        const newPhotos: PhotoInfo[] = result.assets.map((asset, index) => ({
-          id: `photo_${Date.now()}_${index}`,
-          uri: asset.uri,
-          isRepresentative: photos.length === 0 && index === 0,
-          type: "full",
-        }));
-
-        setPhotos((prev) => [...prev, ...newPhotos]);
-      }
-    } catch (error) {
-      console.error("갤러리 에러:", error);
-      Alert.alert("오류", "갤러리를 여는데 문제가 발생했습니다.");
-    }
-  };
-
-  const handleRemovePhoto = (photoId: string) => {
-    setPhotos((prev) => {
-      const filtered = prev.filter((photo) => photo.id !== photoId);
-
-      if (
-        filtered.length > 0 &&
-        !filtered.some((photo) => photo.isRepresentative)
-      ) {
-        filtered[0].isRepresentative = true;
-      }
-
-      return filtered;
-    });
   };
 
   // 진행하기 버튼 활성화 조건 체크
@@ -568,91 +439,23 @@ export default function MachineryAuctionCreate() {
             </VStack>
 
             {/* 사진 등록 */}
-            <VStack space="lg">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                사진 등록
-              </Text>
+            <PhotoPicker
+              photos={photos}
+              onPhotosChange={setPhotos}
+              maxPhotos={5}
+              minPhotos={3}
+              hasRepresentative={true}
+              title="사진 등록"
+              showCounter={false}
+              size="medium"
+            />
 
-              {/* 사진 미리보기 */}
-              <VStack space="md">
-                <HStack space="md" className="flex-wrap">
-                  {photos.map((photo, index) => (
-                    <Box key={photo.id} className="relative">
-                      <Image
-                        source={{ uri: photo.uri }}
-                        className="w-20 h-20 rounded-lg"
-                        style={{ resizeMode: "cover" }}
-                        onError={(error) => {
-                          console.warn("이미지 로딩 실패:", photo.uri, error);
-                        }}
-                        defaultSource={{
-                          uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                        }}
-                      />
-                      <Pressable
-                        onPress={() => handleRemovePhoto(photo.id)}
-                        style={{
-                          position: "absolute",
-                          top: -8,
-                          right: -8,
-                          width: 26,
-                          height: 26,
-                          borderRadius: 13,
-                          backgroundColor: "#000000",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          borderWidth: 2,
-                          borderColor: "#FFFFFF",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: "#FFFFFF",
-                            fontSize: 16,
-                            fontWeight: "bold",
-                            lineHeight: 18,
-                          }}
-                        >
-                          ×
-                        </Text>
-                      </Pressable>
-                    </Box>
-                  ))}
-
-                  {/* 사진 추가 버튼 */}
-                  {photos.length < 5 && (
-                    <Pressable
-                      onPress={showImagePickerOptions}
-                      className="w-20 h-20 rounded-lg border-2 border-dashed items-center justify-center"
-                      style={{
-                        borderColor: "rgba(156, 163, 175, 0.5)",
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      }}
-                    >
-                      <VStack className="items-center" space="xs">
-                        <Plus size={20} color="#9CA3AF" strokeWidth={2} />
-                        <Text
-                          className="text-gray-400 text-xs"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          추가
-                        </Text>
-                      </VStack>
-                    </Pressable>
-                  )}
-                </HStack>
-
-                <Text
-                  className="text-gray-400 text-sm text-center"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  사진 추가 버튼을 눌러 카메라 또는 갤러리에서 선택하세요
-                </Text>
-              </VStack>
-            </VStack>
+            <Text
+              className="text-gray-400 text-sm text-center"
+              style={{ fontFamily: "NanumGothic" }}
+            >
+              사진 추가 버튼을 눌러 카메라 또는 갤러리에서 선택하세요
+            </Text>
           </VStack>
         </ScrollView>
 
