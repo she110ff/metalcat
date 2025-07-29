@@ -237,19 +237,19 @@ export const sampleAddresses: AddressInfo[] = [
 export const samplePhotos: PhotoInfo[] = [
   {
     id: "1",
-    uri: "https://picsum.photos/800/600?random=1",
+    uri: "https://dummyimage.com/800x600/10B981/FFFFFF&text=샘플+이미지+1",
     isRepresentative: true,
     type: "full",
   },
   {
     id: "2",
-    uri: "https://picsum.photos/800/600?random=2",
+    uri: "https://dummyimage.com/800x600/10B981/FFFFFF&text=샘플+이미지+2",
     isRepresentative: false,
     type: "closeup",
   },
   {
     id: "3",
-    uri: "https://picsum.photos/800/600?random=3",
+    uri: "https://dummyimage.com/800x600/10B981/FFFFFF&text=샘플+이미지+3",
     isRepresentative: false,
     type: "detail",
   },
@@ -259,25 +259,25 @@ export const samplePhotos: PhotoInfo[] = [
 export const copperPhotos: PhotoInfo[] = [
   {
     id: "copper_1",
-    uri: "https://picsum.photos/800/600?random=4",
+    uri: "https://dummyimage.com/800x600/D97706/FFFFFF&text=구리+1",
     isRepresentative: true,
     type: "full",
   },
   {
     id: "copper_2",
-    uri: "https://picsum.photos/800/600?random=5",
+    uri: "https://dummyimage.com/800x600/D97706/FFFFFF&text=구리+2",
     isRepresentative: false,
     type: "closeup",
   },
   {
     id: "copper_3",
-    uri: "https://picsum.photos/800/600?random=6",
+    uri: "https://dummyimage.com/800x600/D97706/FFFFFF&text=구리+3",
     isRepresentative: false,
     type: "detail",
   },
   {
     id: "copper_4",
-    uri: "https://picsum.photos/800/600?random=7",
+    uri: "https://dummyimage.com/800x600/D97706/FFFFFF&text=구리+4",
     isRepresentative: false,
     type: "detail",
   },
@@ -287,13 +287,13 @@ export const copperPhotos: PhotoInfo[] = [
 export const stainlessPhotos: PhotoInfo[] = [
   {
     id: "stainless_1",
-    uri: "https://picsum.photos/800/600?random=8",
+    uri: "https://dummyimage.com/800x600/6B7280/FFFFFF&text=스테인리스+1",
     isRepresentative: true,
     type: "full",
   },
   {
     id: "stainless_2",
-    uri: "https://picsum.photos/800/600?random=9",
+    uri: "https://dummyimage.com/800x600/6B7280/FFFFFF&text=스테인리스+2",
     isRepresentative: false,
     type: "closeup",
   },
@@ -303,19 +303,19 @@ export const stainlessPhotos: PhotoInfo[] = [
 export const brassPhotos: PhotoInfo[] = [
   {
     id: "brass_1",
-    uri: "https://picsum.photos/800/600?random=10",
+    uri: "https://dummyimage.com/800x600/FBBF24/FFFFFF&text=황동+1",
     isRepresentative: true,
     type: "full",
   },
   {
     id: "brass_2",
-    uri: "https://picsum.photos/800/600?random=11",
+    uri: "https://dummyimage.com/800x600/FBBF24/FFFFFF&text=황동+2",
     isRepresentative: false,
     type: "closeup",
   },
   {
     id: "brass_3",
-    uri: "https://picsum.photos/800/600?random=12",
+    uri: "https://dummyimage.com/800x600/FBBF24/FFFFFF&text=황동+3",
     isRepresentative: false,
     type: "detail",
   },
@@ -767,7 +767,7 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     currentBid: 12000000,
     pricePerUnit: 12000000,
     totalBidAmount: 12000000,
-    endTime: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12시간 후
+    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2일 후
     status: "ending",
     bidders: 5,
     viewCount: 89,
@@ -953,7 +953,7 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     currentBid: 4500000,
     pricePerUnit: 4500000,
     totalBidAmount: 4500000,
-    endTime: new Date(Date.now() + 12 * 60 * 60 * 1000), // 12시간 후 (긴급 경매)
+    endTime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2일 후 (긴급 경매)
     status: "ending",
     bidders: 5,
     viewCount: 67,

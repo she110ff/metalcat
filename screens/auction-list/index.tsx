@@ -182,13 +182,33 @@ export const AuctionList = () => {
       : queryAuctions.map((auction) => ({
           id: auction.id,
           title:
-            (auction as any).title ||
-            (auction as any).productName ||
-            "고철 경매",
-          metalType: auction.productType?.name || "고철",
-          weight: (auction as any).quantity?.quantity
-            ? `${(auction as any).quantity.quantity}대`
-            : "1건",
+            (auction as any).auctionCategory === "demolition" &&
+            (auction as any).demolitionInfo?.demolitionTitle
+              ? (auction as any).demolitionInfo.demolitionTitle
+              : (auction as any).title ||
+                (auction as any).productName ||
+                "고철 경매",
+          metalType:
+            (auction as any).auctionCategory === "demolition"
+              ? "철거"
+              : auction.productType?.name || "고철",
+          weight:
+            (auction as any).auctionCategory === "demolition" &&
+            (auction as any).demolitionInfo
+              ? `${
+                  (
+                    auction as any
+                  ).demolitionInfo.demolitionArea?.toLocaleString() || "미상"
+                } ${
+                  (auction as any).demolitionInfo.areaUnit === "sqm"
+                    ? "㎡"
+                    : "평"
+                }`
+              : (auction as any).quantity?.quantity
+              ? `${(auction as any).quantity.quantity}${
+                  (auction as any).auctionCategory === "machinery" ? "대" : "kg"
+                }`
+              : "1건",
           currentBid: formatAuctionPrice(auction.currentBid || 0),
           endTime: getRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",

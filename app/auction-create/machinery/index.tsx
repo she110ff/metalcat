@@ -25,23 +25,23 @@ export default function MachineryAuctionCreate() {
   const [quantity, setQuantity] = useState("1");
   const [unit] = useState("대"); // 고정된 단위
 
-  // 기본 사진들 추가 (중고기계 경매용 샘플 이미지)
+  // ✅ 기본 사진들 추가 (중고기계 경매용 샘플 이미지)
   const [photos, setPhotos] = useState<PhotoInfo[]>([
     {
       id: "default_1",
-      uri: "https://images.unsplash.com/photo-1581094651181-35942459e431?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/F59E0B/FFFFFF&text=중고기계+1",
       isRepresentative: true,
       type: "full",
     },
     {
       id: "default_2",
-      uri: "https://images.unsplash.com/photo-1581094651181-35942459e431?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/F59E0B/FFFFFF&text=중고기계+2",
       isRepresentative: false,
       type: "full",
     },
     {
       id: "default_3",
-      uri: "https://images.unsplash.com/photo-1581094651181-35942459e431?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/F59E0B/FFFFFF&text=중고기계+3",
       isRepresentative: false,
       type: "full",
     },

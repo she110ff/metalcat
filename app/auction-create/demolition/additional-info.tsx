@@ -18,6 +18,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { useCreateAuction } from "@/hooks/useAuctions";
 import {
+  calculateAuctionEndTime,
+  getAuctionDurationInfo,
+  getDefaultAuctionEndTime,
+} from "@/data/utils/auction-utils";
+import {
   DemolitionAuctionItem,
   PhotoInfo,
   DemolitionProductType,
@@ -200,11 +205,8 @@ export default function DemolitionAdditionalInfoScreen() {
     setIsSubmitting(true);
 
     try {
-      // 경매 종료 시간 계산 (긴급 경매는 12시간, 일반 경매는 7일)
-      const endTime =
-        transactionType === "urgent"
-          ? new Date(Date.now() + 12 * 60 * 60 * 1000) // 12시간 후
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+      // 경매 종료 시간 계산 (긴급 경매는 2일, 일반 경매는 7일 - 오후 6시 종료)
+      const endTime = calculateAuctionEndTime(transactionType);
 
       // 전체 경매 데이터 구성 (첫 번째 + 두 번째 단계 데이터 통합)
       const completeAuctionData: Partial<DemolitionAuctionItem> = {
@@ -246,10 +248,10 @@ export default function DemolitionAdditionalInfoScreen() {
 
       console.log("💾 완전한 철거 경매 데이터 저장:", completeAuctionData);
 
-      // ✅ 실제 데이터 저장 로직 연결 (임시로 성공 처리)
-      // const createdAuction = await createAuctionMutation.mutateAsync(
-      //   completeAuctionData
-      // );
+      // ✅ 실제 데이터 저장 로직 연결
+      const createdAuction = await createAuctionMutation.mutateAsync(
+        completeAuctionData
+      );
 
       console.log("🎉 철거 경매 등록 성공");
 
@@ -257,9 +259,7 @@ export default function DemolitionAdditionalInfoScreen() {
       Alert.alert(
         "등록 완료",
         `철거 경매가 성공적으로 등록되었습니다!\n\n${
-          transactionType === "urgent"
-            ? "긴급 경매 (12시간 진행)"
-            : "일반 경매 (7일 진행)"
+          getAuctionDurationInfo(transactionType).fullDescription
         }`,
         [
           {
@@ -545,7 +545,7 @@ export default function DemolitionAdditionalInfoScreen() {
                         className="text-gray-400 text-sm"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        12시간 진행
+                        2일간 진행
                       </Text>
                     </Box>
                   </Pressable>

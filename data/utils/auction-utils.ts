@@ -389,3 +389,87 @@ export const getDemolitionSpecialNotes = (
 export const getDemolitionTitle = (item: DemolitionAuctionItem): string => {
   return item.demolitionInfo.demolitionTitle || item.title || "철거";
 };
+
+// ===== 경매 진행 방식 관리 유틸리티 =====
+
+// 경매 종료 시간 계산 (오후 6시 고정)
+export const calculateAuctionEndTime = (
+  transactionType: "normal" | "urgent",
+  startDate?: Date
+): Date => {
+  const start = startDate || new Date();
+  const daysToAdd = transactionType === "urgent" ? 2 : 7; // 긴급: 2일, 일반: 7일
+
+  const endDate = new Date(start);
+  endDate.setDate(endDate.getDate() + daysToAdd);
+
+  // 오후 6시로 설정 (18:00:00)
+  endDate.setHours(18, 0, 0, 0);
+
+  return endDate;
+};
+
+// 경매 진행 방식 정보 가져오기
+export const getAuctionDurationInfo = (
+  transactionType: "normal" | "urgent"
+) => {
+  return {
+    duration: transactionType === "urgent" ? "2일" : "7일",
+    description:
+      transactionType === "urgent"
+        ? "긴급 경매 (2일간 진행)"
+        : "일반 경매 (7일간 진행)",
+    endTime: "오후 6시 종료",
+    fullDescription:
+      transactionType === "urgent"
+        ? "긴급 경매는 2일간 진행되며, 종료일 오후 6시에 마감됩니다."
+        : "일반 경매는 7일간 진행되며, 종료일 오후 6시에 마감됩니다.",
+  };
+};
+
+// 경매 종료까지 남은 시간 계산 (시/분 단위)
+export const getTimeUntilAuctionEnd = (endTime: Date): string => {
+  const now = new Date();
+  const diffInMs = endTime.getTime() - now.getTime();
+
+  if (diffInMs <= 0) {
+    return "종료됨";
+  }
+
+  const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+  const diffInMinutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  if (diffInHours >= 24) {
+    const days = Math.floor(diffInHours / 24);
+    const hours = diffInHours % 24;
+    return hours > 0 ? `${days}일 ${hours}시간` : `${days}일`;
+  } else if (diffInHours > 0) {
+    return diffInMinutes > 0
+      ? `${diffInHours}시간 ${diffInMinutes}분`
+      : `${diffInHours}시간`;
+  } else {
+    return `${diffInMinutes}분`;
+  }
+};
+
+// 경매 상태에 따른 마감 정보 텍스트
+export const getAuctionDeadlineText = (
+  transactionType: "normal" | "urgent",
+  endTime: Date
+): string => {
+  const timeRemaining = getTimeUntilAuctionEnd(endTime);
+  const durationType = transactionType === "urgent" ? "긴급" : "일반";
+
+  if (timeRemaining === "종료됨") {
+    return "경매 종료";
+  }
+
+  return `${durationType} • ${timeRemaining} 남음`;
+};
+
+// 경매 생성 시 기본 종료 시간 설정
+export const getDefaultAuctionEndTime = (
+  transactionType: "normal" | "urgent"
+): Date => {
+  return calculateAuctionEndTime(transactionType);
+};

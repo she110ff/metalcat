@@ -37,15 +37,15 @@ export default function ServiceRequest() {
   const [photos, setPhotos] = useState<PhotoItem[]>([
     {
       id: "default_service_1",
-      uri: "https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+1",
     },
     {
       id: "default_service_2",
-      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+2",
     },
     {
       id: "default_service_3",
-      uri: "https://images.unsplash.com/photo-1583501563110-53c5b33a096d?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+3",
     },
   ]);
 

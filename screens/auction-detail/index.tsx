@@ -759,19 +759,6 @@ export const AuctionDetail = () => {
                                 : "업체가 처리해주세요"}
                             </Text>
                           </VStack>
-
-                          {(auction as any).demolitionInfo.specialNotes && (
-                            <VStack space="sm">
-                              <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                                특이 사항
-                              </Text>
-                              <Box className="rounded-xl p-3 bg-orange-500/10 border border-orange-500/20">
-                                <Text className="text-orange-200 text-sm font-medium">
-                                  {(auction as any).demolitionInfo.specialNotes}
-                                </Text>
-                              </Box>
-                            </VStack>
-                          )}
                         </>
                       )}
 
@@ -799,8 +786,8 @@ export const AuctionDetail = () => {
                       </Text>
                       <Text className="text-white font-semibold text-base">
                         {auctionDetail.transactionType === "urgent"
-                          ? "긴급 경매"
-                          : "일반 경매"}
+                          ? "긴급 경매 (2일간)"
+                          : "일반 경매 (7일간)"}
                       </Text>
                     </VStack>
 

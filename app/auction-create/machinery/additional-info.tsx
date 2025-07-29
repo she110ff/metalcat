@@ -17,6 +17,10 @@ import { router, useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { useCreateAuction } from "@/hooks/useAuctions";
+import {
+  calculateAuctionEndTime,
+  getAuctionDurationInfo,
+} from "@/data/utils/auction-utils";
 import { salesEnvironmentOptions } from "@/data/auction/sample-data";
 import {
   MachineryAuctionItem,
@@ -197,11 +201,8 @@ export default function MachineryAdditionalInfoScreen() {
         }
       }
 
-      // 경매 종료 시간 계산 (긴급 경매는 2일, 일반 경매는 7일)
-      const endTime =
-        transactionType === "urgent"
-          ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // 2일 후
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+      // 경매 종료 시간 계산 (긴급 경매는 2일, 일반 경매는 7일 - 오후 6시 종료)
+      const endTime = calculateAuctionEndTime(transactionType);
 
       // 전체 경매 데이터 구성 (첫 번째 + 두 번째 단계 데이터 통합)
       const completeAuctionData: Partial<MachineryAuctionItem> = {
@@ -258,9 +259,7 @@ export default function MachineryAdditionalInfoScreen() {
       Alert.alert(
         "등록 완료",
         `중고기계 경매가 성공적으로 등록되었습니다!\n\n${
-          transactionType === "urgent"
-            ? "긴급 경매 (2일 진행)"
-            : "일반 경매 (7일 진행)"
+          getAuctionDurationInfo(transactionType).fullDescription
         }`,
         [
           {

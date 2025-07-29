@@ -25,19 +25,19 @@ export default function DemolitionAuctionCreate() {
   const [photos, setPhotos] = useState<PhotoInfo[]>([
     {
       id: "default_1",
-      uri: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+1",
       isRepresentative: true,
       type: "full",
     },
     {
       id: "default_2",
-      uri: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+2",
       isRepresentative: false,
       type: "full",
     },
     {
       id: "default_3",
-      uri: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+3",
       isRepresentative: false,
       type: "full",
     },

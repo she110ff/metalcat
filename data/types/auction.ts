@@ -101,7 +101,7 @@ export interface DemolitionInfo {
   demolitionMethod: "full" | "partial" | "interior"; // 철거 방식
   structureType: "masonry" | "reinforced-concrete" | "steel-frame"; // 구조 타입
 
-  transactionType: "normal" | "urgent"; // 거래 종류 (긴급 경매는 12시간)
+  transactionType: "normal" | "urgent"; // 거래 종류 (긴급 경매는 2일간)
   wasteDisposal: "self" | "company"; // 폐기물 처리
   demolitionArea: number; // 철거 면적
   areaUnit: "sqm" | "pyeong"; // 면적 단위

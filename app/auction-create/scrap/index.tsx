@@ -23,19 +23,19 @@ export default function ScrapAuctionCreate() {
   const [photos, setPhotos] = useState<PhotoInfo[]>([
     {
       id: "default_1",
-      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/10B981/FFFFFF&text=고철+1",
       isRepresentative: true,
       type: "full",
     },
     {
       id: "default_2",
-      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/10B981/FFFFFF&text=고철+2",
       isRepresentative: false,
       type: "full",
     },
     {
       id: "default_3",
-      uri: "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400&h=300&fit=crop",
+      uri: "https://dummyimage.com/400x300/10B981/FFFFFF&text=고철+3",
       isRepresentative: false,
       type: "full",
     },
