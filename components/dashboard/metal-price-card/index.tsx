@@ -77,7 +77,7 @@ export const MetalPriceCard: React.FC<MetalPriceCardProps> = ({
       accessibilityRole="button"
       accessibilityHint="금속 상세 정보를 보려면 탭하세요"
     >
-      <Box className="rounded-2xl p-4 bg-white/4 border border-white/8 shadow-lg hover:bg-white/6 transition-colors duration-200 animate-slide-up">
+      <Box className="rounded-2xl p-4 bg-white/10 border border-white/15 shadow-lg hover:bg-white/12 transition-colors duration-200 animate-slide-up backdrop-blur-sm">
         <HStack className="items-center justify-between">
           <HStack className="items-center">
             <Box
