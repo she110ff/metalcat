@@ -673,7 +673,7 @@ export const AuctionList = () => {
                   fontWeight: "600",
                 }}
               >
-                쉽고 빠른 경매 플랫폼
+                쉽고 빠른 금속 거래 플랫폼
               </Text>
             </View>
 
