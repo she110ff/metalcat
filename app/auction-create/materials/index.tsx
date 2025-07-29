@@ -32,10 +32,6 @@ const styles = StyleSheet.create({
 
 export default function MaterialsAuctionCreate() {
   const router = useRouter();
-  const [selectedProductType, setSelectedProductType] =
-    useState<MaterialProductType | null>(null);
-  const [quantity, setQuantity] = useState("1");
-  const [unit, setUnit] = useState<"개" | "kg" | "m" | "㎡">("개");
 
   // 기본 사진들 추가 (중고자재 경매용 샘플 이미지)
   const [photos, setPhotos] = useState<PhotoInfo[]>([
@@ -81,56 +77,19 @@ export default function MaterialsAuctionCreate() {
     router.back();
   };
 
-  const handleProductTypeSelect = (productType: MaterialProductType) => {
-    // 토글 기능: 같은 종류를 다시 클릭하면 선택 해제
-    if (selectedProductType?.id === productType.id) {
-      setSelectedProductType(null);
-    } else {
-      setSelectedProductType(productType);
-    }
-  };
-
   // 다음 단계로 이동 가능한지 체크
-  const isNextButtonEnabled = () =>
-    selectedProductType !== null &&
-    quantity.trim() !== "" &&
-    !isNaN(parseFloat(quantity)) &&
-    parseFloat(quantity) >= 1 &&
-    photos.length >= 3;
+  const isNextButtonEnabled = () => photos.length >= 3;
 
   // 진행 상태 텍스트
   const getProgressText = () => {
-    if (!selectedProductType) return "자재 종류를 선택하세요";
-    if (
-      !quantity.trim() ||
-      isNaN(parseFloat(quantity)) ||
-      parseFloat(quantity) < 1
-    )
-      return "수량을 입력하세요";
     if (photos.length < 3) return `사진 ${photos.length}/3 (최소 3장 필요)`;
     return "다음 단계로 진행하세요";
   };
 
   const handleNext = () => {
     console.log("handleNext 호출됨");
-    console.log("selectedProductType:", selectedProductType);
-    console.log("quantity:", quantity);
     console.log("photos.length:", photos.length);
 
-    if (!selectedProductType) {
-      Alert.alert("알림", "자재 종류를 선택해주세요.");
-      return;
-    }
-    if (!quantity.trim()) {
-      Alert.alert("알림", "수량을 입력해주세요.");
-      return;
-    }
-
-    const quantityValue = parseFloat(quantity);
-    if (isNaN(quantityValue) || quantityValue < 1) {
-      Alert.alert("입력 오류", "수량은 1 이상이어야 합니다.");
-      return;
-    }
     if (photos.length < 3) {
       Alert.alert("알림", "사진을 최소 3장 이상 등록해주세요.");
       return;
@@ -140,9 +99,7 @@ export default function MaterialsAuctionCreate() {
 
     // 첫 번째 단계 데이터를 쿼리 파라미터로 전달
     const firstStepData = {
-      productType: selectedProductType,
-      quantity: quantityValue,
-      unit: unit,
+      productType: materialsProductTypes[0], // 기본값: H빔
       photos: photos,
     };
 
@@ -165,8 +122,8 @@ export default function MaterialsAuctionCreate() {
 
   // 사진 추가 함수
   const addPhoto = async () => {
-    if (photos.length >= 10) {
-      Alert.alert("알림", "사진은 최대 10장까지 등록할 수 있습니다.");
+    if (photos.length >= 5) {
+      Alert.alert("알림", "사진은 최대 5장까지 등록할 수 있습니다.");
       return;
     }
 
@@ -229,20 +186,21 @@ export default function MaterialsAuctionCreate() {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
+        allowsMultipleSelection: true,
+        allowsEditing: false,
         quality: 0.8,
-        allowsMultipleSelection: false,
+        selectionLimit: 5 - photos.length, // 최대 5장까지
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const newPhoto: PhotoInfo = {
-          id: `photo_${Date.now()}`,
-          uri: result.assets[0].uri,
-          isRepresentative: photos.length === 0,
+      if (!result.canceled && result.assets) {
+        const newPhotos: PhotoInfo[] = result.assets.map((asset, index) => ({
+          id: `photo_${Date.now()}_${index}`,
+          uri: asset.uri,
+          isRepresentative: photos.length === 0 && index === 0, // 첫 번째 사진을 대표 사진으로
           type: "full",
-        };
-        setPhotos([...photos, newPhoto]);
+        }));
+
+        setPhotos((prev) => [...prev, ...newPhotos]);
       }
     } catch (error) {
       console.error("갤러리 오류:", error);
@@ -251,8 +209,19 @@ export default function MaterialsAuctionCreate() {
   };
 
   const removePhoto = (photoId: string) => {
-    const updatedPhotos = photos.filter((photo) => photo.id !== photoId);
-    setPhotos(updatedPhotos);
+    setPhotos((prev) => {
+      const filtered = prev.filter((photo) => photo.id !== photoId);
+
+      // 대표 사진이 삭제된 경우, 첫 번째 사진을 대표 사진으로 설정
+      if (
+        filtered.length > 0 &&
+        !filtered.some((photo) => photo.isRepresentative)
+      ) {
+        filtered[0].isRepresentative = true;
+      }
+
+      return filtered;
+    });
   };
 
   const setRepresentativePhoto = (photoId: string) => {
@@ -263,50 +232,25 @@ export default function MaterialsAuctionCreate() {
     setPhotos(updatedPhotos);
   };
 
-  // 개발용 샘플 데이터 채우기
-  const fillSampleData = () => {
-    setSelectedProductType(materialsProductTypes[0]); // H빔
-    setQuantity("50");
-    setUnit("개");
-  };
-
   return (
     <LinearGradient
       colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
-      style={styles.container}
+      style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
         {/* 헤더 */}
-        <VStack space="md" className="px-6 py-4">
-          <HStack className="items-center justify-between">
+        <VStack space="md">
+          <HStack className="items-center justify-between px-6 py-4">
             <Pressable onPress={handleBack}>
-              <HStack className="items-center space-x-2">
-                <Ionicons
-                  name="arrow-back"
-                  size={24}
-                  color="#FFFFFF"
-                  style={{
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.3,
-                    shadowRadius: 4,
-                  }}
-                />
-                {Platform.OS === "ios" && (
-                  <Text className="text-white text-base font-medium">뒤로</Text>
-                )}
-              </HStack>
+              <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
             </Pressable>
-
             <Text
-              className="text-white text-xl font-bold"
+              className="text-white text-lg font-bold"
               style={{ fontFamily: "NanumGothic" }}
             >
               중고자재 경매 등록
             </Text>
-
-            {/* 오른쪽 여백 (대칭을 위해) */}
-            <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
+            <Box style={{ width: 24 }} />
           </HStack>
         </VStack>
 
@@ -315,180 +259,6 @@ export default function MaterialsAuctionCreate() {
           showsVerticalScrollIndicator={false}
         >
           <VStack space="xl" className="pb-8">
-            {/* 개발용 샘플 데이터 버튼 */}
-            {__DEV__ && (
-              <HStack className="justify-end">
-                <Pressable onPress={fillSampleData}>
-                  <HStack className="items-center space-x-2 bg-purple-600/20 px-3 py-2 rounded-lg">
-                    <Ionicons name="flask" size={16} color="#9333EA" />
-                    <Text
-                      className="text-purple-400 text-sm"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      샘플 데이터
-                    </Text>
-                  </HStack>
-                </Pressable>
-              </HStack>
-            )}
-
-            {/* 자재 종류 선택 */}
-            <VStack space="lg">
-              <Text
-                className="text-yellow-300 text-lg font-bold"
-                style={{ fontFamily: "NanumGothic" }}
-              >
-                자재 종류 선택
-              </Text>
-
-              <VStack space="md">
-                {selectedProductType ? (
-                  // 선택된 자재만 표시
-                  <Pressable
-                    onPress={() => handleProductTypeSelect(selectedProductType)}
-                  >
-                    <Box
-                      className="rounded-xl p-4"
-                      style={{
-                        backgroundColor: "rgba(147, 51, 234, 0.2)",
-                        borderWidth: 1,
-                        borderColor: "rgba(147, 51, 234, 0.5)",
-                      }}
-                    >
-                      <HStack className="items-center justify-between">
-                        <VStack className="flex-1">
-                          <Text
-                            className="text-white font-bold text-base"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            {selectedProductType.name}
-                          </Text>
-                          <Text
-                            className="text-gray-400 text-sm mt-1"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            {selectedProductType.description}
-                          </Text>
-                        </VStack>
-                        <HStack space="sm" className="items-center">
-                          <Ionicons
-                            name="checkmark-circle"
-                            size={24}
-                            color="#9333EA"
-                          />
-                          <Text
-                            className="text-purple-400 text-sm"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            선택됨
-                          </Text>
-                        </HStack>
-                      </HStack>
-                    </Box>
-                  </Pressable>
-                ) : (
-                  // 전체 자재 종류 표시
-                  materialsProductTypes.map((productType) => (
-                    <Pressable
-                      key={productType.id}
-                      onPress={() => handleProductTypeSelect(productType)}
-                    >
-                      <Box
-                        className="rounded-xl p-4"
-                        style={{
-                          backgroundColor: "rgba(255, 255, 255, 0.04)",
-                          borderWidth: 1,
-                          borderColor: "rgba(255, 255, 255, 0.08)",
-                        }}
-                      >
-                        <HStack className="items-center justify-between">
-                          <VStack className="flex-1">
-                            <Text
-                              className="text-white font-bold text-base"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {productType.name}
-                            </Text>
-                            <Text
-                              className="text-gray-400 text-sm mt-1"
-                              style={{ fontFamily: "NanumGothic" }}
-                            >
-                              {productType.description}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-                    </Pressable>
-                  ))
-                )}
-              </VStack>
-            </VStack>
-
-            {/* 수량 입력 */}
-            <VStack space="md">
-              <HStack className="items-center space-x-3">
-                <Ionicons name="calculator" size={20} color="#FCD34D" />
-                <Text
-                  className="text-yellow-300 text-lg font-bold"
-                  style={{ fontFamily: "NanumGothic" }}
-                >
-                  수량 입력
-                </Text>
-                <Text className="text-red-400 text-lg font-bold">*</Text>
-              </HStack>
-
-              <HStack space="md" className="items-end">
-                <Box className="rounded-xl p-4 flex-1">
-                  <Text
-                    className="text-white text-sm mb-2"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    수량
-                  </Text>
-                  <Input className="bg-white/10 border-white/20 rounded-xl">
-                    <InputField
-                      placeholder="수량 입력"
-                      placeholderTextColor="#9CA3AF"
-                      value={quantity}
-                      onChangeText={setQuantity}
-                      keyboardType="numeric"
-                      className="text-white text-base"
-                      style={{ fontFamily: "NanumGothic" }}
-                    />
-                  </Input>
-                </Box>
-
-                <Box className="rounded-xl p-4">
-                  <Text
-                    className="text-white text-sm mb-2"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    단위
-                  </Text>
-                  <HStack space="sm">
-                    {(["개", "kg", "m", "㎡"] as const).map((unitOption) => (
-                      <Pressable
-                        key={unitOption}
-                        onPress={() => setUnit(unitOption)}
-                        className={`px-3 py-2 rounded-lg border ${
-                          unit === unitOption
-                            ? "bg-purple-600/20 border-purple-500"
-                            : "bg-white/5 border-white/20"
-                        }`}
-                      >
-                        <Text
-                          className="text-white text-sm font-medium"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          {unitOption}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </HStack>
-                </Box>
-              </HStack>
-            </VStack>
-
             {/* 사진 등록 */}
             <VStack space="md">
               <HStack className="items-center justify-between">
@@ -506,7 +276,7 @@ export default function MaterialsAuctionCreate() {
                   className="text-gray-400 text-sm"
                   style={{ fontFamily: "NanumGothic" }}
                 >
-                  {photos.length}/10장
+                  {photos.length}/5장
                 </Text>
               </HStack>
 
@@ -514,78 +284,72 @@ export default function MaterialsAuctionCreate() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 className="flex-row"
+                contentContainerStyle={{ paddingVertical: 8 }}
               >
-                <HStack space="md" className="px-1">
-                  {/* 사진 추가 버튼 */}
-                  <Pressable onPress={addPhoto}>
-                    <Box className="w-24 h-24 rounded-xl bg-white/10 border-2 border-dashed border-white/30 items-center justify-center">
-                      <Plus size={24} color="#9CA3AF" />
-                      <Text
-                        className="text-gray-400 text-xs mt-1"
-                        style={{ fontFamily: "NanumGothic" }}
-                      >
-                        추가
-                      </Text>
-                    </Box>
-                  </Pressable>
-
+                <HStack space="md" className="px-3 py-2">
                   {/* 등록된 사진들 */}
                   {photos.map((photo, index) => (
                     <Box key={photo.id} className="relative">
                       <Image
                         source={{ uri: photo.uri }}
-                        className="w-24 h-24 rounded-xl"
+                        className="w-20 h-20 rounded-lg"
                         style={{ resizeMode: "cover" }}
                       />
-                      {/* 대표 사진 표시 */}
-                      {photo.isRepresentative && (
-                        <Box className="absolute top-1 left-1 bg-purple-600 rounded px-1">
-                          <Text
-                            className="text-white text-xs"
-                            style={{ fontFamily: "NanumGothic" }}
-                          >
-                            대표
-                          </Text>
-                        </Box>
-                      )}
-                      {/* 삭제 버튼 */}
+                      {/* 삭제 버튼 개선 */}
                       <Pressable
                         onPress={() => removePhoto(photo.id)}
-                        className="absolute top-1 right-1 bg-red-600 rounded-full w-5 h-5 items-center justify-center"
+                        style={{
+                          position: "absolute",
+                          top: -8,
+                          right: -8,
+                          width: 26,
+                          height: 26,
+                          borderRadius: 13,
+                          backgroundColor: "#000000",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderWidth: 2,
+                          borderColor: "#FFFFFF",
+                        }}
                       >
-                        <Ionicons name="close" size={12} color="#FFFFFF" />
+                        <Text
+                          style={{
+                            color: "#FFFFFF",
+                            fontSize: 16,
+                            fontWeight: "bold",
+                            lineHeight: 18,
+                          }}
+                        >
+                          ×
+                        </Text>
                       </Pressable>
                     </Box>
                   ))}
+
+                  {/* 사진 추가 버튼 - 뒤쪽으로 이동 */}
+                  {photos.length < 5 && (
+                    <Pressable onPress={addPhoto}>
+                      <Box className="w-20 h-20 rounded-lg bg-white/10 border-2 border-dashed border-white/30 items-center justify-center">
+                        <Plus size={20} color="#9CA3AF" strokeWidth={2} />
+                        <Text
+                          className="text-gray-400 text-xs"
+                          style={{ fontFamily: "NanumGothic" }}
+                        >
+                          추가
+                        </Text>
+                      </Box>
+                    </Pressable>
+                  )}
                 </HStack>
               </ScrollView>
 
-              {/* 사진 등록 안내 */}
-              <Box className="bg-blue-600/10 border border-blue-500/30 rounded-xl p-4">
-                <HStack className="items-center space-x-3">
-                  <Ionicons
-                    name="information-circle"
-                    size={20}
-                    color="#60A5FA"
-                  />
-                  <VStack className="flex-1" space="xs">
-                    <Text
-                      className="text-blue-200 font-bold text-sm"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      고품질 사진 촬영 팁
-                    </Text>
-                    <Text
-                      className="text-blue-300 text-xs leading-5"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      • 자재 전체가 잘 보이는 각도로 촬영{"\n"}• 손상 부위나
-                      특징을 자세히 촬영{"\n"}• 밝은 곳에서 선명하게 촬영{"\n"}•
-                      최소 3장 이상 등록 (권장: 5장 이상)
-                    </Text>
-                  </VStack>
-                </HStack>
-              </Box>
+              {/* 사진 등록 안내 메시지 */}
+              <Text
+                className="text-gray-400 text-sm text-center"
+                style={{ fontFamily: "NanumGothic" }}
+              >
+                사진 추가 버튼을 눌러 카메라 또는 갤러리에서 선택하세요
+              </Text>
             </VStack>
           </VStack>
         </ScrollView>
@@ -608,10 +372,8 @@ export default function MaterialsAuctionCreate() {
               style={{ fontFamily: "NanumGothic" }}
             >
               {isNextButtonEnabled()
-                ? "📋 추가 정보 입력 →"
-                : `진행하기 (${selectedProductType ? "✓" : "종류"} | ${
-                    parseFloat(quantity) >= 1 ? "✓" : "수량"
-                  } | ${photos.length}/3장)`}
+                ? `진행하기 ✓`
+                : `진행하기 (${photos.length}/3장)`}
             </ButtonText>
           </Button>
         </Box>

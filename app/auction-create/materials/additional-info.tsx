@@ -27,8 +27,6 @@ import {
 // 첫 번째 단계에서 전달받은 데이터 타입
 interface FirstStepData {
   productType: MaterialProductType;
-  quantity: number;
-  unit: string;
   photos: PhotoInfo[];
 }
 
@@ -116,19 +114,6 @@ export default function MaterialsAdditionalInfoScreen() {
     });
   }, [title, address, addressDetail, description, desiredPrice]);
 
-  // 개발용 샘플 데이터 채우기
-  const fillSampleData = () => {
-    setTitle("고품질 H빔 자재 판매");
-    setAddress("서울특별시 강남구 테헤란로 123");
-    setAddressDetail("테크노밸리 지하 1층");
-    setDescription(
-      "건축용 H빔 자재입니다. 미사용 제품으로 상태가 매우 좋습니다. 현장 접근성이 좋아 운반이 용이합니다."
-    );
-    setDesiredPrice("15000000");
-    setAccessibility("easy");
-    setShippingCost("seller");
-  };
-
   const handleBack = () => {
     router.back();
   };
@@ -187,8 +172,8 @@ export default function MaterialsAdditionalInfoScreen() {
         transactionType,
         auctionCategory: "materials" as const,
         quantity: {
-          quantity: firstStepData.quantity,
-          unit: firstStepData.unit,
+          quantity: 1, // 기본값
+          unit: "개", // 기본값
         },
         salesEnvironment: {
           delivery: "buyer", // Fixed value
@@ -291,29 +276,8 @@ export default function MaterialsAdditionalInfoScreen() {
           >
             중고자재 추가 정보
           </Text>
-          <Pressable onPress={fillSampleData}>
-            <Ionicons name="flask" size={24} color="#9333EA" />
-          </Pressable>
+          <Box style={{ width: 24 }} />
         </HStack>
-
-        {/* 진행 단계 표시 */}
-        <Box className="px-6 pb-4">
-          <HStack className="items-center space-x-2">
-            <Box className="w-8 h-8 rounded-full bg-green-600 items-center justify-center">
-              <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-            </Box>
-            <Box className="flex-1 h-1 bg-purple-600 rounded" />
-            <Box className="w-8 h-8 rounded-full bg-purple-600 items-center justify-center">
-              <Text className="text-white text-sm font-bold">2</Text>
-            </Box>
-          </HStack>
-          <Text
-            className="text-purple-300 text-sm mt-2"
-            style={{ fontFamily: "NanumGothic" }}
-          >
-            2단계: 추가 정보 입력
-          </Text>
-        </Box>
 
         {/* 다음 주소 검색 모달 */}
         {showAddressSearch && (
@@ -341,23 +305,14 @@ export default function MaterialsAdditionalInfoScreen() {
                     className="text-purple-300 text-sm font-bold"
                     style={{ fontFamily: "NanumGothic" }}
                   >
-                    ✓ 선택한 정보
+                    ✓ 등록 정보
                   </Text>
-                  <HStack className="justify-between">
-                    <Text
-                      className="text-white"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      자재 종류: {firstStepData.productType.name}
-                    </Text>
-                    <Text
-                      className="text-white"
-                      style={{ fontFamily: "NanumGothic" }}
-                    >
-                      수량: {firstStepData.quantity}
-                      {firstStepData.unit}
-                    </Text>
-                  </HStack>
+                  <Text
+                    className="text-white"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    카테고리: 중고자재
+                  </Text>
                   <Text
                     className="text-white text-xs"
                     style={{ fontFamily: "NanumGothic" }}
@@ -390,6 +345,43 @@ export default function MaterialsAdditionalInfoScreen() {
               </HStack>
             </Box>
 
+            {/* 전화번호 노출 안내 */}
+            <VStack space="md" className="mb-6">
+              <HStack className="items-center space-x-3">
+                <Ionicons name="call" size={20} color="#FCD34D" />
+                <Text
+                  className="text-yellow-300 text-lg font-bold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  안전한 거래 연결
+                </Text>
+              </HStack>
+              <Box className="bg-blue-600/20 border border-blue-500/30 rounded-2xl p-5">
+                <HStack className="items-center space-x-3">
+                  <Ionicons
+                    name="information-circle"
+                    size={24}
+                    color="#60A5FA"
+                  />
+                  <VStack className="flex-1" space="xs">
+                    <Text
+                      className="text-blue-200 font-bold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      구매자와 직접 소통 가능
+                    </Text>
+                    <Text
+                      className="text-blue-300 text-sm leading-5"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      신뢰할 수 있는 거래를 위해 연락처가 낙찰된 구매자에게만
+                      공개됩니다.
+                    </Text>
+                  </VStack>
+                </HStack>
+              </Box>
+            </VStack>
+
             <VStack space="xl" className="flex-1">
               {/* 경매 제목 */}
               <VStack space="md">
@@ -403,13 +395,13 @@ export default function MaterialsAdditionalInfoScreen() {
                   </Text>
                   <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
-                <Input className="bg-white/5 border border-white/10 rounded-2xl">
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
                     placeholder="자재 경매 제목을 입력하세요"
                     placeholderTextColor="#9CA3AF"
                     value={title}
                     onChangeText={setTitle}
-                    className="text-white text-base p-4"
+                    className="text-white text-base px-5 py-4"
                     style={{ fontFamily: "NanumGothic" }}
                   />
                 </Input>
@@ -427,14 +419,14 @@ export default function MaterialsAdditionalInfoScreen() {
                   </Text>
                   <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
-                <Input className="bg-white/5 border border-white/10 rounded-2xl">
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
                     placeholder="희망 가격을 입력하세요 (원)"
                     placeholderTextColor="#9CA3AF"
                     value={desiredPrice}
                     onChangeText={setDesiredPrice}
                     keyboardType="numeric"
-                    className="text-white text-base p-4"
+                    className="text-white text-base px-5 py-4"
                     style={{ fontFamily: "NanumGothic" }}
                   />
                 </Input>
@@ -655,7 +647,7 @@ export default function MaterialsAdditionalInfoScreen() {
 
                 <VStack space="sm">
                   <Pressable onPress={openAddressModal}>
-                    <Box className="bg-white/5 border border-white/10 rounded-2xl p-4 min-h-14 justify-center">
+                    <Box className="bg-white/5 border-white/10 rounded-2xl px-5 py-4 min-h-14 justify-center">
                       <Text
                         className={`text-base ${
                           address ? "text-white" : "text-gray-400"
@@ -668,13 +660,13 @@ export default function MaterialsAdditionalInfoScreen() {
                   </Pressable>
 
                   {address && (
-                    <Input className="bg-white/5 border border-white/10 rounded-2xl">
+                    <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                       <InputField
                         placeholder="상세 주소를 입력하세요"
                         placeholderTextColor="#9CA3AF"
                         value={addressDetail}
                         onChangeText={setAddressDetail}
-                        className="text-white text-base p-4"
+                        className="text-white text-base px-5 py-4"
                         style={{ fontFamily: "NanumGothic" }}
                       />
                     </Input>
@@ -694,14 +686,20 @@ export default function MaterialsAdditionalInfoScreen() {
                   </Text>
                   <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
-                <Textarea className="bg-white/5 border border-white/10 rounded-2xl min-h-32">
+                <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-32">
                   <TextareaInput
                     placeholder="자재 상태, 사용 이력, 특이사항 등을 자세히 설명해주세요"
                     placeholderTextColor="#9CA3AF"
                     value={description}
                     onChangeText={setDescription}
-                    className="text-white text-base p-4"
-                    style={{ fontFamily: "NanumGothic" }}
+                    className="text-white text-base px-5 py-4"
+                    style={{
+                      fontFamily: "NanumGothic",
+                      color: "#FFFFFF",
+                      textAlignVertical: "top",
+                    }}
+                    multiline
+                    numberOfLines={6}
                   />
                 </Textarea>
 
