@@ -150,7 +150,8 @@ export const AuctionDetail = () => {
           title: "고순도 구리 스크랩",
           metalType: "구리",
           weight: "2,500kg",
-          purity: "99.5%",
+          purity: "99.5%", // 기본값
+          transactionType: "normal",
           startPrice: "₩10,000,000",
           currentBid: "₩12,500,000",
           endTime: "2시간 30분",
@@ -162,6 +163,8 @@ export const AuctionDetail = () => {
           seller: "메탈코리아",
           startDate: "2025.01.20 09:00",
           endDate: "2025.01.21 18:00",
+          // 기본 정보
+          auctionCategory: "scrap",
         }
       : {
           id: auction.id,
@@ -170,13 +173,29 @@ export const AuctionDetail = () => {
             (auction as any).productName ||
             "고철 경매",
           metalType: auction.productType?.name || "고철",
-          weight: (auction as any).quantity?.quantity
-            ? `${(auction as any).quantity.quantity}${
-                (auction as any).quantity?.unit || "kg"
-              }`
-            : "1건",
+          weight:
+            (auction as any).auctionCategory === "demolition" &&
+            (auction as any).demolitionInfo
+              ? `${
+                  (
+                    auction as any
+                  ).demolitionInfo.demolitionArea?.toLocaleString() || "미상"
+                } ${
+                  (auction as any).demolitionInfo.areaUnit === "sqm"
+                    ? "㎡"
+                    : "평"
+                }`
+              : (auction as any).quantity?.quantity
+              ? `${(auction as any).quantity.quantity}${
+                  (auction as any).quantity?.unit || "kg"
+                }`
+              : "1건",
           purity: "99.5%", // 기본값
-          transactionType: (auction as any).transactionType || "normal",
+          transactionType:
+            (auction as any).auctionCategory === "demolition" &&
+            (auction as any).demolitionInfo
+              ? (auction as any).demolitionInfo.transactionType || "normal"
+              : (auction as any).transactionType || "normal",
           startPrice: formatAuctionPrice((auction as any).desiredPrice || 0),
           currentBid: formatAuctionPrice(auction.currentBid || 0),
           endTime: getRemainingTime(auction.endTime),
@@ -446,6 +465,8 @@ export const AuctionDetail = () => {
                     <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
                       {auctionDetail.auctionCategory === "machinery"
                         ? "Machinery"
+                        : auctionDetail.auctionCategory === "demolition"
+                        ? "Demolition"
                         : auctionDetail.metalType}{" "}
                       Auction
                     </Text>
@@ -453,6 +474,9 @@ export const AuctionDetail = () => {
                       {auctionDetail.auctionCategory === "machinery" &&
                       auctionDetail.productName
                         ? auctionDetail.productName
+                        : auctionDetail.auctionCategory === "demolition" &&
+                          (auction as any)?.demolitionInfo?.demolitionTitle
+                        ? (auction as any).demolitionInfo.demolitionTitle
                         : auctionDetail.title}
                     </Text>
                     {auctionDetail.auctionCategory === "machinery" ? (
@@ -467,6 +491,37 @@ export const AuctionDetail = () => {
                             모델: {auctionDetail.modelName}
                           </Text>
                         )}
+                      </VStack>
+                    ) : auctionDetail.auctionCategory === "demolition" &&
+                      (auction as any)?.demolitionInfo ? (
+                      <VStack space="xs">
+                        <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
+                          {(auction as any).demolitionInfo.buildingPurpose ===
+                          "residential"
+                            ? "주거용"
+                            : (auction as any).demolitionInfo
+                                .buildingPurpose === "commercial"
+                            ? "산업/상업용"
+                            : "공공시설"}{" "}
+                          •{" "}
+                          {(
+                            auction as any
+                          ).demolitionInfo.demolitionArea?.toLocaleString() ||
+                            "미상"}{" "}
+                          {(auction as any).demolitionInfo.areaUnit === "sqm"
+                            ? "㎡"
+                            : "평"}
+                        </Text>
+                        <Text className="text-purple-200/60 text-xs tracking-wider">
+                          {(auction as any).demolitionInfo.demolitionMethod ===
+                          "full"
+                            ? "전면 철거"
+                            : (auction as any).demolitionInfo
+                                .demolitionMethod === "partial"
+                            ? "부분 철거"
+                            : "내부 철거"}{" "}
+                          • {(auction as any).demolitionInfo.floorCount}층
+                        </Text>
                       </VStack>
                     ) : (
                       <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
@@ -618,6 +673,107 @@ export const AuctionDetail = () => {
                         )}
                       </>
                     )}
+
+                    {/* 철거 특화 정보 */}
+                    {auctionDetail.auctionCategory === "demolition" &&
+                      (auction as any)?.demolitionInfo && (
+                        <>
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              건물 용도
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {(auction as any).demolitionInfo
+                                .buildingPurpose === "residential"
+                                ? "주거용"
+                                : (auction as any).demolitionInfo
+                                    .buildingPurpose === "commercial"
+                                ? "산업/상업용"
+                                : "공공시설"}
+                            </Text>
+                          </VStack>
+
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              철거 방식
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {(auction as any).demolitionInfo
+                                .demolitionMethod === "full"
+                                ? "전면 철거"
+                                : (auction as any).demolitionInfo
+                                    .demolitionMethod === "partial"
+                                ? "부분 철거"
+                                : "내부 철거"}
+                            </Text>
+                          </VStack>
+
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              구조 타입
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {(auction as any).demolitionInfo.structureType ===
+                              "masonry"
+                                ? "조적조"
+                                : (auction as any).demolitionInfo
+                                    .structureType === "reinforced-concrete"
+                                ? "철근콘크리트"
+                                : "철골조"}
+                            </Text>
+                          </VStack>
+
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              철거 면적
+                            </Text>
+                            <Text className="text-cyan-400 font-bold text-lg">
+                              {(
+                                auction as any
+                              ).demolitionInfo.demolitionArea?.toLocaleString() ||
+                                "미상"}{" "}
+                              {(auction as any).demolitionInfo.areaUnit ===
+                              "sqm"
+                                ? "㎡"
+                                : "평"}
+                            </Text>
+                          </VStack>
+
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              현장 층수
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {(auction as any).demolitionInfo.floorCount}층
+                            </Text>
+                          </VStack>
+
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              폐기물 처리
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {(auction as any).demolitionInfo.wasteDisposal ===
+                              "self"
+                                ? "제가 직접 처리할게요"
+                                : "업체가 처리해주세요"}
+                            </Text>
+                          </VStack>
+
+                          {(auction as any).demolitionInfo.specialNotes && (
+                            <VStack space="sm">
+                              <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                                특이 사항
+                              </Text>
+                              <Box className="rounded-xl p-3 bg-orange-500/10 border border-orange-500/20">
+                                <Text className="text-orange-200 text-sm font-medium">
+                                  {(auction as any).demolitionInfo.specialNotes}
+                                </Text>
+                              </Box>
+                            </VStack>
+                          )}
+                        </>
+                      )}
 
                     <VStack space="sm">
                       <Text className="text-white/60 text-xs uppercase tracking-[1px]">
