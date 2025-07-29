@@ -205,12 +205,34 @@ export const AuctionCreate = () => {
                       {auctionTypes.map((auctionType) => (
                         <Pressable
                           key={auctionType.id}
-                          onPress={() =>
-                            setFormData({
-                              ...formData,
-                              metalType: auctionType.id,
-                            })
-                          }
+                          onPress={() => {
+                            // 각 경매 유형별 전용 등록 화면으로 이동
+                            switch (auctionType.id) {
+                              case "scrap":
+                                router.push("/auction-create/scrap");
+                                break;
+                              case "machinery":
+                                router.push("/auction-create/machinery");
+                                break;
+                              case "materials":
+                                Alert.alert(
+                                  "준비중",
+                                  "중고자재 경매 등록 화면을 준비 중입니다."
+                                );
+                                break;
+                              case "demolition":
+                                Alert.alert(
+                                  "준비중",
+                                  "철거 경매 등록 화면을 준비 중입니다."
+                                );
+                                break;
+                              default:
+                                setFormData({
+                                  ...formData,
+                                  metalType: auctionType.id,
+                                });
+                            }
+                          }}
                         >
                           <Box
                             className="px-4 py-2 rounded-xl"
@@ -231,19 +253,33 @@ export const AuctionCreate = () => {
                               elevation: 4,
                             }}
                           >
-                            <Text
-                              className={`font-semibold text-sm tracking-wide ${
-                                formData.metalType === auctionType.id
-                                  ? "text-purple-200"
-                                  : "text-purple-300"
-                              }`}
-                            >
-                              {auctionType.name}
-                            </Text>
+                            <HStack className="items-center" space="sm">
+                              <Ionicons
+                                name={auctionType.icon as any}
+                                size={16}
+                                color={
+                                  formData.metalType === auctionType.id
+                                    ? "#C084FC"
+                                    : "#A855F7"
+                                }
+                              />
+                              <Text
+                                className={`font-semibold text-sm tracking-wide ${
+                                  formData.metalType === auctionType.id
+                                    ? "text-purple-200"
+                                    : "text-purple-300"
+                                }`}
+                              >
+                                {auctionType.name}
+                              </Text>
+                            </HStack>
                           </Box>
                         </Pressable>
                       ))}
                     </HStack>
+                    <Text className="text-gray-400 text-xs mt-2">
+                      💡 각 경매 유형에 맞는 전용 등록 화면으로 이동합니다
+                    </Text>
                   </VStack>
                 </VStack>
               </Box>

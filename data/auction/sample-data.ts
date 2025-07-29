@@ -699,10 +699,10 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
 export const sampleMachineryAuctions: MachineryAuctionItem[] = [
   {
     id: "machinery1",
-    title: "기계",
-    productName: "어니",
-    manufacturer: "모름",
-    modelName: "모델",
+    title: "식품 가공 장비",
+    productName: "자동 포장 기계",
+    manufacturer: "한국포장기계",
+    modelName: "AP-2000",
     manufacturingDate: new Date("2018-03-15"),
     productType: machineryProductTypes[4], // 식품/제약기계
     transactionType: "normal",
@@ -720,8 +720,9 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     } as SalesEnvironment,
     photos: samplePhotos,
     address: sampleAddresses[2], // 삼성동
-    description: "설명",
-    desiredPrice: 1000000,
+    description:
+      "2018년식 자동 포장 기계입니다. 식품 포장에 최적화되어 있으며 상태가 양호합니다. 정기 점검을 받아 즉시 사용 가능합니다.",
+    desiredPrice: 28000000,
     currentBid: 25000000,
     pricePerUnit: 25000000,
     totalBidAmount: 25000000,

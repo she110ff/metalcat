@@ -231,8 +231,8 @@ export interface MachineryAuctionItem {
   id: string;
   title: string;
   productName: string;
-  manufacturer?: string;
-  modelName?: string;
+  manufacturer: string;
+  modelName: string;
   manufacturingDate?: Date;
   productType: MachineryProductType;
   transactionType: TransactionType;
