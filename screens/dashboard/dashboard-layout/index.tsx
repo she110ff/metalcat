@@ -1,5 +1,11 @@
 import React from "react";
-import { ScrollView, View, Text as RNText, Image } from "react-native";
+import {
+  ScrollView,
+  View,
+  Text as RNText,
+  Image,
+  Animated,
+} from "react-native";
 
 // MetalCat Dashboard Layout
 import { Box } from "@/components/ui/box";
@@ -17,6 +23,26 @@ import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 
 export const Dashboard = () => {
   const router = useRouter();
+
+  // 애니메이션을 위한 Animated Values
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(20)).current;
+
+  // 컴포넌트 마운트 시 애니메이션 시작
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   // Dashboard 컴포넌트 렌더링
 
@@ -54,12 +80,19 @@ export const Dashboard = () => {
         >
           <Box className="flex-1 px-4 pt-6">
             {/* MetalCat Logo Header - Improved spacing and accessibility */}
-            <Box className="items-center mb-8">
+            <Animated.View
+              style={{
+                alignItems: "center",
+                marginBottom: 32,
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              }}
+            >
               <Box className="items-center justify-center">
-                {/* MetalCat 로고 - Enhanced with animation */}
+                {/* MetalCat 로고 - Enhanced with native animation */}
                 <Image
                   source={require("@/assets/images/metalcat_logo.png")}
-                  className="w-32 h-32 animate-fade-in"
+                  className="w-32 h-32"
                   resizeMode="contain"
                   accessible={true}
                   accessibilityLabel="MetalCat 로고"
@@ -73,14 +106,14 @@ export const Dashboard = () => {
                 />
               </Box>
               <Text
-                className="text-slate-50 text-xl uppercase text-center font-mono animate-fade-in -mt-4 tracking-[2px]"
+                className="text-slate-50 text-xl uppercase text-center font-mono -mt-4 tracking-[2px]"
                 accessible={true}
                 accessibilityLabel="메탈캣 - 금속 거래 플랫폼"
                 accessibilityRole="header"
               >
                 METALCAT
               </Text>
-            </Box>
+            </Animated.View>
 
             {/* LME PRICES Section - Enhanced with animations and proper fonts */}
             <VStack space="lg" className="mt-12 animate-slide-up">
