@@ -14,34 +14,26 @@ import { Avatar, AvatarBadge, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Input, InputField } from "@/components/ui/input";
-import {
-  FormControl,
-  FormControlError,
-  FormControlErrorIcon,
-  FormControlErrorText,
-  FormControlHelper,
-  FormControlHelperText,
-  FormControlLabel,
-  FormControlLabelText,
-} from "@/components/ui/form-control";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { Keyboard } from "react-native";
 import { EditPhotoIcon } from "@/screens/profile-screens/profile/assets/icons/edit-photo";
 import { useImagePicker } from "@/hooks/useImagePicker";
+import {
+  DaumAddressSearch,
+  DaumAddressResult,
+} from "@/components/DaumAddressSearch";
 
 const userSchema = z.object({
-  firstName: z
-    .string()
-    .min(1, "First name is required")
-    .max(50, "First name must be less than 50 characters"),
   lastName: z
     .string()
-    .min(1, "Last name is required")
-    .max(50, "Last name must be less than 50 characters"),
-  email: z.string().email("Invalid email address"),
-  bio: z.string().max(200, "Bio must be less than 200 characters").optional(),
+    .min(1, "성은 필수입니다")
+    .max(50, "성은 50자 이하로 입력해주세요"),
+  firstName: z
+    .string()
+    .min(1, "이름은 필수입니다")
+    .max(50, "이름은 50자 이하로 입력해주세요"),
 });
 
 type UserSchemaDetails = z.infer<typeof userSchema>;
@@ -49,9 +41,15 @@ type UserSchemaDetails = z.infer<typeof userSchema>;
 export default function ProfileEditScreen() {
   const { isLoggedIn, isLoading } = useAuth();
   const router = useRouter();
-  const [isEmailFocused, setIsEmailFocused] = useState(false);
-  const [isNameFocused, setIsNameFocused] = useState(false);
-  const [isBioFocused, setIsBioFocused] = useState(false);
+  const [isLastNameFocused, setIsLastNameFocused] = useState(false);
+  const [isFirstNameFocused, setIsFirstNameFocused] = useState(false);
+
+  // 주소 관련 state
+  const [address, setAddress] = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [selectedAddress, setSelectedAddress] =
+    useState<DaumAddressResult | null>(null);
+  const [showAddressSearch, setShowAddressSearch] = useState(false);
 
   // 이미지 선택 훅 사용
   const {
@@ -74,12 +72,25 @@ export default function ProfileEditScreen() {
   } = useForm<UserSchemaDetails>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      firstName: "Alexander",
       lastName: "Leslie",
-      email: "alexander.leslie@example.com",
-      bio: "",
+      firstName: "Alexander",
     },
   });
+
+  // 주소 검색 관련 함수들
+  const openAddressModal = () => {
+    setShowAddressSearch(true);
+  };
+
+  const handleAddressComplete = (result: DaumAddressResult) => {
+    setSelectedAddress(result);
+    setAddress(result.roadAddress || result.jibunAddress || result.address);
+    setShowAddressSearch(false);
+  };
+
+  const handleAddressClose = () => {
+    setShowAddressSearch(false);
+  };
 
   const handleKeyPress = () => {
     Keyboard.dismiss();
@@ -88,6 +99,8 @@ export default function ProfileEditScreen() {
   const onSubmit = (data: UserSchemaDetails) => {
     console.log("Profile updated:", data);
     console.log("Avatar image:", avatarImage);
+    console.log("Address:", address);
+    console.log("Address detail:", addressDetail);
     // TODO: API 호출로 프로필 업데이트
     router.back();
   };
@@ -109,6 +122,15 @@ export default function ProfileEditScreen() {
 
   return (
     <SafeAreaView className="h-full w-full bg-background-0">
+      {/* 주소 검색 모달 */}
+      {showAddressSearch && (
+        <DaumAddressSearch
+          visible={showAddressSearch}
+          onComplete={handleAddressComplete}
+          onClose={handleAddressClose}
+        />
+      )}
+
       {/* 헤더 */}
       <Box className="py-4 px-4 border-b border-border-300 bg-background-0">
         <HStack className="items-center justify-between" space="md">
@@ -173,129 +195,99 @@ export default function ProfileEditScreen() {
 
           {/* 폼 */}
           <VStack className="px-6" space="lg">
-            {/* 이름 */}
-            <HStack className="items-center justify-between" space="md">
-              <FormControl
-                isInvalid={!!errors.firstName || isNameFocused}
-                className="flex-1"
-              >
-                <FormControlLabel className="mb-2">
-                  <FormControlLabelText>이름</FormControlLabelText>
-                </FormControlLabel>
-                <Controller
-                  name="firstName"
-                  control={control}
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <Input>
-                      <InputField
-                        placeholder="이름"
-                        type="text"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        onFocus={() => setIsNameFocused(true)}
-                        onSubmitEditing={handleKeyPress}
-                        returnKeyType="next"
-                      />
-                    </Input>
+            {/* 성/이름 */}
+            <VStack space="md">
+              <Text className="text-typography-900 text-lg font-medium">
+                이름
+              </Text>
+              <HStack className="items-center justify-between" space="md">
+                <VStack className="flex-1" space="sm">
+                  <Text className="text-typography-600 text-sm">성</Text>
+                  <Controller
+                    name="lastName"
+                    control={control}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input>
+                        <InputField
+                          placeholder="성"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          onFocus={() => setIsLastNameFocused(true)}
+                          onSubmitEditing={handleKeyPress}
+                          returnKeyType="next"
+                        />
+                      </Input>
+                    )}
+                  />
+                  {errors.lastName && (
+                    <Text className="text-error-500 text-xs">
+                      {errors.lastName.message}
+                    </Text>
                   )}
-                />
-                <FormControlError>
-                  <FormControlErrorText>
-                    {errors.firstName?.message}
-                  </FormControlErrorText>
-                </FormControlError>
-              </FormControl>
+                </VStack>
 
-              <FormControl isInvalid={!!errors.lastName} className="flex-1">
-                <FormControlLabel className="mb-2">
-                  <FormControlLabelText>성</FormControlLabelText>
-                </FormControlLabel>
-                <Controller
-                  name="lastName"
-                  control={control}
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <Input>
-                      <InputField
-                        placeholder="성"
-                        type="text"
-                        value={value}
-                        onChangeText={onChange}
-                        onBlur={onBlur}
-                        onSubmitEditing={handleKeyPress}
-                        returnKeyType="next"
-                      />
-                    </Input>
+                <VStack className="flex-1" space="sm">
+                  <Text className="text-typography-600 text-sm">이름</Text>
+                  <Controller
+                    name="firstName"
+                    control={control}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input>
+                        <InputField
+                          placeholder="이름"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          onFocus={() => setIsFirstNameFocused(true)}
+                          onSubmitEditing={handleKeyPress}
+                          returnKeyType="next"
+                        />
+                      </Input>
+                    )}
+                  />
+                  {errors.firstName && (
+                    <Text className="text-error-500 text-xs">
+                      {errors.firstName.message}
+                    </Text>
                   )}
-                />
-                <FormControlError>
-                  <FormControlErrorText>
-                    {errors.lastName?.message}
-                  </FormControlErrorText>
-                </FormControlError>
-              </FormControl>
-            </HStack>
+                </VStack>
+              </HStack>
+            </VStack>
 
-            {/* 이메일 */}
-            <FormControl isInvalid={!!errors.email || isEmailFocused}>
-              <FormControlLabel className="mb-2">
-                <FormControlLabelText>이메일</FormControlLabelText>
-              </FormControlLabel>
-              <Controller
-                name="email"
-                control={control}
-                render={({ field: { onChange, onBlur, value } }) => (
+            {/* 주소 */}
+            <VStack space="md">
+              <Text className="text-typography-900 text-lg font-medium">
+                주소
+              </Text>
+
+              {/* 주소 입력 필드 (클릭시 주소 검색) */}
+              <Pressable onPress={openAddressModal}>
+                <Input pointerEvents="none">
+                  <InputField
+                    placeholder="주소를 검색하세요"
+                    value={address}
+                    editable={false}
+                  />
+                </Input>
+              </Pressable>
+
+              {/* 상세 주소 입력 */}
+              {address && (
+                <VStack space="sm">
+                  <Text className="text-typography-600 text-sm">상세 주소</Text>
                   <Input>
                     <InputField
-                      placeholder="이메일"
-                      type="text"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      onFocus={() => setIsEmailFocused(true)}
-                      onSubmitEditing={handleKeyPress}
-                      returnKeyType="next"
-                      keyboardType="email-address"
-                    />
-                  </Input>
-                )}
-              />
-              <FormControlError>
-                <FormControlErrorText>
-                  {errors.email?.message}
-                </FormControlErrorText>
-              </FormControlError>
-            </FormControl>
-
-            {/* 자기소개 */}
-            <FormControl isInvalid={!!errors.bio || isBioFocused}>
-              <FormControlLabel className="mb-2">
-                <FormControlLabelText>자기소개</FormControlLabelText>
-              </FormControlLabel>
-              <Controller
-                name="bio"
-                control={control}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input className="h-20">
-                    <InputField
-                      placeholder="자기소개를 입력하세요"
-                      value={value}
-                      onChangeText={onChange}
-                      onBlur={onBlur}
-                      onFocus={() => setIsBioFocused(true)}
-                      multiline
-                      textAlignVertical="top"
+                      value={addressDetail}
+                      onChangeText={setAddressDetail}
+                      placeholder="상세 주소를 입력하세요 (건물명, 층수 등)"
                       returnKeyType="done"
+                      onSubmitEditing={handleKeyPress}
                     />
                   </Input>
-                )}
-              />
-              <FormControlError>
-                <FormControlErrorText>
-                  {errors.bio?.message}
-                </FormControlErrorText>
-              </FormControlError>
-            </FormControl>
+                </VStack>
+              )}
+            </VStack>
 
             {/* 저장 버튼 */}
             <VStack space="md" className="mt-6">
