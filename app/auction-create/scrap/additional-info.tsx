@@ -180,6 +180,12 @@ export default function AdditionalInfoScreen() {
     setIsSubmitting(true);
 
     try {
+      // 경매 종료 시간 계산 (긴급 경매는 2일, 일반 경매는 7일)
+      const endTime =
+        transactionType === "urgent"
+          ? new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) // 2일 후
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7일 후
+
       // 전체 경매 데이터 구성 (첫 번째 + 두 번째 단계 데이터 통합)
       const completeAuctionData: Partial<ScrapAuctionItem> = {
         title: title.trim(),
@@ -206,6 +212,7 @@ export default function AdditionalInfoScreen() {
         },
         description: description.trim(),
         specialNotes: `접근성: ${accessibility}, 운반조건: ${transportCondition}`,
+        endTime, // 계산된 종료 시간 추가
         currentBid: 0,
         status: "active" as const,
         bidders: 0,
@@ -227,23 +234,23 @@ export default function AdditionalInfoScreen() {
       });
 
       // 성공 메시지
-      Alert.alert("등록 완료", "경매가 성공적으로 등록되었습니다!", [
-        {
-          text: "목록 보기",
-          onPress: () => {
-            // 경매 목록 화면으로 이동
-            router.push("/(tabs)/auction");
+      Alert.alert(
+        "등록 완료",
+        `고철 경매가 성공적으로 등록되었습니다!\n\n${
+          transactionType === "urgent"
+            ? "긴급 경매 (2일 진행)"
+            : "일반 경매 (7일 진행)"
+        }`,
+        [
+          {
+            text: "확인",
+            onPress: () => {
+              // 경매 목록 화면으로 이동
+              router.push("/(tabs)/auction");
+            },
           },
-        },
-        {
-          text: "상세 보기",
-          style: "default",
-          onPress: () => {
-            // 등록한 경매 상세 화면으로 이동
-            router.push(`/auction-detail/${createdAuction.id}`);
-          },
-        },
-      ]);
+        ]
+      );
     } catch (error) {
       console.error("❌ 경매 등록 오류:", error);
       Alert.alert(
@@ -485,13 +492,13 @@ export default function AdditionalInfoScreen() {
                         className="text-white font-bold text-base mb-1"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        표준 경매
+                        일반 경매
                       </Text>
                       <Text
                         className="text-gray-400 text-sm"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        충분한 검토 시간
+                        7일간 진행
                       </Text>
                     </Box>
                   </Pressable>
@@ -511,13 +518,13 @@ export default function AdditionalInfoScreen() {
                         className="text-white font-bold text-base mb-1"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        빠른 경매
+                        긴급 경매
                       </Text>
                       <Text
                         className="text-gray-400 text-sm"
                         style={{ fontFamily: "NanumGothic" }}
                       >
-                        신속한 거래 완료
+                        2일간 진행
                       </Text>
                     </Box>
                   </Pressable>
