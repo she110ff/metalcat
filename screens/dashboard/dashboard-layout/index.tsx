@@ -154,18 +154,9 @@ export const Dashboard = () => {
                 accessibilityHint="프리미엄 페이지로 이동하려면 탭하세요"
                 className="active:scale-[0.98] transform transition-transform duration-150"
               >
-                <LinearGradient
-                  colors={[
-                    "rgba(255, 215, 0, 0.9)",
-                    "rgba(255, 165, 0, 0.8)",
-                    "rgba(255, 140, 0, 0.9)",
-                    "rgba(255, 215, 0, 0.9)",
-                  ]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+                <View
                   style={{
                     borderRadius: 20,
-                    padding: 20,
                     shadowColor: "#FFD700",
                     shadowOffset: { width: 0, height: 8 },
                     shadowOpacity: 0.4,
@@ -173,47 +164,62 @@ export const Dashboard = () => {
                     elevation: 12,
                   }}
                 >
-                  <HStack className="items-center justify-between">
-                    <VStack className="flex-1 mr-4">
-                      <HStack className="items-center mb-2">
-                        <Ionicons name="star" size={24} color="#FFFFFF" />
-                        <Text className="text-white text-lg font-black ml-2 tracking-wide animate-pulse-slow">
-                          오픈 이벤트
+                  <LinearGradient
+                    colors={[
+                      "rgba(255, 215, 0, 0.9)",
+                      "rgba(255, 165, 0, 0.8)",
+                      "rgba(255, 140, 0, 0.9)",
+                      "rgba(255, 215, 0, 0.9)",
+                    ]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 20,
+                      padding: 20,
+                    }}
+                  >
+                    <HStack className="items-center justify-between">
+                      <VStack className="flex-1 mr-4">
+                        <HStack className="items-center mb-2">
+                          <Ionicons name="star" size={24} color="#FFFFFF" />
+                          <Text className="text-white text-lg font-black ml-2 tracking-wide animate-pulse-slow">
+                            오픈 이벤트
+                          </Text>
+                          <Ionicons name="star" size={24} color="#FFFFFF" />
+                        </HStack>
+                        <Text className="text-white text-2xl font-black tracking-wide mb-1 drop-shadow-lg">
+                          3달간 프리미엄 서비스
                         </Text>
-                        <Ionicons name="star" size={24} color="#FFFFFF" />
-                      </HStack>
-                      <Text className="text-white text-2xl font-black tracking-wide mb-1 drop-shadow-lg">
-                        3달간 프리미엄 서비스
-                      </Text>
-                      <Text className="text-white text-3xl font-black tracking-wider drop-shadow-lg">
-                        무료! 🎉
-                      </Text>
-                      <Text className="text-white/80 text-sm mt-2 font-semibold">
-                        지금 가입하고 특별 혜택을 받아보세요
-                      </Text>
-                    </VStack>
+                        <Text className="text-white text-3xl font-black tracking-wider drop-shadow-lg">
+                          무료! 🎉
+                        </Text>
+                        <Text className="text-white/80 text-sm mt-2 font-semibold">
+                          지금 가입하고 특별 혜택을 받아보세요
+                        </Text>
+                      </VStack>
 
-                    <VStack className="items-center">
-                      <Box className="w-16 h-16 rounded-full items-center justify-center bg-white/20 mb-2 animate-pulse-slow">
-                        <Ionicons name="star" size={32} color="#FFFFFF" />
-                      </Box>
-                      <Text className="text-white text-xs font-bold tracking-wide text-center">
-                        PREMIUM
-                      </Text>
-                    </VStack>
-                  </HStack>
+                      <VStack className="items-center">
+                        <Box className="w-16 h-16 rounded-full items-center justify-center bg-white/20 mb-2 animate-pulse-slow">
+                          <Ionicons name="star" size={32} color="#FFFFFF" />
+                        </Box>
+                        <Text className="text-white text-xs font-bold tracking-wide text-center">
+                          PREMIUM
+                        </Text>
+                      </VStack>
+                    </HStack>
 
-                  {/* Sparkle Effects */}
-                  <Box className="absolute top-3 right-3">
-                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
-                  </Box>
-                  <Box className="absolute bottom-3 left-3">
-                    <Ionicons name="sparkles" size={12} color="#FFFFFF" />
-                  </Box>
-                  <Box className="absolute top-8 left-8">
-                    <Ionicons name="sparkles" size={14} color="#FFFFFF" />
-                  </Box>
-                </LinearGradient>
+                    {/* Sparkle Effects */}
+                    <Box className="absolute top-3 right-3">
+                      <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                    </Box>
+                    <Box className="absolute bottom-3 left-3">
+                      <Ionicons name="sparkles" size={12} color="#FFFFFF" />
+                    </Box>
+                    <Box className="absolute top-8 left-8">
+                      <Ionicons name="sparkles" size={14} color="#FFFFFF" />
+                    </Box>
+                  </LinearGradient>
+                </View>
               </Pressable>
             </VStack>
 
