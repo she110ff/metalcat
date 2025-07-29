@@ -303,9 +303,11 @@ export const getMachineryModelName = (item: MachineryAuctionItem): string => {
 };
 
 // 중고 기계 제조일 정보 가져오기
-export const getMachineryManufacturingDate = (item: MachineryAuctionItem): string => {
+export const getMachineryManufacturingDate = (
+  item: MachineryAuctionItem
+): string => {
   if (!item.manufacturingDate) return "미상";
-  
+
   const year = item.manufacturingDate.getFullYear();
   const month = String(item.manufacturingDate.getMonth() + 1).padStart(2, "0");
   return `${year}년 ${month}월`;
@@ -347,19 +349,8 @@ export const getDemolitionStructureType = (
     masonry: "조적조",
     "reinforced-concrete": "철근콘크리트",
     "steel-frame": "철골조",
-    composite: "복합구조",
   };
   return structureMap[item.demolitionInfo.structureType] || "미상";
-};
-
-// 철거 경매 철거 규모 정보 가져오기
-export const getDemolitionScale = (item: DemolitionAuctionItem): string => {
-  const scaleMap = {
-    small: "소규모",
-    medium: "중규모",
-    large: "대규모",
-  };
-  return scaleMap[item.demolitionInfo.demolitionScale] || "미상";
 };
 
 // 철거 경매 폐기물 처리 정보 가져오기

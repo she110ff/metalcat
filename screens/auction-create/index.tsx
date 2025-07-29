@@ -221,10 +221,7 @@ export const AuctionCreate = () => {
                                 );
                                 break;
                               case "demolition":
-                                Alert.alert(
-                                  "준비중",
-                                  "철거 경매 등록 화면을 준비 중입니다."
-                                );
+                                router.push("/auction-create/demolition");
                                 break;
                               default:
                                 setFormData({

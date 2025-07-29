@@ -97,14 +97,10 @@ export interface DemolitionProductType {
 
 // 철거 경매 특화 정보
 export interface DemolitionInfo {
-  buildingPurpose: "residential" | "commercial" | "industrial" | "public"; // 건축물 용도
+  buildingPurpose: "residential" | "commercial" | "public"; // 건축물 용도
   demolitionMethod: "full" | "partial" | "interior"; // 철거 방식
-  structureType:
-    | "masonry"
-    | "reinforced-concrete"
-    | "steel-frame"
-    | "composite"; // 구조 타입
-  demolitionScale: "small" | "medium" | "large"; // 철거 규모
+  structureType: "masonry" | "reinforced-concrete" | "steel-frame"; // 구조 타입
+
   transactionType: "normal" | "urgent"; // 거래 종류 (긴급 경매는 12시간)
   wasteDisposal: "self" | "company"; // 폐기물 처리
   demolitionArea: number; // 철거 면적

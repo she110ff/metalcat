@@ -142,6 +142,9 @@ function RootLayoutNav() {
           <Stack.Screen name="auction-create/machinery/additional-info" />
           <Stack.Screen name="auction-create/materials" />
           <Stack.Screen name="auction-create/materials/additional-info" />
+          <Stack.Screen name="auction-create/demolition" />
+          <Stack.Screen name="auction-create/demolition/additional-info" />
+          <Stack.Screen name="auction-create/demolition/confirmation" />
         </Stack>
       </GluestackUIProvider>
       {/* 개발 환경에서만 Query Debugger 표시 */}

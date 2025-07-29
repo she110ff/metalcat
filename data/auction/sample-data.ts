@@ -150,16 +150,15 @@ export const demolitionSpecificOptions = {
   buildingPurpose: [
     {
       id: "residential",
-      label: "주거용 건축물",
-      description: "주택, 아파트 등",
+      label: "주거용",
+      description: "주택, 아파트, 빌라 등",
     },
     {
       id: "commercial",
-      label: "상업용 건축물",
-      description: "상가, 사무실 등",
+      label: "산업/상업용",
+      description: "공장, 창고, 상가, 사무실, 호텔 등",
     },
-    { id: "industrial", label: "산업용 건축물", description: "공장, 창고 등" },
-    { id: "public", label: "공공시설 철거", description: "학교, 병원 등" },
+    { id: "public", label: "공공시설", description: "학교, 병원, 관공서 등" },
   ],
   demolitionMethod: [
     { id: "full", label: "전면 철거", description: "건물 전체 철거" },
@@ -174,13 +173,8 @@ export const demolitionSpecificOptions = {
       description: "RC 구조",
     },
     { id: "steel-frame", label: "철골조", description: "강재 구조" },
-    { id: "composite", label: "복합구조", description: "혼합 구조" },
   ],
-  demolitionScale: [
-    { id: "small", label: "소규모", description: "100m² 미만" },
-    { id: "medium", label: "중규모", description: "100-500m²" },
-    { id: "large", label: "대규모", description: "500m² 이상" },
-  ],
+
   wasteDisposal: [
     {
       id: "self",
@@ -940,7 +934,6 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
       buildingPurpose: "residential",
       demolitionMethod: "full",
       structureType: "reinforced-concrete",
-      demolitionScale: "small",
       transactionType: "urgent",
       wasteDisposal: "self",
       demolitionArea: 12,
@@ -983,12 +976,11 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
   {
     id: "demolition2",
     title: "상가 철거",
-    productType: demolitionProductTypes[1], // 상업용 건축물
+    productType: demolitionProductTypes[1], // 산업/상업용 건축물
     demolitionInfo: {
       buildingPurpose: "commercial",
       demolitionMethod: "partial",
       structureType: "steel-frame",
-      demolitionScale: "medium",
       transactionType: "normal",
       wasteDisposal: "company",
       demolitionArea: 250,
@@ -1004,7 +996,8 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     } as QuantityInfo,
     photos: samplePhotos,
     address: sampleAddresses[2], // 삼성동
-    description: "상업용 건축물 부분 철거입니다. 전문 업체만 신청 가능합니다.",
+    description:
+      "산업/상업용 건축물 부분 철거입니다. 전문 업체만 신청 가능합니다.",
     currentBid: 12000000,
     pricePerUnit: 12000000,
     totalBidAmount: 12000000,
@@ -1033,10 +1026,9 @@ export const sampleDemolitionAuctions: DemolitionAuctionItem[] = [
     title: "공장 철거",
     productType: demolitionProductTypes[2], // 산업용 건축물
     demolitionInfo: {
-      buildingPurpose: "industrial",
+      buildingPurpose: "commercial",
       demolitionMethod: "full",
-      structureType: "composite",
-      demolitionScale: "large",
+      structureType: "steel-frame",
       transactionType: "normal",
       wasteDisposal: "company",
       demolitionArea: 800,
