@@ -301,9 +301,8 @@ export const SimpleProfile = () => {
       <Box className="py-6 px-4 border-b border-border-300 bg-background-0">
         <HStack className="items-center" space="md">
           <Pressable onPress={() => router.back()}>
-            <Icon as={ChevronLeftIcon} />
+            <Text className="text-lg font-medium">뒤로</Text>
           </Pressable>
-          <Text className="text-lg font-medium">프로필</Text>
         </HStack>
       </Box>
 
