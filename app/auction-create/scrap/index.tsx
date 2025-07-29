@@ -247,7 +247,7 @@ export default function ScrapAuctionCreate() {
 
     // 다음 화면으로 이동 (추가 정보 입력)
     router.push(
-      `/auction-create/scrap/additional-info?${params.toString()}` as any
+      `/auction-create/scrap/additional-info?${params.toString()}`
     );
   };
 

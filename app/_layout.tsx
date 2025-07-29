@@ -1,8 +1,3 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -135,15 +130,19 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="auction-detail/[id]" />
-            <Stack.Screen name="auction-create" />
-          </Stack>
-        </ThemeProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auction-detail/[id]" />
+          <Stack.Screen name="auction-create" />
+          <Stack.Screen name="auction-create/scrap" />
+          <Stack.Screen name="auction-create/scrap/additional-info" />
+          <Stack.Screen name="auction-create/scrap/confirmation" />
+          <Stack.Screen name="auction-create/scrap/test" />
+          <Stack.Screen name="auction-create/machinery" />
+          <Stack.Screen name="auction-create/machinery/additional-info" />
+          <Stack.Screen name="auction-create/materials" />
+          <Stack.Screen name="auction-create/materials/additional-info" />
+        </Stack>
       </GluestackUIProvider>
       {/* 개발 환경에서만 Query Debugger 표시 */}
       {__DEV__ && (

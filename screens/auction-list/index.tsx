@@ -207,7 +207,7 @@ export const AuctionList = () => {
       id: "materials",
       name: "중고자재",
       IconComponent: Package,
-      enabled: false,
+      enabled: true, // 활성화
     },
     { id: "demolition", name: "철거", IconComponent: Gavel, enabled: false },
   ];
@@ -417,6 +417,47 @@ export const AuctionList = () => {
         Alert.alert(
           "라우팅 오류",
           "중고기계 경매 생성 화면으로 이동할 수 없습니다.\n\n시도된 경로:\n" +
+            routes.join("\n") +
+            "\n\n메인 경매 화면을 사용하시겠습니까?",
+          [
+            { text: "취소", style: "cancel" },
+            {
+              text: "메인 경매",
+              onPress: () => {
+                try {
+                  router.push("/(tabs)/auction");
+                  console.log("📱 대안 라우팅: 메인 경매 화면으로 이동");
+                } catch (e) {
+                  console.error("❌ 대안 라우팅도 실패:", e);
+                }
+              },
+            },
+          ]
+        );
+      }
+    } else if (auctionType === "materials") {
+      console.log("🚀 중고자재 경매 생성 화면으로 이동 시도 중...");
+      const routes = [
+        "/auction-create/materials", // 1순위: 중고자재 경매 생성 화면 (정확한 스크린 이름)
+        "/auction-create", // 2순위: 메인 경매 생성 화면 (대안)
+      ];
+      let routeSuccess = false;
+      for (const route of routes) {
+        try {
+          console.log("📁 시도하는 라우팅 경로:", route);
+          router.push(route as any);
+          console.log("✅ 라우팅 성공:", route);
+          routeSuccess = true;
+          break;
+        } catch (error) {
+          console.error("❌ 라우팅 실패:", route, error);
+        }
+      }
+      if (!routeSuccess) {
+        console.error("🚫 모든 라우팅 경로 실패");
+        Alert.alert(
+          "라우팅 오류",
+          "중고자재 경매 생성 화면으로 이동할 수 없습니다.\n\n시도된 경로:\n" +
             routes.join("\n") +
             "\n\n메인 경매 화면을 사용하시겠습니까?",
           [

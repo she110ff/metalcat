@@ -262,7 +262,7 @@ export default function MachineryAuctionCreate() {
 
     // 다음 화면으로 이동 (추가 정보 입력)
     router.push(
-      `/auction-create/machinery/additional-info?${params.toString()}` as any
+      `/auction-create/machinery/additional-info?${params.toString()}`
     );
   };
 
