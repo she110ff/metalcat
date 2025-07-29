@@ -150,17 +150,12 @@ function RootLayoutNav() {
           <Stack.Screen name="profile-edit" />
           <Stack.Screen name="auction-detail/[id]" />
           <Stack.Screen name="auction-create" />
-          <Stack.Screen name="auction-create/scrap" />
-          <Stack.Screen name="auction-create/scrap/additional-info" />
-          <Stack.Screen name="auction-create/scrap/confirmation" />
-          <Stack.Screen name="auction-create/scrap/test" />
-          <Stack.Screen name="auction-create/machinery" />
-          <Stack.Screen name="auction-create/machinery/additional-info" />
-          <Stack.Screen name="auction-create/materials" />
-          <Stack.Screen name="auction-create/materials/additional-info" />
-          <Stack.Screen name="auction-create/demolition" />
-          <Stack.Screen name="auction-create/demolition/additional-info" />
-          <Stack.Screen name="auction-create/demolition/confirmation" />
+          {/* Removed manual Stack.Screen declarations for file-based routes:
+              - auction-create/scrap and its sub-routes
+              - auction-create/machinery and its sub-routes  
+              - auction-create/materials and its sub-routes
+              - auction-create/demolition and its sub-routes
+              These are automatically handled by Expo Router */}
         </Stack>
       </GluestackUIProvider>
       {/* 개발 환경에서만 Query Debugger 표시 */}
