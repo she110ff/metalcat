@@ -171,7 +171,9 @@ export const AuctionDetail = () => {
             "고철 경매",
           metalType: auction.productType?.name || "고철",
           weight: (auction as any).quantity?.quantity
-            ? `${(auction as any).quantity.quantity}대`
+            ? `${(auction as any).quantity.quantity}${
+                (auction as any).quantity?.unit || "kg"
+              }`
             : "1건",
           purity: "99.5%", // 기본값
           transactionType: (auction as any).transactionType || "normal",
@@ -190,6 +192,14 @@ export const AuctionDetail = () => {
           endDate: auction.endTime
             ? new Date(auction.endTime).toLocaleString("ko-KR")
             : "2025.01.21 18:00",
+          // 중고기계 특화 정보 추가
+          productName: (auction as any).productName,
+          manufacturer: (auction as any).manufacturer,
+          modelName: (auction as any).modelName,
+          manufacturingDate: (auction as any).manufacturingDate,
+          desiredPrice: (auction as any).desiredPrice,
+          auctionCategory: (auction as any).auctionCategory,
+          salesEnvironment: (auction as any).salesEnvironment,
         };
 
   // 입찰 기록을 UI에 맞게 변환
@@ -434,14 +444,35 @@ export const AuctionDetail = () => {
                 <Box className="rounded-3xl p-8 mx-6 bg-purple-600/8 border border-purple-500/15 shadow-2xl shadow-purple-600/30">
                   <VStack space="md">
                     <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
-                      {auctionDetail.metalType} Auction
+                      {auctionDetail.auctionCategory === "machinery"
+                        ? "Machinery"
+                        : auctionDetail.metalType}{" "}
+                      Auction
                     </Text>
                     <Text className="text-white text-2xl font-black tracking-wide">
-                      {auctionDetail.title}
+                      {auctionDetail.auctionCategory === "machinery" &&
+                      auctionDetail.productName
+                        ? auctionDetail.productName
+                        : auctionDetail.title}
                     </Text>
-                    <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
-                      {auctionDetail.weight} • {auctionDetail.purity}
-                    </Text>
+                    {auctionDetail.auctionCategory === "machinery" ? (
+                      <VStack space="xs">
+                        <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
+                          {auctionDetail.weight}
+                          {auctionDetail.manufacturer &&
+                            ` • ${auctionDetail.manufacturer}`}
+                        </Text>
+                        {auctionDetail.modelName && (
+                          <Text className="text-purple-200/60 text-xs tracking-wider">
+                            모델: {auctionDetail.modelName}
+                          </Text>
+                        )}
+                      </VStack>
+                    ) : (
+                      <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
+                        {auctionDetail.weight} • {auctionDetail.purity}
+                      </Text>
+                    )}
                   </VStack>
                 </Box>
               </VStack>
@@ -462,6 +493,127 @@ export const AuctionDetail = () => {
                         {auctionDetail.description}
                       </Text>
                     </VStack>
+
+                    {/* 중고기계 특화 정보 */}
+                    {auctionDetail.auctionCategory === "machinery" && (
+                      <>
+                        {auctionDetail.productName && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              제품명
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {auctionDetail.productName}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {auctionDetail.manufacturer && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              제조사
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {auctionDetail.manufacturer}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {auctionDetail.modelName && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              모델명
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {auctionDetail.modelName}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {auctionDetail.manufacturingDate && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              제조일
+                            </Text>
+                            <Text className="text-white font-semibold text-base">
+                              {new Date(
+                                auctionDetail.manufacturingDate
+                              ).toLocaleDateString("ko-KR", {
+                                year: "numeric",
+                                month: "long",
+                              })}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {auctionDetail.desiredPrice && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              희망 가격
+                            </Text>
+                            <Text className="text-yellow-400 font-bold text-lg">
+                              {formatAuctionPrice(auctionDetail.desiredPrice)}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {/* 판매 조건 정보 */}
+                        {auctionDetail.salesEnvironment && (
+                          <VStack space="sm">
+                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                              판매 조건
+                            </Text>
+                            <VStack space="xs">
+                              <HStack className="justify-between">
+                                <Text className="text-gray-300 text-sm">
+                                  운송비 부담:
+                                </Text>
+                                <Text className="text-white text-sm font-medium">
+                                  {auctionDetail.salesEnvironment
+                                    .shippingCost === "buyer"
+                                    ? "구매자 부담"
+                                    : "판매자 부담"}
+                                </Text>
+                              </HStack>
+                              <HStack className="justify-between">
+                                <Text className="text-gray-300 text-sm">
+                                  현장 접근성:
+                                </Text>
+                                <Text className="text-white text-sm font-medium">
+                                  {auctionDetail.salesEnvironment.truckAccess
+                                    ? "5톤 집게차 진입 가능"
+                                    : "접근 제한적"}
+                                </Text>
+                              </HStack>
+                              <HStack className="justify-between">
+                                <Text className="text-gray-300 text-sm">
+                                  적재 조건:
+                                </Text>
+                                <Text className="text-white text-sm font-medium">
+                                  {auctionDetail.salesEnvironment.loading ===
+                                  "buyer"
+                                    ? "구매자 직접"
+                                    : auctionDetail.salesEnvironment.loading ===
+                                      "seller"
+                                    ? "판매자 지원"
+                                    : "협의 가능"}
+                                </Text>
+                              </HStack>
+                              {auctionDetail.salesEnvironment.sacksNeeded && (
+                                <HStack className="justify-between">
+                                  <Text className="text-gray-300 text-sm">
+                                    추가 조건:
+                                  </Text>
+                                  <Text className="text-blue-300 text-sm font-medium">
+                                    마대 필요
+                                  </Text>
+                                </HStack>
+                              )}
+                            </VStack>
+                          </VStack>
+                        )}
+                      </>
+                    )}
 
                     <VStack space="sm">
                       <Text className="text-white/60 text-xs uppercase tracking-[1px]">
