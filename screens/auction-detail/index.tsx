@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   ScrollView,
   ActivityIndicator,
-  Alert,
   FlatList,
   Dimensions,
   Image,
@@ -15,35 +14,29 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
-import { Button } from "@/components/ui/button";
-import { ButtonText } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { InputField } from "@/components/ui/input";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { useAuction, useCreateBid, useBids } from "@/hooks/useAuctions";
+import { useAuction, useBids } from "@/hooks/useAuctions";
 import {
   formatAuctionPrice,
   getRemainingTime,
   getAuctionStatusColor,
 } from "@/data";
+import {
+  BidStatusSection,
+  BidInputSection,
+  BidHistorySection,
+  EndedAuctionSection,
+} from "@/components/auction/bid";
 
 const { width: screenWidth } = Dimensions.get("window");
-
-interface BidHistory {
-  id: string;
-  bidder: string;
-  amount: string;
-  time: string;
-}
 
 export const AuctionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [bidAmount, setBidAmount] = useState("");
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   console.log("🔍 경매 상세 화면 진입, ID:", id);
@@ -53,9 +46,6 @@ export const AuctionDetail = () => {
 
   // 입찰 기록 조회
   const { data: bids = [], isLoading: bidsLoading } = useBids(id as string);
-
-  // 입찰 생성 뮤테이션
-  const createBidMutation = useCreateBid();
 
   console.log("📊 경매 데이터 조회 결과:", {
     auction: auction
@@ -69,227 +59,141 @@ export const AuctionDetail = () => {
     requestedId: id,
   });
 
-  // 경매를 찾을 수 없는 경우 에러 화면 표시
-  if (!isLoading && !auction && id) {
+  if (isLoading) {
     return (
       <LinearGradient
-        colors={["#0F0A1A", "#1A0F2A", "#2A1A3A", "#1A0F2A"]}
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
         style={{ flex: 1 }}
       >
         <SafeAreaView style={{ flex: 1 }}>
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              padding: 20,
-            }}
+          <VStack
+            space="lg"
+            className="flex-1 items-center justify-center px-6"
           >
-            <Text
-              style={{
-                color: "#EF4444",
-                fontSize: 24,
-                fontWeight: "bold",
-                marginBottom: 16,
-              }}
-            >
-              경매를 찾을 수 없습니다
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text className="text-white text-lg font-semibold">
+              경매 정보를 불러오는 중...
             </Text>
-            <Text
-              style={{
-                color: "#FFFFFF",
-                fontSize: 16,
-                textAlign: "center",
-                marginBottom: 32,
-              }}
-            >
-              요청한 경매 ID: {id}
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(tabs)/auction")}
-              style={{
-                backgroundColor: "#9333EA",
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
-            >
-              <Text
-                style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "bold" }}
-              >
-                경매 목록으로 돌아가기
-              </Text>
-            </TouchableOpacity>
-          </View>
+          </VStack>
         </SafeAreaView>
       </LinearGradient>
     );
   }
 
-  // 시간 차이 계산 함수
-  const getTimeAgo = (date: Date) => {
-    const now = new Date();
-    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  if (error || !auction) {
+    console.error("❌ 경매 데이터 로딩 실패:", error);
+    return (
+      <LinearGradient
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <VStack
+            space="lg"
+            className="flex-1 items-center justify-center px-6"
+          >
+            <Ionicons
+              name="alert-circle-outline"
+              size={64}
+              color="rgba(239, 68, 68, 0.8)"
+            />
+            <Text className="text-red-300 text-xl font-bold text-center">
+              경매 정보를 불러올 수 없습니다
+            </Text>
+            <Text className="text-white/60 text-sm text-center">
+              {error?.message || "알 수 없는 오류가 발생했습니다."}
+            </Text>
+            <Pressable
+              onPress={() => router.back()}
+              className="px-6 py-3 bg-blue-500/20 rounded-lg border border-blue-500/30"
+            >
+              <Text className="text-blue-300 font-semibold">뒤로 가기</Text>
+            </Pressable>
+          </VStack>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
-    if (diffInSeconds < 60) {
-      return `${diffInSeconds}초 전`;
-    } else if (diffInSeconds < 3600) {
-      return `${Math.floor(diffInSeconds / 60)}분 전`;
-    } else if (diffInSeconds < 86400) {
-      return `${Math.floor(diffInSeconds / 3600)}시간 전`;
-    } else {
-      return `${Math.floor(diffInSeconds / 86400)}일 전`;
-    }
+  // 샘플 데이터 (실제로는 API에서 받아올 데이터)
+  const sampleAuctionDetail = {
+    id: auction.id,
+    title: (auction as any).title || "경매 상품",
+    status: "active" as const,
+    startPrice: "₩10,000,000",
+    currentBid: "₩12,500,000",
+    endTime: "2일 14시간 남음",
+    startDate: "2024년 3월 15일 오전 10:00",
+    endDate: "2024년 3월 20일 오후 6:00",
+    bidders: 8,
+    location: "서울시 강남구",
+    desiredPrice: 15000000,
+    description:
+      "고품질 구리 스크랩입니다. 깨끗하게 분리되어 있으며 순도가 높습니다.",
   };
 
-  // 로딩 중이거나 에러가 있으면 기본 데이터 사용
-  const auctionDetail =
-    isLoading || error || !auction
-      ? {
-          id: id as string,
-          title: "고순도 구리 스크랩",
-          metalType: "구리",
-          weight: "2,500kg",
-          purity: "99.5%", // 기본값
-          transactionType: "normal",
-          startPrice: "₩10,000,000",
-          currentBid: "₩12,500,000",
-          endTime: "2시간 30분",
-          status: "active" as const,
-          bidders: 8,
-          description:
-            "고품질 구리 스크랩입니다. 순도 99.5% 이상 보장되며, 산업용으로 적합합니다.",
-          location: "서울특별시 강남구",
-          seller: "메탈코리아",
-          startDate: "2025.01.20 09:00",
-          endDate: "2025.01.21 18:00",
-          // 기본 정보
-          auctionCategory: "scrap",
-        }
-      : {
-          id: auction.id,
-          title:
-            (auction as any).title ||
-            (auction as any).productName ||
-            "고철 경매",
-          metalType: auction.productType?.name || "고철",
-          weight:
-            (auction as any).auctionCategory === "demolition" &&
-            (auction as any).demolitionInfo
-              ? `${
-                  (
-                    auction as any
-                  ).demolitionInfo.demolitionArea?.toLocaleString() || "미상"
-                } ${
-                  (auction as any).demolitionInfo.areaUnit === "sqm"
-                    ? "㎡"
-                    : "평"
-                }`
-              : (auction as any).quantity?.quantity
-              ? `${(auction as any).quantity.quantity}${
-                  (auction as any).quantity?.unit || "kg"
-                }`
-              : "1건",
-          purity: "99.5%", // 기본값
-          transactionType:
-            (auction as any).auctionCategory === "demolition" &&
-            (auction as any).demolitionInfo
-              ? (auction as any).demolitionInfo.transactionType || "normal"
-              : (auction as any).transactionType || "normal",
-          startPrice: formatAuctionPrice((auction as any).desiredPrice || 0),
-          currentBid: formatAuctionPrice(auction.currentBid || 0),
-          endTime: getRemainingTime(auction.endTime),
-          status: auction.status as "active" | "ending" | "ended",
-          bidders: auction.bidders || 0,
-          description:
-            (auction as any).description || "고품질 경매 상품입니다.",
-          location: (auction as any).address?.address || "서울특별시 강남구",
-          seller: "메탈코리아", // 기본값
-          startDate: auction.createdAt
-            ? new Date(auction.createdAt).toLocaleString("ko-KR")
-            : "2025.01.20 09:00",
-          endDate: auction.endTime
-            ? new Date(auction.endTime).toLocaleString("ko-KR")
-            : "2025.01.21 18:00",
-          // 중고기계 특화 정보 추가
-          productName: (auction as any).productName,
-          manufacturer: (auction as any).manufacturer,
-          modelName: (auction as any).modelName,
-          manufacturingDate: (auction as any).manufacturingDate,
-          desiredPrice: (auction as any).desiredPrice,
-          auctionCategory: (auction as any).auctionCategory,
-          salesEnvironment: (auction as any).salesEnvironment,
-        };
-
-  // 입찰 기록을 UI에 맞게 변환
-  const bidHistory: BidHistory[] = bids.map((bid) => ({
-    id: bid.id,
-    bidder: bid.userName || "익명",
-    amount: formatAuctionPrice(bid.amount),
-    time: getTimeAgo(bid.bidTime),
-  }));
+  // 실제 데이터를 사용하여 auctionDetail 구성
+  const auctionDetail = {
+    id: auction.id,
+    title:
+      (auction as any).title || (auction as any).productName || "경매 상품",
+    status: auction.status || "active",
+    startPrice: formatAuctionPrice((auction as any).desiredPrice || 0),
+    currentBid: formatAuctionPrice(auction.currentBid || 0),
+    endTime: getRemainingTime(auction.endTime),
+    startDate: auction.createdAt
+      ? new Date(auction.createdAt).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "정보 없음",
+    endDate: auction.endTime
+      ? new Date(auction.endTime).toLocaleDateString("ko-KR", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "정보 없음",
+    bidders: auction.bidders || 0,
+    location:
+      typeof (auction as any).address === "object" && (auction as any).address
+        ? `${(auction as any).address.address || ""} ${
+            (auction as any).address.detailAddress || ""
+          }`.trim() || "위치 정보 없음"
+        : (auction as any).address || "위치 정보 없음",
+    desiredPrice: (auction as any).desiredPrice || 0,
+    description: (auction as any).description || "설명이 없습니다.",
+    // 추가 속성들
+    auctionCategory: (auction as any).auctionCategory || "scrap",
+    metalType: auction.productType?.name || "고철",
+    weight: (auction as any).quantity?.quantity
+      ? `${(auction as any).quantity.quantity}${
+          (auction as any).quantity?.unit || "kg"
+        }`
+      : "1건",
+    productName: (auction as any).productName,
+    manufacturer: (auction as any).manufacturer,
+    modelName: (auction as any).modelName,
+    manufacturingDate: (auction as any).manufacturingDate,
+    salesEnvironment: (auction as any).salesEnvironment,
+    // 누락된 속성들 추가
+    purity: "99.5%", // 기본값
+    seller: "메탈코리아", // 기본값
+    transactionType:
+      (auction as any).auctionCategory === "demolition" &&
+      (auction as any).demolitionInfo
+        ? (auction as any).demolitionInfo.transactionType || "normal"
+        : (auction as any).transactionType || "normal",
+  };
 
   // 현재 최고 입찰가 계산
   const currentTopBid =
     bids.length > 0 ? Math.max(...bids.map((bid) => bid.amount)) : 0;
-
-  const handleBid = async () => {
-    if (!bidAmount) {
-      Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
-      return;
-    }
-
-    // 콤마 제거 후 숫자 변환
-    const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
-    if (isNaN(amount) || amount <= 0) {
-      Alert.alert("입력 오류", "올바른 금액을 입력해주세요.");
-      return;
-    }
-
-    // 현재 최고 입찰가보다 낮은지 확인
-    if (amount <= currentTopBid) {
-      Alert.alert(
-        "입찰 오류",
-        "현재 최고 입찰가보다 높은 금액을 입력해주세요."
-      );
-      return;
-    }
-
-    try {
-      await createBidMutation.mutateAsync({
-        auctionId: id as string,
-        bidData: {
-          userId: "current_user", // 실제로는 로그인된 사용자 ID
-          userName: "현재 사용자", // 실제로는 로그인된 사용자 이름
-          amount: amount,
-          location: "서울특별시", // 실제로는 사용자 위치
-        },
-      });
-
-      setBidAmount("");
-      Alert.alert("입찰 성공", "입찰이 성공적으로 등록되었습니다.");
-    } catch (error: any) {
-      Alert.alert("입찰 실패", error.message || "입찰 중 오류가 발생했습니다.");
-    }
-  };
-
-  // 숫자에 콤마 추가하는 함수
-  const formatNumberWithComma = (value: string) => {
-    // 숫자만 추출
-    const numbers = value.replace(/[^\d]/g, "");
-    // 콤마 추가
-    if (numbers.length > 0) {
-      return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    }
-    return "";
-  };
-
-  // 입력값 변경 처리
-  const handleBidAmountChange = (text: string) => {
-    // 콤마가 포함된 형식으로 변환
-    const formattedText = formatNumberWithComma(text);
-    setBidAmount(formattedText);
-  };
 
   const handleBack = () => {
     router.back();
@@ -502,7 +406,7 @@ export const AuctionDetail = () => {
                             : (auction as any).demolitionInfo
                                 .buildingPurpose === "commercial"
                             ? "산업/상업용"
-                            : "공공시설"}{" "}
+                            : "공공시설"}
                           •{" "}
                           {(
                             auction as any
@@ -519,7 +423,7 @@ export const AuctionDetail = () => {
                             : (auction as any).demolitionInfo
                                 .demolitionMethod === "partial"
                             ? "부분 철거"
-                            : "내부 철거"}{" "}
+                            : "내부 철거"}
                           • {(auction as any).demolitionInfo.floorCount}층
                         </Text>
                       </VStack>
@@ -822,222 +726,36 @@ export const AuctionDetail = () => {
               </VStack>
 
               {/* Current Bid Status */}
-              <VStack space="lg" className="px-6">
-                <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                  현재 입찰 현황
-                </Text>
-
-                <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
-                  <VStack space="lg">
-                    <HStack className="items-center justify-between">
-                      <VStack space="xs">
-                        <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                          {auctionDetail.status === "ended"
-                            ? "최종 입찰가"
-                            : "현재 입찰가"}
-                        </Text>
-                        <Text className="text-white font-bold text-2xl tracking-wide">
-                          {auctionDetail.currentBid}
-                        </Text>
-                      </VStack>
-
-                      <VStack className="items-end" space="xs">
-                        <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                          {auctionDetail.status === "ended"
-                            ? "종료 시간"
-                            : "남은 시간"}
-                        </Text>
-                        <Text className="text-white font-semibold text-lg tracking-wide">
-                          {auctionDetail.endTime}
-                        </Text>
-                      </VStack>
-                    </HStack>
-
-                    <HStack className="items-center justify-between">
-                      <HStack className="items-center" space="xs">
-                        <Ionicons
-                          name="people"
-                          size={16}
-                          color="rgba(255, 255, 255, 0.6)"
-                        />
-                        <Text className="text-white/60 text-xs">
-                          {auctionDetail.bidders}명 참여
-                        </Text>
-                      </HStack>
-
-                      <Box
-                        className={`px-3 py-1 rounded-lg ${
-                          auctionDetail.status === "active"
-                            ? "bg-green-500"
-                            : auctionDetail.status === "ending"
-                            ? "bg-amber-500"
-                            : "bg-red-500"
-                        }`}
-                      >
-                        <Text className="text-white font-semibold text-xs tracking-wide">
-                          {auctionDetail.status === "active"
-                            ? "진행중"
-                            : auctionDetail.status === "ending"
-                            ? "마감임박"
-                            : "종료"}
-                        </Text>
-                      </Box>
-                    </HStack>
-
-                    {/* 종료된 경매에서 낙찰자 정보 표시 */}
-                    {auctionDetail.status === "ended" && bids.length > 0 && (
-                      <Box className="rounded-xl p-4 mt-2 bg-green-500/10 border border-green-500/20">
-                        <HStack className="items-center justify-between">
-                          <VStack space="xs">
-                            <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
-                              낙찰자
-                            </Text>
-                            <Text className="text-white font-semibold text-base">
-                              {bids[0]?.userName || "익명"}
-                            </Text>
-                          </VStack>
-                          <VStack className="items-end" space="xs">
-                            <Text className="text-green-300 text-xs font-semibold uppercase tracking-[1px]">
-                              낙찰가
-                            </Text>
-                            <Text className="text-white font-bold text-lg">
-                              {formatAuctionPrice(bids[0]?.amount || 0)}
-                            </Text>
-                          </VStack>
-                        </HStack>
-                      </Box>
-                    )}
-
-                    {/* 종료된 경매에서 입찰이 없는 경우 */}
-                    {auctionDetail.status === "ended" && bids.length === 0 && (
-                      <Box className="rounded-xl p-4 mt-2 bg-red-500/10 border border-red-500/20">
-                        <Text className="text-red-300 text-sm font-semibold text-center">
-                          입찰자가 없어 경매가 무효 처리되었습니다.
-                        </Text>
-                      </Box>
-                    )}
-                  </VStack>
-                </Box>
-              </VStack>
+              <BidStatusSection
+                auctionStatus={auctionDetail.status}
+                currentBid={auction?.currentBid || 0}
+                endTime={auctionDetail.endTime}
+                bidders={auctionDetail.bidders}
+                winnerInfo={
+                  auctionDetail.status === "ended" && bids.length > 0
+                    ? {
+                        userName: bids[0]?.userName || "익명",
+                        amount: bids[0]?.amount || 0,
+                      }
+                    : undefined
+                }
+                hasBids={bids.length > 0}
+              />
 
               {/* Bid Input */}
-              {auctionDetail.status === "active" && (
-                <VStack space="lg" className="px-6">
-                  <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                    입찰하기
-                  </Text>
+              <BidInputSection
+                auctionId={id as string}
+                currentTopBid={currentTopBid}
+                isActive={auctionDetail.status === "active"}
+              />
 
-                  <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
-                    <VStack space="md">
-                      <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
-                        입찰 금액
-                      </Text>
-                      <Input className="bg-white/5 border-white/10 rounded-2xl">
-                        <InputField
-                          placeholder="입찰 금액을 입력하세요"
-                          placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                          value={bidAmount}
-                          onChangeText={handleBidAmountChange}
-                          className="text-white text-base px-4 py-3"
-                          keyboardType="numeric"
-                        />
-                      </Input>
-
-                      {currentTopBid > 0 && (
-                        <Text className="text-yellow-300 text-xs font-medium">
-                          최소 입찰가:{" "}
-                          {formatAuctionPrice(currentTopBid + 10000)}
-                        </Text>
-                      )}
-
-                      <Button
-                        onPress={handleBid}
-                        disabled={createBidMutation.isPending}
-                        className={`rounded-2xl border-2 min-h-14 ${
-                          createBidMutation.isPending
-                            ? "bg-gray-500/30 border-gray-500/30"
-                            : "bg-green-500/15 border-green-500/30"
-                        } shadow-xl ${
-                          createBidMutation.isPending
-                            ? "shadow-gray-500/40"
-                            : "shadow-green-500/40"
-                        }`}
-                      >
-                        <ButtonText
-                          className={`font-bold tracking-wide text-base ${
-                            createBidMutation.isPending
-                              ? "text-gray-400"
-                              : "text-green-300"
-                          }`}
-                        >
-                          {createBidMutation.isPending
-                            ? "입찰 중..."
-                            : "입찰하기"}
-                        </ButtonText>
-                      </Button>
-                    </VStack>
-                  </Box>
-                </VStack>
-              )}
-
-              {/* 종료된 경매 안내 */}
+              {/* Ended Auction Notice */}
               {auctionDetail.status === "ended" && (
-                <VStack space="lg" className="px-6">
-                  <Text className="text-red-300 text-xl font-black tracking-[2px] uppercase">
-                    경매 종료
-                  </Text>
-
-                  <Box className="rounded-2xl p-6 bg-red-500/5 border border-red-500/15 shadow-lg shadow-black/40">
-                    <VStack space="md" className="items-center">
-                      <Ionicons
-                        name="time-outline"
-                        size={48}
-                        color="rgba(239, 68, 68, 0.8)"
-                      />
-                      <Text className="text-red-300 text-lg font-bold text-center">
-                        이 경매는 종료되었습니다
-                      </Text>
-                      <Text className="text-white/60 text-sm text-center">
-                        {bids.length > 0
-                          ? "다른 경매에 참여해보세요!"
-                          : "입찰자가 없어 경매가 무효 처리되었습니다."}
-                      </Text>
-                    </VStack>
-                  </Box>
-                </VStack>
+                <EndedAuctionSection hasBids={bids.length > 0} />
               )}
 
               {/* Bid History */}
-              {bidHistory.length > 0 && (
-                <VStack space="lg" className="px-6">
-                  <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-                    입찰 기록
-                  </Text>
-
-                  <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
-                    <VStack space="md">
-                      {bidHistory.map((bid) => (
-                        <HStack
-                          key={bid.id}
-                          className="items-center justify-between p-3 rounded-xl bg-white/2 border border-white/5"
-                        >
-                          <VStack space="xs">
-                            <Text className="text-white font-semibold text-base">
-                              {bid.bidder}
-                            </Text>
-                            <Text className="text-white/60 text-xs">
-                              {bid.time}
-                            </Text>
-                          </VStack>
-                          <Text className="text-yellow-300 font-bold text-lg">
-                            {bid.amount}
-                          </Text>
-                        </HStack>
-                      ))}
-                    </VStack>
-                  </Box>
-                </VStack>
-              )}
+              <BidHistorySection auctionId={id as string} />
             </VStack>
           </ScrollView>
         )}
