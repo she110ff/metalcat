@@ -16,42 +16,6 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { cn } from "@gluestack-ui/nativewind-utils/cn";
 import { Platform } from "react-native";
 
-const bottomTabsList = [
-  { iconName: Icon, iconText: "시세" },
-  { iconName: Icon, iconText: "계산기" },
-  { iconName: Icon, iconText: "경매" },
-  { iconName: Icon, iconText: "프리미엄" },
-  { iconName: Icon, iconText: "My" },
-];
-
-function MobileFooter({ footerIcons }: { footerIcons: any }) {
-  const router = useRouter();
-  return (
-    <HStack
-      className={cn(
-        "bg-background-0 justify-between w-full absolute left-0 bottom-0 right-0 p-3 overflow-hidden items-center border-t-border-300 border-t",
-        { "pb-5": Platform.OS === "ios" },
-        { "pb-5": Platform.OS === "android" }
-      )}
-    >
-      {footerIcons.map(
-        (item: { iconText: string; iconName: any }, index: number) => (
-          <Pressable
-            className="px-0.5 flex-1 flex-col items-center"
-            key={index}
-            onPress={() => router.push("/(tabs)/")}
-          >
-            <Icon as={item.iconName} size="md" className="h-[32px] w-[65px]" />
-            <Text className="text-xs text-center text-typography-600">
-              {item.iconText}
-            </Text>
-          </Pressable>
-        )
-      )}
-    </HStack>
-  );
-}
-
 const MainContent = () => {
   const [activeTab, setActiveTab] = useState<"auction" | "bidding" | "premium">(
     "auction"
@@ -143,104 +107,94 @@ const MainContent = () => {
 
   return (
     <VStack
-      className="w-full mb-16"
+      className="w-full flex-1"
       style={{ justifyContent: "flex-start", alignItems: "stretch" }}
     >
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={{ flex: 0 }}
-        contentContainerStyle={{
-          paddingBottom: 110,
-          flexGrow: 0,
-          justifyContent: "flex-start",
-        }}
-      >
-        <VStack className="w-full pb-8">
-          {/* 배너 이미지 제거 */}
+      {/* 배너 이미지 제거 */}
 
-          {/* 아바타 및 Edit Profile 섹션 - negative margin 제거 */}
-          <Box className="w-full px-6 mb-5 mt-6">
-            <HStack space="lg" className="items-center">
-              <Avatar size="lg" className="bg-primary-600">
-                <AvatarBadge />
-              </Avatar>
-              <VStack space="md" className="flex-1">
-                <Text size="2xl" className="font-roboto text-dark">
-                  Alexander Leslie
-                </Text>
-                <Button
-                  variant="outline"
-                  action="secondary"
-                  className="gap-3 relative self-start"
-                >
-                  <ButtonText className="text-dark">Edit Profile</ButtonText>
-                  <ButtonIcon as={EditIcon} />
-                </Button>
-              </VStack>
-            </HStack>
-          </Box>
-
-          {/* 활동 내역 탭 섹션 */}
-          <VStack className="mx-6" space="lg">
-            {/* 탭 헤더 */}
-            <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
-              <Pressable
-                className={`flex-1 py-3 px-4 rounded-lg ${
-                  activeTab === "auction"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent"
-                }`}
-                onPress={() => setActiveTab("auction")}
-              >
-                <Text
-                  className={`text-center font-medium ${
-                    activeTab === "auction" ? "text-gray-900" : "text-gray-600"
-                  }`}
-                >
-                  경매
-                </Text>
-              </Pressable>
-
-              <Pressable
-                className={`flex-1 py-3 px-4 rounded-lg ${
-                  activeTab === "bidding"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent"
-                }`}
-                onPress={() => setActiveTab("bidding")}
-              >
-                <Text
-                  className={`text-center font-medium ${
-                    activeTab === "bidding" ? "text-gray-900" : "text-gray-600"
-                  }`}
-                >
-                  입찰
-                </Text>
-              </Pressable>
-
-              <Pressable
-                className={`flex-1 py-3 px-4 rounded-lg ${
-                  activeTab === "premium"
-                    ? "bg-white shadow-sm"
-                    : "bg-transparent"
-                }`}
-                onPress={() => setActiveTab("premium")}
-              >
-                <Text
-                  className={`text-center font-medium ${
-                    activeTab === "premium" ? "text-gray-900" : "text-gray-600"
-                  }`}
-                >
-                  프리미엄
-                </Text>
-              </Pressable>
-            </HStack>
-
-            {/* 탭 컨텐츠 */}
-            <Box className="min-h-[300px]">{renderTabContent()}</Box>
+      {/* 아바타 및 Edit Profile 섹션 - negative margin 제거 */}
+      <Box className="w-full px-6 mb-5 mt-6">
+        <HStack space="lg" className="items-center">
+          <Avatar size="lg" className="bg-primary-600">
+            <AvatarBadge />
+          </Avatar>
+          <VStack space="md" className="flex-1">
+            <Text size="2xl" className="font-roboto text-dark">
+              Alexander Leslie
+            </Text>
+            <Button
+              variant="outline"
+              action="secondary"
+              className="gap-3 relative self-start"
+            >
+              <ButtonText className="text-dark">Edit Profile</ButtonText>
+              <ButtonIcon as={EditIcon} />
+            </Button>
           </VStack>
-        </VStack>
-      </ScrollView>
+        </HStack>
+      </Box>
+
+      {/* 활동 내역 탭 섹션 */}
+      <VStack className="mx-6 flex-1" space="lg">
+        {/* 탭 헤더 */}
+        <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "auction" ? "bg-white shadow-sm" : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("auction")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "auction" ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
+              경매
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "bidding" ? "bg-white shadow-sm" : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("bidding")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "bidding" ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
+              입찰
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "premium" ? "bg-white shadow-sm" : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("premium")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "premium" ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
+              프리미엄
+            </Text>
+          </Pressable>
+        </HStack>
+
+        {/* 탭 컨텐츠 - 스크롤 적용 */}
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: 20,
+          }}
+        >
+          {renderTabContent()}
+        </ScrollView>
+      </VStack>
     </VStack>
   );
 };
@@ -308,8 +262,6 @@ export const SimpleProfile = () => {
 
       {/* 메인 컨텐츠 */}
       <MainContent />
-
-      <MobileFooter footerIcons={bottomTabsList} />
     </SafeAreaView>
   );
 };
