@@ -9,12 +9,21 @@ import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { ArrowLeft, MapPin, Phone, FileText } from "lucide-react-native";
+import {
+  ArrowLeft,
+  MapPin,
+  Phone,
+  FileText,
+  Camera,
+} from "lucide-react-native";
 import {
   DaumAddressSearch,
   DaumAddressResult,
 } from "@/components/DaumAddressSearch";
 import { PhotoPicker, PhotoItem } from "@/components/PhotoPicker";
+import { useImagePicker } from "@/hooks/useImagePicker";
+import { Image } from "react-native";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
 export default function ServiceRequest() {
   const router = useRouter();
@@ -32,6 +41,20 @@ export default function ServiceRequest() {
   const [serviceType, setServiceType] = useState<"appraisal" | "purchase">(
     getInitialServiceType()
   );
+
+  // 대표 이미지 선택을 위한 useImagePicker 훅 사용
+  const {
+    selectedImage: mainImage,
+    selectImage: selectMainImage,
+    clearImage: clearMainImage,
+    isLoading: imageLoading,
+  } = useImagePicker({
+    aspect: [4, 3],
+    quality: 0.8,
+    title: "대표 이미지 선택",
+    cameraText: "카메라로 촬영",
+    galleryText: "갤러리에서 선택",
+  });
 
   // ✅ 기본 사진들 추가 (서비스 요청용 샘플 이미지)
   const [photos, setPhotos] = useState<PhotoItem[]>([

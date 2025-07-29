@@ -141,6 +141,7 @@ function RootLayoutNav() {
           }}
         >
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="profile-edit" />
           <Stack.Screen name="auction-detail/[id]" />
           <Stack.Screen name="auction-create" />
           <Stack.Screen name="auction-create/scrap" />

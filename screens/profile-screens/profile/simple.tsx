@@ -17,6 +17,7 @@ import { cn } from "@gluestack-ui/nativewind-utils/cn";
 import { Platform } from "react-native";
 
 const MainContent = () => {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"auction" | "bidding" | "premium">(
     "auction"
   );
@@ -125,6 +126,7 @@ const MainContent = () => {
             <Button
               variant="outline"
               action="secondary"
+              onPress={() => router.push("/profile-edit")}
               className="gap-3 relative self-start"
             >
               <ButtonText className="text-dark">Edit Profile</ButtonText>
