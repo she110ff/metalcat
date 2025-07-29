@@ -149,6 +149,7 @@ const bottomTabsList: BottomTabs[] = [
     iconText: "Profile",
   },
 ];
+
 interface UserStats {
   friends: string;
   friendsText: string;
@@ -292,19 +293,19 @@ const DashboardLayout = (props: any) => {
   }
 
   return (
-    <VStack className="h-full w-full bg-background-0">
+    <VStack className="min-h-full w-full bg-background-0 justify-start">
       <Box className="md:hidden">
         <MobileHeader title={props.title} />
       </Box>
       <Box className="hidden md:flex">
         <WebHeader toggleSidebar={toggleSidebar} title={props.title} />
       </Box>
-      <VStack className="h-full w-full">
-        <HStack className="h-full w-full">
+      <VStack className="w-full justify-start">
+        <HStack className="w-full justify-start">
           <Box className="hidden md:flex h-full">
             {isSidebarVisible && <Sidebar />}
           </Box>
-          <VStack className="w-full flex-1">{props.children}</VStack>
+          <VStack className="w-full justify-start">{props.children}</VStack>
         </HStack>
       </VStack>
     </VStack>
@@ -373,20 +374,16 @@ function MobileHeader(props: MobileHeaderProps) {
   const router = useRouter();
   return (
     <HStack
-      className="py-6 px-4 border-b border-border-300 bg-background-0 items-center justify-between"
+      className="py-6 px-4 border-b border-border-300 bg-background-0 items-center"
       space="md"
     >
-      <HStack className="items-center" space="sm">
-        <Pressable
-          onPress={() => {
-            router.back();
-          }}
-        >
-          <Icon as={ChevronLeftIcon} />
-        </Pressable>
-        <Text className="text-xl">{props.title}</Text>
-      </HStack>
-      <Icon as={HeartIcon} className="h-8 w-20" />
+      <Pressable
+        onPress={() => {
+          router.back();
+        }}
+      >
+        <Icon as={ChevronLeftIcon} />
+      </Pressable>
     </HStack>
   );
 }
@@ -451,6 +448,9 @@ const accountData: AccountCardType[] = [
 ];
 const MainContent = () => {
   const [showModal, setShowModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"auction" | "bidding" | "premium">(
+    "auction"
+  );
   const { logout, user } = useAuth();
   const router = useRouter();
 
@@ -459,35 +459,358 @@ const MainContent = () => {
     router.replace("/(tabs)/");
   };
 
+  // 샘플 데이터 - 실제로는 API에서 가져올 데이터
+  const myAuctions = [
+    {
+      id: "1",
+      title: "고순도 구리 스크랩",
+      category: "고철",
+      currentBid: "₩12,500,000",
+      status: "진행중",
+      endTime: "2일 남음",
+    },
+    {
+      id: "2",
+      title: "알루미늄 캔 스크랩",
+      category: "고철",
+      currentBid: "₩3,600,000",
+      status: "종료",
+      endTime: "종료됨",
+    },
+    {
+      id: "3",
+      title: "스테인리스 스틸 파이프",
+      category: "고철",
+      currentBid: "₩8,900,000",
+      status: "진행중",
+      endTime: "1일 14시간",
+    },
+    {
+      id: "4",
+      title: "황동 배관 자재",
+      category: "고철",
+      currentBid: "₩5,200,000",
+      status: "진행중",
+      endTime: "3일 8시간",
+    },
+    {
+      id: "5",
+      title: "티타늄 합금 스크랩",
+      category: "특수금속",
+      currentBid: "₩18,750,000",
+      status: "진행중",
+      endTime: "12시간 30분",
+    },
+    {
+      id: "6",
+      title: "산업용 철 구조물",
+      category: "고철",
+      currentBid: "₩4,300,000",
+      status: "종료",
+      endTime: "종료됨",
+    },
+    {
+      id: "7",
+      title: "니켈 도금 부품",
+      category: "특수금속",
+      currentBid: "₩7,650,000",
+      status: "진행중",
+      endTime: "4일 2시간",
+    },
+  ];
+
+  const myBiddings = [
+    {
+      id: "3",
+      title: "스테인리스 스틸 스크랩",
+      category: "고철",
+      myBid: "₩8,500,000",
+      currentBid: "₩8,960,000",
+      status: "진행중",
+      endTime: "1시간 45분",
+    },
+    {
+      id: "4",
+      title: "황동 스크랩",
+      category: "고철",
+      myBid: "₩4,750,000",
+      currentBid: "₩4,750,000",
+      status: "낙찰",
+      endTime: "종료됨",
+    },
+    {
+      id: "5",
+      title: "알루미늄 합금 판재",
+      category: "고철",
+      myBid: "₩6,200,000",
+      currentBid: "₩6,800,000",
+      status: "진행중",
+      endTime: "2일 12시간",
+    },
+    {
+      id: "6",
+      title: "구리 전선 스크랩",
+      category: "고철",
+      myBid: "₩15,300,000",
+      currentBid: "₩15,300,000",
+      status: "최고가",
+      endTime: "6시간 20분",
+    },
+    {
+      id: "7",
+      title: "몰리브덴 합금",
+      category: "특수금속",
+      myBid: "₩22,000,000",
+      currentBid: "₩23,500,000",
+      status: "진행중",
+      endTime: "3일 15시간",
+    },
+  ];
+
+  const myPremiumServices = [
+    {
+      id: "p1",
+      serviceName: "금속 시세 분석 리포트",
+      requestDate: "2024-01-15",
+      status: "완료",
+      price: "₩50,000",
+    },
+    {
+      id: "p2",
+      serviceName: "맞춤형 시장 동향 분석",
+      requestDate: "2024-01-10",
+      status: "진행중",
+      price: "₩100,000",
+    },
+    {
+      id: "p3",
+      serviceName: "스크랩 품질 감정 서비스",
+      requestDate: "2024-01-08",
+      status: "완료",
+      price: "₩75,000",
+    },
+    {
+      id: "p4",
+      serviceName: "월간 금속 전망 보고서",
+      requestDate: "2024-01-05",
+      status: "진행중",
+      price: "₩120,000",
+    },
+    {
+      id: "p5",
+      serviceName: "특수금속 매입 컨설팅",
+      requestDate: "2024-01-03",
+      status: "대기중",
+      price: "₩200,000",
+    },
+    {
+      id: "p6",
+      serviceName: "국제 금속 시장 분석",
+      requestDate: "2024-01-01",
+      status: "완료",
+      price: "₩150,000",
+    },
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "auction":
+        return (
+          <VStack space="md">
+            {myAuctions.map((auction) => (
+              <Box
+                key={auction.id}
+                className="p-4 border border-border-300 rounded-xl bg-white/50"
+              >
+                <VStack space="sm">
+                  <HStack className="justify-between items-start">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-lg">
+                        {auction.title}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {auction.category}
+                      </Text>
+                    </VStack>
+                    <VStack className="items-end">
+                      <Text className="font-bold text-green-600">
+                        {auction.currentBid}
+                      </Text>
+                      <Text className="text-xs text-gray-500">
+                        {auction.endTime}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <HStack className="justify-between items-center">
+                    <Box
+                      className={`px-2 py-1 rounded ${
+                        auction.status === "진행중"
+                          ? "bg-green-100"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          auction.status === "진행중"
+                            ? "text-green-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {auction.status}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        );
+
+      case "bidding":
+        return (
+          <VStack space="md">
+            {myBiddings.map((bidding) => (
+              <Box
+                key={bidding.id}
+                className="p-4 border border-border-300 rounded-xl bg-white/50"
+              >
+                <VStack space="sm">
+                  <HStack className="justify-between items-start">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-lg">
+                        {bidding.title}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {bidding.category}
+                      </Text>
+                    </VStack>
+                    <VStack className="items-end">
+                      <Text className="font-bold text-blue-600">
+                        현재: {bidding.currentBid}
+                      </Text>
+                      <Text className="text-sm text-gray-700">
+                        내 입찰: {bidding.myBid}
+                      </Text>
+                      <Text className="text-xs text-gray-500">
+                        {bidding.endTime}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <HStack className="justify-between items-center">
+                    <Box
+                      className={`px-2 py-1 rounded ${
+                        bidding.status === "진행중"
+                          ? "bg-blue-100"
+                          : bidding.status === "낙찰"
+                          ? "bg-green-100"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          bidding.status === "진행중"
+                            ? "text-blue-700"
+                            : bidding.status === "낙찰"
+                            ? "text-green-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {bidding.status}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        );
+
+      case "premium":
+        return (
+          <VStack space="md">
+            {myPremiumServices.map((service) => (
+              <Box
+                key={service.id}
+                className="p-4 border border-border-300 rounded-xl bg-white/50"
+              >
+                <VStack space="sm">
+                  <HStack className="justify-between items-start">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-lg">
+                        {service.serviceName}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        요청일: {service.requestDate}
+                      </Text>
+                    </VStack>
+                    <VStack className="items-end">
+                      <Text className="font-bold text-purple-600">
+                        {service.price}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <HStack className="justify-between items-center">
+                    <Box
+                      className={`px-2 py-1 rounded ${
+                        service.status === "완료"
+                          ? "bg-green-100"
+                          : "bg-orange-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-semibold ${
+                          service.status === "완료"
+                            ? "text-green-700"
+                            : "text-orange-700"
+                        }`}
+                      >
+                        {service.status}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <VStack className="h-full w-full mb-16 md:mb-0">
+    <VStack
+      className="w-full mb-16 md:mb-0"
+      style={{ justifyContent: "flex-start", alignItems: "stretch" }}
+    >
       <ModalComponent showModal={showModal} setShowModal={setShowModal} />
       <ScrollView
         showsVerticalScrollIndicator={false}
+        style={{ flex: 0 }}
         contentContainerStyle={{
           paddingBottom: isWeb ? 0 : 110,
-          flexGrow: 1,
+          flexGrow: 0,
+          justifyContent: "flex-start",
         }}
       >
-        <VStack className="h-full w-full pb-8" space="2xl">
-          <Box className="relative w-full md:h-[478px] h-[380px]">
+        <VStack className="w-full pb-8">
+          <Box className="w-full md:h-[240px] h-[190px]">
             <Image
               source={require("@/assets/profile-screens/profile/image2.png")}
-              height={"100%"}
-              width={"100%"}
+              style={{
+                width: "100%",
+                height: "100%",
+              }}
               alt="Banner Image"
-              contentFit="cover"
+              resizeMode="cover"
             />
           </Box>
-          <HStack className="absolute pt-6 px-10 hidden md:flex">
-            <Text className="text-typography-900 font-roboto">
-              home &gt; {` `}
-            </Text>
-            <Text className="font-semibold text-typography-900 ">profile</Text>
-          </HStack>
-          <Center className="absolute md:mt-14 mt-6 w-full md:px-10 md:pt-6 pb-4">
-            <VStack space="lg" className="items-center">
-              <Avatar size="2xl" className="bg-primary-600">
+
+          {/* 아바타 및 Edit Profile 섹션 */}
+          <Box className="w-full -mt-12 px-6 mb-5">
+            <HStack space="lg" className="items-center">
+              <Avatar size="lg" className="bg-primary-600">
                 <AvatarImage
                   alt="Profile Image"
                   height={"100%"}
@@ -496,146 +819,79 @@ const MainContent = () => {
                 />
                 <AvatarBadge />
               </Avatar>
-              <VStack className="gap-1 w-full items-center">
+              <VStack space="md" className="flex-1">
                 <Text size="2xl" className="font-roboto text-dark">
                   Alexander Leslie
                 </Text>
-                <Text className="font-roboto text-sm text-typograpphy-700">
-                  United States
-                </Text>
+                <Button
+                  variant="outline"
+                  action="secondary"
+                  onPress={() => setShowModal(true)}
+                  className="gap-3 relative self-start"
+                >
+                  <ButtonText className="text-dark">Edit Profile</ButtonText>
+                  <ButtonIcon as={EditIcon} />
+                </Button>
               </VStack>
-              <>
-                {userData.map((item, index) => {
-                  return (
-                    <HStack className="items-center gap-1" key={index}>
-                      <VStack className="py-3 px-4 items-center" space="xs">
-                        <Text className="text-dark font-roboto font-semibold justify-center items-center">
-                          {item.friends}
-                        </Text>
-                        <Text className="text-dark text-xs font-roboto">
-                          {item.friendsText}
-                        </Text>
-                      </VStack>
-                      <Divider orientation="vertical" className="h-10" />
-                      <VStack className="py-3 px-4 items-center" space="xs">
-                        <Text className="text-dark font-roboto font-semibold">
-                          {item.followers}
-                        </Text>
-                        <Text className="text-dark text-xs font-roboto">
-                          {item.followersText}
-                        </Text>
-                      </VStack>
-                      <Divider orientation="vertical" className="h-10" />
-                      <VStack className="py-3 px-4 items-center" space="xs">
-                        <Text className="text-dark font-roboto font-semibold">
-                          {item.rewards}
-                        </Text>
-                        <Text className="text-dark text-xs font-roboto">
-                          {item.rewardsText}
-                        </Text>
-                      </VStack>
-                      <Divider orientation="vertical" className="h-10" />
-                      <VStack className="py-3 px-4 items-center" space="xs">
-                        <Text className="text-dark font-roboto font-semibold">
-                          {item.posts}
-                        </Text>
-                        <Text className="text-dark text-xs font-roboto">
-                          {item.postsText}
-                        </Text>
-                      </VStack>
-                    </HStack>
-                  );
-                })}
-              </>
-              <Button
-                variant="outline"
-                action="secondary"
-                onPress={() => setShowModal(true)}
-                className="gap-3 relative"
-              >
-                <ButtonText className="text-dark">Edit Profile</ButtonText>
-                <ButtonIcon as={EditIcon} />
-              </Button>
-            </VStack>
-          </Center>
-          <VStack className="mx-6" space="2xl">
-            <HStack
-              className="py-5 px-6 border rounded-xl border-border-300 justify-between items-center"
-              space="2xl"
-            >
-              <HStack space="2xl" className="items-center">
-                <Box className="md:h-20 md:w-20 h-10 w-10">
-                  <Image
-                    source={require("@/assets/profile-screens/profile/image1.png")}
-                    height={"100%"}
-                    width={"100%"}
-                    alt="Promo Image"
-                  />
-                </Box>
-                <VStack>
-                  <Text className="text-typography-900 text-lg" size="lg">
-                    Invite & get rewards
-                  </Text>
-                  <Text className="font-roboto text-sm md:text-[16px]">
-                    Your code r45dAsdeK8
-                  </Text>
-                </VStack>
-              </HStack>
-              <Button className="p-0 md:py-2 md:px-4 bg-background-0 active:bg-background-0 md:bg-background-900 ">
-                <ButtonText className="md:text-typography-0 text-typography-800 text-sm">
-                  Invite
-                </ButtonText>
-              </Button>
             </HStack>
-            <Heading className="font-roboto" size="xl">
-              Account
-            </Heading>
-            <VStack className="py-2 px-4 border rounded-xl border-border-300 justify-between items-center">
-              {accountData.map((item, index) => {
-                return (
-                  <React.Fragment key={index}>
-                    <HStack
-                      space="2xl"
-                      className="justify-between items-center w-full flex-1 py-3 px-2"
-                    >
-                      <HStack className="items-center" space="md">
-                        <Icon as={item.iconName} className="stroke-[#747474]" />
-                        <Text size="lg">{item.subText}</Text>
-                      </HStack>
-                      <Icon as={item.endIcon} />
-                    </HStack>
-                    {accountData.length - 1 !== index && (
-                      <Divider className="my-1" />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </VStack>
-            <Heading className="font-roboto" size="xl">
-              Preferences
-            </Heading>
-            <VStack className="py-2 px-4 border rounded-xl border-border-300 justify-between items-center">
-              {accountData.map((item, index) => {
-                return (
-                  <React.Fragment key={index}>
-                    <HStack
-                      space="2xl"
-                      className="justify-between items-center w-full flex-1 py-3 px-2"
-                      key={index}
-                    >
-                      <HStack className="items-center" space="md">
-                        <Icon as={item.iconName} className="stroke-[#747474]" />
-                        <Text size="lg">{item.subText}</Text>
-                      </HStack>
-                      <Icon as={item.endIcon} />
-                    </HStack>
-                    {accountData.length - 1 !== index && (
-                      <Divider className="my-1" />
-                    )}
-                  </React.Fragment>
-                );
-              })}
-            </VStack>
+          </Box>
+
+          {/* 활동 내역 탭 섹션 */}
+          <VStack className="mx-6" space="lg">
+            {/* 탭 헤더 */}
+            <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
+              <Pressable
+                onPress={() => setActiveTab("auction")}
+                className={`flex-1 py-3 px-4 rounded-lg ${
+                  activeTab === "auction" ? "bg-white shadow-sm" : ""
+                }`}
+              >
+                <Text
+                  className={`text-center font-semibold ${
+                    activeTab === "auction"
+                      ? "text-primary-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  경매
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setActiveTab("bidding")}
+                className={`flex-1 py-3 px-4 rounded-lg ${
+                  activeTab === "bidding" ? "bg-white shadow-sm" : ""
+                }`}
+              >
+                <Text
+                  className={`text-center font-semibold ${
+                    activeTab === "bidding"
+                      ? "text-primary-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  입찰
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setActiveTab("premium")}
+                className={`flex-1 py-3 px-4 rounded-lg ${
+                  activeTab === "premium" ? "bg-white shadow-sm" : ""
+                }`}
+              >
+                <Text
+                  className={`text-center font-semibold ${
+                    activeTab === "premium"
+                      ? "text-primary-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  프리미엄
+                </Text>
+              </Pressable>
+            </HStack>
+
+            {/* 탭 컨텐츠 */}
+            <Box className="min-h-[300px]">{renderTabContent()}</Box>
           </VStack>
         </VStack>
       </ScrollView>
@@ -1590,8 +1846,8 @@ export const Profile = () => {
   }
 
   return (
-    <SafeAreaView className="h-full w-full">
-      <DashboardLayout title="Company Name" isSidebarVisible={true}>
+    <SafeAreaView className="w-full" style={{ justifyContent: "flex-start" }}>
+      <DashboardLayout title="" isSidebarVisible={true}>
         <MainContent />
       </DashboardLayout>
       <MobileFooter footerIcons={bottomTabsList} />

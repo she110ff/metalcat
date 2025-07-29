@@ -130,7 +130,16 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: {
+              justifyContent: "flex-start",
+              alignItems: "stretch",
+              flex: 1,
+            },
+          }}
+        >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="auction-detail/[id]" />
           <Stack.Screen name="auction-create" />
