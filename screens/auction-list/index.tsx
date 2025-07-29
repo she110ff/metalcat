@@ -53,6 +53,12 @@ interface AuctionItem {
 
 type SortFilter = "createdAt" | "endTime";
 type StatusFilter = "active" | "ended" | "all";
+type AuctionCategoryFilter =
+  | "all"
+  | "scrap"
+  | "machinery"
+  | "materials"
+  | "demolition";
 
 interface AuctionFilters {
   category?: AuctionCategory;
@@ -72,6 +78,8 @@ export const AuctionList = () => {
   const [showActionMenu, setShowActionMenu] = useState(false);
   const [selectedSort, setSelectedSort] = useState<SortFilter>("createdAt");
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>("all");
+  const [selectedCategory, setSelectedCategory] =
+    useState<AuctionCategoryFilter>("all");
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
   const filterAnimatedValue = useState(new Animated.Value(0))[0];
@@ -103,6 +111,9 @@ export const AuctionList = () => {
   const filters: AuctionFilters = {
     sortBy: selectedSort,
     ...(getEffectiveStatus() && { status: getEffectiveStatus() }),
+    ...(selectedCategory !== "all" && {
+      category: selectedCategory as AuctionCategory,
+    }),
   };
   const { data: queryAuctions = [], isLoading, error } = useAuctions(filters);
 
@@ -268,6 +279,39 @@ export const AuctionList = () => {
     },
   ];
 
+  const categoryOptions = [
+    {
+      id: "all" as AuctionCategoryFilter,
+      name: "전체",
+      IconComponent: Grid3X3,
+      description: "모든 종류",
+    },
+    {
+      id: "scrap" as AuctionCategoryFilter,
+      name: "고철",
+      IconComponent: Hammer,
+      description: "고철 스크랩",
+    },
+    {
+      id: "machinery" as AuctionCategoryFilter,
+      name: "중고기계",
+      IconComponent: Settings,
+      description: "중고 기계",
+    },
+    {
+      id: "materials" as AuctionCategoryFilter,
+      name: "중고자재",
+      IconComponent: Package,
+      description: "중고 자재",
+    },
+    {
+      id: "demolition" as AuctionCategoryFilter,
+      name: "철거",
+      IconComponent: Gavel,
+      description: "철거 작업",
+    },
+  ];
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -313,6 +357,10 @@ export const AuctionList = () => {
     setSelectedStatus(statusId);
   };
 
+  const handleCategoryChange = (categoryId: AuctionCategoryFilter) => {
+    setSelectedCategory(categoryId);
+  };
+
   // 현재 선택된 상태를 실제 표시되는 상태로 변환
   const getDisplayStatus = () => {
     if (selectedSort === "endTime") {
@@ -338,11 +386,16 @@ export const AuctionList = () => {
     const sortText = selectedSort === "createdAt" ? "등록일순" : "마감시간순";
     const statusText =
       getDisplayStatus() === "all"
-        ? "전체"
+        ? "전체상태"
         : getDisplayStatus() === "active"
         ? "진행중"
         : "종료";
-    return `${sortText} · ${statusText}`;
+    const categoryText =
+      selectedCategory === "all"
+        ? "전체경매종류"
+        : categoryOptions.find((cat) => cat.id === selectedCategory)?.name ||
+          "전체경매종류";
+    return `${sortText} · ${statusText} · ${categoryText}`;
   };
 
   const handleCreateAuction = (auctionType: string) => {
@@ -686,7 +739,7 @@ export const AuctionList = () => {
                 style={{
                   height: filterAnimatedValue.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [0, 160], // 높이를 160으로 증가하여 버튼 잘림 방지
+                    outputRange: [0, 240], // 높이를 240으로 증가하여 카테고리 필터 공간 확보
                   }),
                   opacity: filterAnimatedValue,
                   overflow: "hidden",
@@ -745,6 +798,73 @@ export const AuctionList = () => {
                           style={{
                             color:
                               selectedSort === option.id
+                                ? "#9333EA"
+                                : "rgba(255,255,255,0.7)",
+                            fontSize: 13,
+                            fontWeight: "600",
+                            marginLeft: 6,
+                          }}
+                        >
+                          {option.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Category Filter Group */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      fontSize: 13,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    경매 종류
+                  </Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ paddingHorizontal: 4, gap: 8 }}
+                  >
+                    {categoryOptions.map((option) => (
+                      <TouchableOpacity
+                        key={option.id}
+                        onPress={() => handleCategoryChange(option.id)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          backgroundColor:
+                            selectedCategory === option.id
+                              ? "rgba(147, 51, 234, 0.3)"
+                              : "rgba(255, 255, 255, 0.04)",
+                          borderWidth: 1,
+                          borderColor:
+                            selectedCategory === option.id
+                              ? "rgba(147, 51, 234, 0.6)"
+                              : "rgba(255, 255, 255, 0.08)",
+                          borderRadius: 8,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <option.IconComponent
+                          size={14}
+                          color={
+                            selectedCategory === option.id
+                              ? "#9333EA"
+                              : "rgba(255,255,255,0.7)"
+                          }
+                          strokeWidth={2}
+                        />
+                        <Text
+                          style={{
+                            color:
+                              selectedCategory === option.id
                                 ? "#9333EA"
                                 : "rgba(255,255,255,0.7)",
                             fontSize: 13,
