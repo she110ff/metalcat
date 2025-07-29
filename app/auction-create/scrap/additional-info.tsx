@@ -22,6 +22,7 @@ import {
   PhotoInfo,
   ScrapProductType,
 } from "@/data/types/auction";
+import { salesEnvironmentOptions } from "@/data/auction/sample-data";
 
 // 첫 번째 단계에서 전달받은 데이터 타입
 interface FirstStepData {
@@ -70,12 +71,14 @@ export default function AdditionalInfoScreen() {
   const [selectedAddress, setSelectedAddress] =
     useState<DaumAddressResult | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
+  // 판매 조건 상태
   const [accessibility, setAccessibility] = useState<
     "easy" | "normal" | "difficult"
   >("normal");
   const [transportCondition, setTransportCondition] = useState<
     "buyer" | "negotiable" | "seller"
   >("buyer");
+  const [shippingCost, setShippingCost] = useState<"buyer" | "seller">("buyer");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 필수 입력 항목 완성도 체크
@@ -84,7 +87,10 @@ export default function AdditionalInfoScreen() {
       title.trim() !== "" &&
       address.trim() !== "" &&
       (address ? addressDetail.trim() !== "" : true) &&
-      description.trim() !== "";
+      description.trim() !== "" &&
+      accessibility !== null &&
+      transportCondition !== null &&
+      shippingCost !== null;
 
     return isComplete;
   };
@@ -100,20 +106,32 @@ export default function AdditionalInfoScreen() {
       address: address.trim() !== "",
       addressDetail: address ? addressDetail.trim() !== "" : true,
       description: description.trim() !== "",
+      accessibility: accessibility !== null,
+      transportCondition: transportCondition !== null,
+      shippingCost: shippingCost !== null,
       isComplete: complete,
     });
-  }, [title, address, addressDetail, description]);
+  }, [
+    title,
+    address,
+    addressDetail,
+    description,
+    accessibility,
+    transportCondition,
+    shippingCost,
+  ]);
 
   // 개발용 샘플 데이터 채우기
   const fillSampleData = () => {
-    setTitle("고품질 구리파이프 대량 판매");
+    setTitle("고품질 철강 스크랩");
     setAddress("서울특별시 강남구 테헤란로 123");
-    setAddressDetail("메탈캣빌딩 1층");
+    setAddressDetail("테크노밸리 지하 1층");
     setDescription(
-      "구리파이프 약 50kg 정도입니다. 상태가 매우 깨끗하고 트럭 접근이 용이합니다. 포장이 필요하지 않으며 즉시 운반 가능합니다."
+      "고품질 철강 스크랩입니다. 순도가 높고 분류가 잘 되어 있어 즉시 사용 가능합니다. 현장 접근성도 좋아 운반에 문제없습니다."
     );
     setAccessibility("easy");
-    setTransportCondition("buyer");
+    setTransportCondition("negotiable");
+    setShippingCost("seller");
   };
 
   // 주소 검색 상태 디버깅
@@ -174,7 +192,7 @@ export default function AdditionalInfoScreen() {
         },
         salesEnvironment: {
           delivery: "buyer", // 기본값 설정
-          shippingCost: "buyer",
+          shippingCost,
           accessibility,
           loading: "buyer",
           sacksNeeded: false,
@@ -236,6 +254,24 @@ export default function AdditionalInfoScreen() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // 색상 클래스 헬퍼 함수
+  const getColorClasses = (color: string) => {
+    switch (color) {
+      case "blue":
+        return "bg-blue-600/20 border-blue-500";
+      case "purple":
+        return "bg-purple-600/20 border-purple-500";
+      case "green":
+        return "bg-green-600/20 border-green-500";
+      case "yellow":
+        return "bg-yellow-600/20 border-yellow-500";
+      case "red":
+        return "bg-red-600/20 border-red-500";
+      default:
+        return "bg-gray-600/20 border-gray-500";
     }
   };
 
@@ -501,6 +537,45 @@ export default function AdditionalInfoScreen() {
                   <Text className="text-red-400 text-lg font-bold">*</Text>
                 </HStack>
 
+                {/* 운송비 부담 */}
+                <VStack space="sm">
+                  <HStack className="items-center space-x-2">
+                    <Text
+                      className="text-white font-semibold text-base"
+                      style={{ fontFamily: "NanumGothic" }}
+                    >
+                      운송비 부담
+                    </Text>
+                    <Text className="text-red-400 text-sm font-bold">*</Text>
+                  </HStack>
+                  <HStack space="md">
+                    {salesEnvironmentOptions.shippingCost.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        onPress={() =>
+                          setShippingCost(option.id as "buyer" | "seller")
+                        }
+                        className="flex-1"
+                      >
+                        <Box
+                          className={`rounded-xl p-4 items-center border ${
+                            shippingCost === option.id
+                              ? getColorClasses(option.color)
+                              : "bg-white/5 border-white/20"
+                          }`}
+                        >
+                          <Text
+                            className="text-white font-medium text-sm"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            {option.label}
+                          </Text>
+                        </Box>
+                      </Pressable>
+                    ))}
+                  </HStack>
+                </VStack>
+
                 {/* 현장 접근성 */}
                 <VStack space="sm">
                   <HStack className="items-center space-x-2">
@@ -513,67 +588,35 @@ export default function AdditionalInfoScreen() {
                     <Text className="text-red-400 text-sm font-bold">*</Text>
                   </HStack>
                   <HStack space="md">
-                    <Pressable
-                      onPress={() => setAccessibility("easy")}
-                      className="flex-1"
-                    >
-                      <Box
-                        className={`rounded-xl p-4 items-center border ${
-                          accessibility === "easy"
-                            ? "bg-green-600/20 border-green-500"
-                            : "bg-white/5 border-white/20"
-                        }`}
+                    {salesEnvironmentOptions.accessibility.map((option) => (
+                      <Pressable
+                        key={option.id}
+                        onPress={() =>
+                          setAccessibility(
+                            option.id as "easy" | "normal" | "difficult"
+                          )
+                        }
+                        className="flex-1"
                       >
-                        <Text
-                          className="text-white font-medium text-sm"
-                          style={{ fontFamily: "NanumGothic" }}
+                        <Box
+                          className={`rounded-xl p-4 items-center border ${
+                            accessibility === option.id
+                              ? getColorClasses(option.color)
+                              : "bg-white/5 border-white/20"
+                          }`}
                         >
-                          접근 용이
-                        </Text>
-                      </Box>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => setAccessibility("normal")}
-                      className="flex-1"
-                    >
-                      <Box
-                        className={`rounded-xl p-4 items-center border ${
-                          accessibility === "normal"
-                            ? "bg-yellow-600/20 border-yellow-500"
-                            : "bg-white/5 border-white/20"
-                        }`}
-                      >
-                        <Text
-                          className="text-white font-medium text-sm"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          보통
-                        </Text>
-                      </Box>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => setAccessibility("difficult")}
-                      className="flex-1"
-                    >
-                      <Box
-                        className={`rounded-xl p-4 items-center border ${
-                          accessibility === "difficult"
-                            ? "bg-red-600/20 border-red-500"
-                            : "bg-white/5 border-white/20"
-                        }`}
-                      >
-                        <Text
-                          className="text-white font-medium text-sm"
-                          style={{ fontFamily: "NanumGothic" }}
-                        >
-                          제한적
-                        </Text>
-                      </Box>
-                    </Pressable>
+                          <Text
+                            className="text-white font-medium text-sm"
+                            style={{ fontFamily: "NanumGothic" }}
+                          >
+                            {option.label}
+                          </Text>
+                        </Box>
+                      </Pressable>
+                    ))}
                   </HStack>
                 </VStack>
 
-                {/* 운반 조건 */}
                 <VStack space="sm">
                   <HStack className="items-center space-x-2">
                     <Text
