@@ -2,7 +2,13 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { LogBox, TouchableOpacity, Text, Platform } from "react-native";
+import {
+  LogBox,
+  TouchableOpacity,
+  Text,
+  Platform,
+  Pressable,
+} from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QueryDebugger } from "@/components/QueryDebugger";
 
@@ -158,28 +164,29 @@ function RootLayoutNav() {
         </Stack>
       </GluestackUIProvider>
       {/* 개발 환경에서만 Query Debugger 표시 */}
-      {__DEV__ && (
-        <>
-          <QueryDebugger
-            visible={showDebugger}
-            onClose={() => setShowDebugger(false)}
-          />
-          {/* 디버거 토글 버튼 */}
-          <TouchableOpacity
-            style={{
-              position: "absolute",
-              top: 50,
-              right: 10,
-              backgroundColor: "#333",
-              padding: 10,
-              borderRadius: 5,
-              zIndex: 999,
-            }}
-            onPress={() => setShowDebugger(!showDebugger)}
-          >
-            <Text style={{ color: "#fff", fontSize: 12 }}>Query Debug</Text>
-          </TouchableOpacity>
-        </>
+      {/* 개발용 디버거는 현재 숨김 처리 */}
+      {false && __DEV__ && Platform.OS !== "web" && (
+        <QueryDebugger
+          position={{ bottom: 100, right: 20 }}
+          panelProps={{ maxHeight: 600 }}
+        />
+      )}
+      {/* 디버거 토글 버튼 */}
+      {false && __DEV__ && Platform.OS !== "web" && (
+        <Pressable
+          style={{
+            position: "absolute",
+            bottom: 50,
+            right: 20,
+            backgroundColor: "#007AFF",
+            padding: 8,
+            borderRadius: 6,
+            zIndex: 1000,
+          }}
+          onPress={() => {}}
+        >
+          <Text style={{ color: "#fff", fontSize: 12 }}>Query Debug</Text>
+        </Pressable>
       )}
     </QueryClientProvider>
   );

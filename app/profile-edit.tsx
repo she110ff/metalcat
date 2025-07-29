@@ -14,6 +14,12 @@ import { Avatar, AvatarBadge, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Input, InputField } from "@/components/ui/input";
+import {
+  Checkbox,
+  CheckboxIndicator,
+  CheckboxLabel,
+  CheckboxIcon,
+} from "@/components/ui/checkbox";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
@@ -24,17 +30,26 @@ import {
   DaumAddressSearch,
   DaumAddressResult,
 } from "@/components/DaumAddressSearch";
+import { Check } from "lucide-react-native";
 
-const userSchema = z.object({
-  lastName: z
-    .string()
-    .min(1, "성은 필수입니다")
-    .max(50, "성은 50자 이하로 입력해주세요"),
-  firstName: z
-    .string()
-    .min(1, "이름은 필수입니다")
-    .max(50, "이름은 50자 이하로 입력해주세요"),
-});
+const userSchema = z
+  .object({
+    lastName: z
+      .string()
+      .min(1, "성은 필수입니다")
+      .max(50, "성은 50자 이하로 입력해주세요"),
+    firstName: z
+      .string()
+      .min(1, "이름은 필수입니다")
+      .max(50, "이름은 50자 이하로 입력해주세요"),
+    // 사업자 정보 (사업자 체크 시 필수)
+    companyName: z.string().optional(),
+    businessNumber: z.string().optional(),
+    businessType: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // isBusiness는 여기서 접근할 수 없으므로, 폼 제출 시 별도로 검증
+  });
 
 type UserSchemaDetails = z.infer<typeof userSchema>;
 
@@ -43,6 +58,9 @@ export default function ProfileEditScreen() {
   const router = useRouter();
   const [isLastNameFocused, setIsLastNameFocused] = useState(false);
   const [isFirstNameFocused, setIsFirstNameFocused] = useState(false);
+
+  // 사업자 체크 및 관련 필드들
+  const [isBusiness, setIsBusiness] = useState(false);
 
   // 주소 관련 state
   const [address, setAddress] = useState("");
@@ -69,11 +87,15 @@ export default function ProfileEditScreen() {
     formState: { errors },
     handleSubmit,
     reset,
+    setError,
   } = useForm<UserSchemaDetails>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       lastName: "Leslie",
       firstName: "Alexander",
+      companyName: "",
+      businessNumber: "",
+      businessType: "",
     },
   });
 
@@ -97,10 +119,27 @@ export default function ProfileEditScreen() {
   };
 
   const onSubmit = (data: UserSchemaDetails) => {
+    // 사업자 체크 시 필수 필드 검증
+    if (isBusiness) {
+      if (!data.companyName?.trim()) {
+        setError("companyName", { message: "업체명은 필수입니다" });
+        return;
+      }
+      if (!data.businessNumber?.trim()) {
+        setError("businessNumber", { message: "사업자등록번호는 필수입니다" });
+        return;
+      }
+      if (!data.businessType?.trim()) {
+        setError("businessType", { message: "업종은 필수입니다" });
+        return;
+      }
+    }
+
     console.log("Profile updated:", data);
     console.log("Avatar image:", avatarImage);
     console.log("Address:", address);
     console.log("Address detail:", addressDetail);
+    console.log("Is business:", isBusiness);
     // TODO: API 호출로 프로필 업데이트
     router.back();
   };
@@ -255,6 +294,26 @@ export default function ProfileEditScreen() {
               </HStack>
             </VStack>
 
+            {/* 전화번호 (수정 불가) */}
+            <VStack space="md">
+              <Text className="text-typography-900 text-lg font-medium">
+                전화번호
+              </Text>
+              <VStack space="sm">
+                <Input>
+                  <InputField
+                    placeholder="010-1234-5678"
+                    value="010-1234-5678"
+                    editable={false}
+                    className="text-typography-400"
+                  />
+                </Input>
+                <Text className="text-typography-400 text-xs">
+                  전화번호는 고객센터를 통해 변경 가능합니다
+                </Text>
+              </VStack>
+            </VStack>
+
             {/* 주소 */}
             <VStack space="md">
               <Text className="text-typography-900 text-lg font-medium">
@@ -288,6 +347,116 @@ export default function ProfileEditScreen() {
                 </VStack>
               )}
             </VStack>
+
+            {/* 사업자 체크박스 */}
+            <VStack space="md">
+              <Pressable
+                onPress={() => setIsBusiness(!isBusiness)}
+                className="flex-row items-center"
+              >
+                <Checkbox
+                  value="business"
+                  isChecked={isBusiness}
+                  className="mr-3"
+                >
+                  <CheckboxIndicator>
+                    <CheckboxIcon as={Check} />
+                  </CheckboxIndicator>
+                </Checkbox>
+                <Text className="text-typography-900 text-base">사업자</Text>
+              </Pressable>
+            </VStack>
+
+            {/* 사업자 정보 (체크했을 때만 표시) */}
+            {isBusiness && (
+              <VStack space="md">
+                <Text className="text-typography-900 text-lg font-medium">
+                  사업자 정보
+                </Text>
+
+                {/* 업체명 */}
+                <VStack space="sm">
+                  <Text className="text-typography-600 text-sm">
+                    업체명 <Text className="text-error-500">*</Text>
+                  </Text>
+                  <Controller
+                    name="companyName"
+                    control={control}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input>
+                        <InputField
+                          placeholder="업체명을 입력하세요"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          returnKeyType="next"
+                        />
+                      </Input>
+                    )}
+                  />
+                  {errors.companyName && (
+                    <Text className="text-error-500 text-xs">
+                      {errors.companyName.message}
+                    </Text>
+                  )}
+                </VStack>
+
+                {/* 사업자등록번호 */}
+                <VStack space="sm">
+                  <Text className="text-typography-600 text-sm">
+                    사업자등록번호 <Text className="text-error-500">*</Text>
+                  </Text>
+                  <Controller
+                    name="businessNumber"
+                    control={control}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input>
+                        <InputField
+                          placeholder="000-00-00000"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          keyboardType="numeric"
+                          returnKeyType="next"
+                        />
+                      </Input>
+                    )}
+                  />
+                  {errors.businessNumber && (
+                    <Text className="text-error-500 text-xs">
+                      {errors.businessNumber.message}
+                    </Text>
+                  )}
+                </VStack>
+
+                {/* 업종 */}
+                <VStack space="sm">
+                  <Text className="text-typography-600 text-sm">
+                    업종 <Text className="text-error-500">*</Text>
+                  </Text>
+                  <Controller
+                    name="businessType"
+                    control={control}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <Input>
+                        <InputField
+                          placeholder="예: 금속 재활용업, 건설업 등"
+                          value={value}
+                          onChangeText={onChange}
+                          onBlur={onBlur}
+                          returnKeyType="next"
+                        />
+                      </Input>
+                    )}
+                  />
+                  {errors.businessType && (
+                    <Text className="text-error-500 text-xs">
+                      {errors.businessType.message}
+                    </Text>
+                  )}
+                </VStack>
+              </VStack>
+            )}
 
             {/* 저장 버튼 */}
             <VStack space="md" className="mt-6">
