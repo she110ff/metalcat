@@ -71,7 +71,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="premium"
         options={{
-          title: "특수금속",
+          title: "프리미엄",
           tabBarIcon: ({ color }) => (
             <Crown size={22} color={color} strokeWidth={2.5} />
           ),
