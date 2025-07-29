@@ -487,8 +487,8 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     } as QuantityInfo,
     salesEnvironment: {
       delivery: "seller",
-      shippingCost: "buyer",
-      truckAccess: true,
+      shippingCost: "seller",
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -522,9 +522,9 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
       unit: "kg",
     } as QuantityInfo,
     salesEnvironment: {
-      delivery: "buyer",
-      shippingCost: "buyer",
-      truckAccess: false,
+      delivery: "both",
+      shippingCost: "seller",
+      accessibility: "normal",
       loading: "buyer",
       sacksNeeded: true,
     } as SalesEnvironment,
@@ -556,7 +556,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "seller",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -588,7 +588,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     salesEnvironment: {
       delivery: "buyer",
       shippingCost: "buyer",
-      truckAccess: false,
+      accessibility: "difficult",
       loading: "buyer",
       sacksNeeded: true,
     } as SalesEnvironment,
@@ -620,7 +620,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "seller",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -674,7 +674,7 @@ export const sampleScrapAuctions: ScrapAuctionItem[] = [
     salesEnvironment: {
       delivery: "buyer",
       shippingCost: "buyer",
-      truckAccess: false,
+      accessibility: "difficult",
       loading: "buyer",
       sacksNeeded: true,
     } as SalesEnvironment,
@@ -714,7 +714,7 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     salesEnvironment: {
       delivery: "both",
       shippingCost: "buyer",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "both",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -762,7 +762,7 @@ export const sampleMachineryAuctions: MachineryAuctionItem[] = [
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -809,7 +809,7 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -853,7 +853,7 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     salesEnvironment: {
       delivery: "seller",
       shippingCost: "buyer",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "seller",
       sacksNeeded: false,
     } as SalesEnvironment,
@@ -897,7 +897,7 @@ export const sampleMaterialsAuctions: MaterialAuctionItem[] = [
     salesEnvironment: {
       delivery: "both",
       shippingCost: "seller",
-      truckAccess: true,
+      accessibility: "easy",
       loading: "both",
       sacksNeeded: false,
     } as SalesEnvironment,

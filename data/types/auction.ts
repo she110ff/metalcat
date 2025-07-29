@@ -50,7 +50,7 @@ export interface QuantityInfo {
 export interface SalesEnvironment {
   delivery: "seller" | "buyer" | "both";
   shippingCost: "seller" | "buyer";
-  truckAccess: boolean;
+  accessibility: "easy" | "normal" | "difficult";
   loading: "seller" | "buyer" | "both";
   sacksNeeded: boolean;
 }

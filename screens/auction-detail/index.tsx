@@ -580,9 +580,13 @@ export const AuctionDetail = () => {
                                   현장 접근성:
                                 </Text>
                                 <Text className="text-white text-sm font-medium">
-                                  {auctionDetail.salesEnvironment.truckAccess
-                                    ? "5톤 집게차 진입 가능"
-                                    : "접근 제한적"}
+                                  {auctionDetail.salesEnvironment
+                                    .accessibility === "easy"
+                                    ? "접근 용이 (5톤 집게차 진입 가능)"
+                                    : auctionDetail.salesEnvironment
+                                        .accessibility === "normal"
+                                    ? "보통 (일반 트럭 접근 가능)"
+                                    : "제한적 (접근성 제한적)"}
                                 </Text>
                               </HStack>
                               <HStack className="justify-between">

@@ -212,11 +212,11 @@ export default function MachineryAdditionalInfoScreen() {
           unit: firstStepData.unit,
         },
         salesEnvironment: {
-          delivery: "buyer", // 기본값
+          delivery: "buyer", // Fixed value
           shippingCost,
-          truckAccess: accessibility === "easy",
+          accessibility,
           loading,
-          sacksNeeded: false, // 기본값
+          sacksNeeded: false, // Fixed value
         },
         photos: firstStepData.photos,
         address: {

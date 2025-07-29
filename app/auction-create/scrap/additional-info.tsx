@@ -175,7 +175,7 @@ export default function AdditionalInfoScreen() {
         salesEnvironment: {
           delivery: "buyer", // 기본값 설정
           shippingCost: "buyer",
-          truckAccess: accessibility === "easy",
+          accessibility,
           loading: "buyer",
           sacksNeeded: false,
         },
