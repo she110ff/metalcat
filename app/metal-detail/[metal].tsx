@@ -8,6 +8,13 @@ import {
   nickelDetailData,
 } from "@/data/dashboard/collected-metal-prices";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import {
+  useMetalHistory,
+  transformHistoryToDetailData,
+  mergeWithStaticData,
+  normalizeMetalCode,
+} from "@/hooks/lme";
+import type { MetalDetailData } from "@/data/types/metal-price";
 
 export default function MetalDetailPage() {
   const router = useRouter();
@@ -17,8 +24,18 @@ export default function MetalDetailPage() {
     router.back();
   };
 
-  // 금속별 데이터 매핑
-  const getMetalData = (metalName: string) => {
+  // 금속 코드 정규화
+  const normalizedMetalCode = normalizeMetalCode(metal || "nickel");
+
+  // 실시간 30일 히스토리 데이터 조회
+  const {
+    data: historyData,
+    isLoading: isHistoryLoading,
+    error: historyError,
+  } = useMetalHistory(normalizedMetalCode, 30);
+
+  // 정적 데이터 매핑 (fallback용)
+  const getStaticMetalData = (metalName: string): MetalDetailData => {
     switch (metalName) {
       case "copper":
       case "구리":
@@ -43,7 +60,38 @@ export default function MetalDetailPage() {
     }
   };
 
-  const metalData = getMetalData(metal || "nickel");
+  const staticData = getStaticMetalData(metal || "nickel");
 
-  return <MetalDetailScreen data={metalData} onBack={handleBack} />;
+  // 실시간 데이터 변환
+  const realtimeData = historyData
+    ? transformHistoryToDetailData(historyData, normalizedMetalCode)
+    : null;
+
+  // 실시간 데이터가 있으면 해당 데이터의 금속명 사용, 없으면 정적 데이터 사용
+  let finalData = mergeWithStaticData(realtimeData, staticData);
+
+  // 실시간 데이터가 있고 금속명이 다르면 실시간 데이터의 금속명 우선 사용
+  if (
+    realtimeData &&
+    realtimeData.metalName &&
+    realtimeData.metalName !== staticData.metalName
+  ) {
+    console.log(
+      `금속명 실시간 데이터 우선 사용: ${realtimeData.metalName} (기존: ${staticData.metalName})`
+    );
+    finalData = {
+      ...finalData,
+      metalName: realtimeData.metalName, // 실시간 데이터의 금속명 우선 사용
+    };
+  }
+
+  return (
+    <MetalDetailScreen
+      data={finalData}
+      onBack={handleBack}
+      isLoading={isHistoryLoading}
+      error={historyError}
+      isRealtimeData={!!realtimeData}
+    />
+  );
 }

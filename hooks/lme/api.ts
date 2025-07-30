@@ -12,24 +12,24 @@ import { validateLmePrice, classifyError } from "./errorUtils";
  * Supabase와 통신하여 실시간 LME 데이터를 가져오는 함수들
  */
 
-// 금속 코드 매핑 (한글명 → 영문 코드)
+// 금속 코드 매핑 (한글명 → 실제 DB 코드)
 const METAL_CODE_MAP: Record<string, string> = {
-  구리: "copper",
-  알루미늄: "aluminum",
-  아연: "zinc",
-  납: "lead",
-  니켈: "nickel",
-  주석: "tin",
+  구리: "CU",
+  알루미늄: "AL",
+  아연: "ZN",
+  납: "PB",
+  니켈: "NI",
+  주석: "SN",
 } as const;
 
-// 영문 코드 → 한글명 매핑
+// 실제 DB 코드 → 한글명 매핑
 const METAL_NAME_MAP: Record<string, string> = {
-  copper: "구리",
-  aluminum: "알루미늄",
-  zinc: "아연",
-  lead: "납",
-  nickel: "니켈",
-  tin: "주석",
+  CU: "구리",
+  AL: "알루미늄",
+  ZN: "아연",
+  PB: "납",
+  NI: "니켈",
+  SN: "주석",
 } as const;
 
 /**
@@ -142,6 +142,7 @@ export async function fetchMetalHistory(
       .select(
         `
         metal_code,
+        metal_name_kr,
         price_date,
         price_krw_per_kg,
         price_usd_per_ton,
@@ -162,8 +163,9 @@ export async function fetchMetalHistory(
       return [];
     }
 
-    return data.map((item) => ({
+    return data.map((item: any) => ({
       metal_code: item.metal_code,
+      metal_name_kr: item.metal_name_kr, // 실제 DB에서 오는 한글 금속명 포함
       price_date: item.price_date,
       price_krw_per_kg: item.price_krw_per_kg,
       price_usd_per_ton: item.price_usd_per_ton,

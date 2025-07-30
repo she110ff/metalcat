@@ -68,6 +68,9 @@ const getMetalColorClass = (metalName: string) => {
 interface MetalDetailScreenProps {
   data: MetalDetailData;
   onBack: () => void;
+  isLoading?: boolean;
+  error?: any;
+  isRealtimeData?: boolean;
 }
 
 const { width } = Dimensions.get("window");
@@ -75,11 +78,17 @@ const { width } = Dimensions.get("window");
 export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   data,
   onBack,
+  isLoading = false,
+  error = null,
+  isRealtimeData = false,
 }) => {
   console.log("🔍 MetalDetailScreen 렌더링 시작", {
     metalName: data?.metalName,
     hasData: !!data,
     dataKeys: data ? Object.keys(data) : [],
+    isLoading,
+    hasError: !!error,
+    isRealtimeData,
   });
 
   const IconComponent = getMetalIcon(data.metalName);
@@ -89,6 +98,190 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
     IconComponent: IconComponent?.name,
     metalColorClass,
   });
+
+  // 로딩 상태 처리
+  if (isLoading && (!data.dailyData || data.dailyData.length === 0)) {
+    return (
+      <LinearGradient
+        colors={["#0F172A", "#1E293B", "#334155"]}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingHorizontal: 20 }}>
+            {/* 헤더 */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 20,
+              }}
+            >
+              <TouchableOpacity onPress={onBack}>
+                <ArrowLeft size={24} color="white" strokeWidth={2} />
+              </TouchableOpacity>
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginLeft: 12,
+                }}
+              >
+                {data.metalName} 상세 정보
+              </Text>
+              <Text style={{ color: "#10B981", fontSize: 12, marginLeft: 8 }}>
+                로딩 중...
+              </Text>
+            </View>
+
+            {/* 로딩 스켈레톤 */}
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <View
+                style={{
+                  width: 120,
+                  height: 120,
+                  borderRadius: 60,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  marginBottom: 20,
+                }}
+              />
+              <View
+                style={{
+                  width: 200,
+                  height: 20,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 10,
+                  marginBottom: 10,
+                }}
+              />
+              <View
+                style={{
+                  width: 150,
+                  height: 16,
+                  backgroundColor: "rgba(255,255,255,0.1)",
+                  borderRadius: 8,
+                  marginBottom: 20,
+                }}
+              />
+
+              {[1, 2, 3, 4, 5].map((i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: "100%",
+                    height: 40,
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                    borderRadius: 12,
+                    marginBottom: 8,
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  // 에러 상태 처리
+  if (error && (!data.dailyData || data.dailyData.length === 0)) {
+    return (
+      <LinearGradient
+        colors={["#0F172A", "#1E293B", "#334155"]}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1, paddingHorizontal: 20 }}>
+            {/* 헤더 */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingVertical: 20,
+              }}
+            >
+              <TouchableOpacity onPress={onBack}>
+                <ArrowLeft size={24} color="white" strokeWidth={2} />
+              </TouchableOpacity>
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 18,
+                  fontWeight: "bold",
+                  marginLeft: 12,
+                }}
+              >
+                {data.metalName} 상세 정보
+              </Text>
+              <Text style={{ color: "#EF4444", fontSize: 12, marginLeft: 8 }}>
+                정적 데이터
+              </Text>
+            </View>
+
+            {/* 에러 메시지 */}
+            <View
+              style={{
+                flex: 1,
+                justifyContent: "center",
+                alignItems: "center",
+                backgroundColor: "rgba(239,68,68,0.1)",
+                borderRadius: 16,
+                padding: 20,
+                margin: 20,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#EF4444",
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginBottom: 8,
+                }}
+              >
+                실시간 데이터 로드 실패
+              </Text>
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.7)",
+                  fontSize: 14,
+                  textAlign: "center",
+                  marginBottom: 16,
+                }}
+              >
+                네트워크 문제로 최신 데이터를 가져올 수 없습니다.{"\n"}정적
+                데이터를 표시합니다.
+              </Text>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "rgba(239,68,68,0.2)",
+                  paddingHorizontal: 20,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  borderColor: "#EF4444",
+                }}
+                onPress={() => {
+                  // 새로고침 기능 (부모 컴포넌트에서 처리)
+                  console.log("에러 상태에서 새로고침 시도");
+                }}
+              >
+                <Text style={{ color: "#EF4444", fontWeight: "bold" }}>
+                  정적 데이터로 계속
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
   // USD/톤을 원/KG로 변환
   const convertUsdPerTonToKrwPerKg = (usdPerTon: number) => {
     const USD_TO_KRW_RATE = 1300; // 환율
@@ -140,9 +333,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
             <UIText className="text-slate-400 text-xs font-bold uppercase tracking-[1px] flex-1 text-center font-nanum">
               CASH (원/KG)
             </UIText>
-            <UIText className="text-slate-400 text-xs font-bold uppercase tracking-[1px] flex-1 text-center font-nanum">
-              3M (원/KG)
-            </UIText>
+
             <UIText className="text-slate-400 text-xs font-bold uppercase tracking-[1px] flex-1 text-center font-nanum">
               변동
             </UIText>
@@ -159,9 +350,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                   <UIText className="text-slate-50 text-xs flex-1 text-center font-bold font-mono">
                     {formatPriceInKrw(item.cashPrice)}
                   </UIText>
-                  <UIText className="text-slate-50 text-xs flex-1 text-center font-bold font-mono">
-                    {formatPriceInKrw(item.threeMonthPrice)}
-                  </UIText>
+
                   <HStack className="flex-1 justify-center items-center">
                     <ChangeIconComponent
                       size={10}
@@ -193,7 +382,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
     return (
       <Box className="rounded-2xl p-6 mb-8 mt-6 bg-white/4 border border-white/8 shadow-lg animate-slide-up">
         <UIText className="text-slate-50 text-xl font-black tracking-[2px] uppercase mb-4 font-nanum-bold">
-          통계 분석 (원/KG)
+          통계 분석
         </UIText>
 
         <VStack space="lg">
@@ -250,7 +439,6 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
           data={data.dailyData.map((item) => ({
             ...item,
             cashPrice: convertUsdPerTonToKrwPerKg(item.cashPrice),
-            threeMonthPrice: convertUsdPerTonToKrwPerKg(item.threeMonthPrice),
           }))}
           chartType="line"
           metalName={data.metalName}
@@ -329,9 +517,6 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                 >
                   {data.metalName}
                 </Text>
-                <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 14 }}>
-                  {data.unit}
-                </Text>
               </View>
             </View>
           </View>
@@ -339,15 +524,6 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
           <View style={{ alignItems: "flex-end" }}>
             <Text style={{ color: "white", fontSize: 30, fontWeight: "bold" }}>
               ₩{formatPriceInKrw(data.currentPrice)}
-            </Text>
-            <Text
-              style={{
-                color: "rgba(255,255,255,0.6)",
-                fontSize: 14,
-                marginTop: 4,
-              }}
-            >
-              원/KG
             </Text>
 
             <View
@@ -408,7 +584,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                 marginBottom: 16,
               }}
             >
-              통계 분석 (원/KG)
+              통계 분석
             </Text>
 
             <View style={{ flexDirection: "row", marginBottom: 16 }}>
@@ -493,9 +669,6 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               data={data.dailyData.map((item) => ({
                 ...item,
                 cashPrice: convertUsdPerTonToKrwPerKg(item.cashPrice),
-                threeMonthPrice: convertUsdPerTonToKrwPerKg(
-                  item.threeMonthPrice
-                ),
               }))}
               chartType="line"
               metalName={data.metalName}
@@ -556,16 +729,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
               >
                 CASH (원/KG)
               </Text>
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontSize: 12,
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                3M (원/KG)
-              </Text>
+
               <Text
                 style={{
                   color: "rgba(255,255,255,0.6)",
@@ -615,17 +779,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                     >
                       ₩{formatPriceInKrw(item.cashPrice)}
                     </Text>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        flex: 1,
-                        textAlign: "center",
-                      }}
-                    >
-                      ₩{formatPriceInKrw(item.threeMonthPrice)}
-                    </Text>
+
                     <View
                       style={{
                         flex: 1,

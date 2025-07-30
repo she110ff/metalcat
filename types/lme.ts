@@ -20,6 +20,7 @@ export interface LatestLmePrice {
 // 금속별 히스토리 데이터 인터페이스
 export interface MetalHistoryData {
   metal_code: string;
+  metal_name_kr: string; // 실제 DB에서 오는 한글 금속명
   price_date: string;
   price_krw_per_kg: number;
   price_usd_per_ton: number;

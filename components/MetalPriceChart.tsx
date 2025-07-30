@@ -17,9 +17,18 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   chartType,
   metalName,
 }) => {
-  // 날짜 포맷팅
-  const formatDate = (dateString: string) => {
+  // 날짜 포맷팅 (간격 조정으로 겹침 방지)
+  const formatDate = (
+    dateString: string,
+    index: number,
+    totalLength: number
+  ) => {
     const date = new Date(dateString);
+    // 30일 이상 데이터면 5일 간격, 아니면 3일 간격으로 표시
+    const interval = totalLength > 20 ? 5 : 3;
+    if (index % interval !== 0 && index !== totalLength - 1) {
+      return ""; // 간격에 맞지 않으면 빈 문자열
+    }
     return date.toLocaleDateString("ko-KR", {
       month: "short",
       day: "numeric",
@@ -28,7 +37,9 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
 
   // 메인 가격 차트 데이터 (CASH 가격만)
   const mainPriceData = {
-    labels: data.map((item) => formatDate(item.date)),
+    labels: data.map((item, index) =>
+      formatDate(item.date, index, data.length)
+    ),
     datasets: [
       {
         data: data.map((item) => item.cashPrice),
@@ -40,7 +51,9 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
 
   // 가격 변동 차트 데이터 (절대값)
   const priceChangeData = {
-    labels: data.map((item) => formatDate(item.date)),
+    labels: data.map((item, index) =>
+      formatDate(item.date, index, data.length)
+    ),
     datasets: [
       {
         data: data.map((item, index) => {
@@ -56,7 +69,9 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
 
   // 변동률 차트 데이터
   const changePercentData = {
-    labels: data.map((item) => formatDate(item.date)),
+    labels: data.map((item, index) =>
+      formatDate(item.date, index, data.length)
+    ),
     datasets: [
       {
         data: data.map((item) => item.changePercent),
