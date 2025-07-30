@@ -53,6 +53,11 @@ export const serviceRequestKeys = {
   statistics: () => [...serviceRequestKeys.all, "statistics"] as const,
   stats: (startDate?: string, endDate?: string) =>
     [...serviceRequestKeys.statistics(), startDate, endDate] as const,
+  // My 화면용 쿼리 키 (필터 포함)
+  myRequests: (userId?: string, filter?: any) =>
+    [...serviceRequestKeys.all, "my", userId, filter] as const,
+  myRequestsSummary: (userId?: string) =>
+    [...serviceRequestKeys.all, "my-summary", userId] as const,
 } as const;
 
 // ============================================
@@ -68,6 +73,8 @@ export function useCreateServiceRequest() {
   return useMutation({
     mutationFn: createServiceRequest,
     onSuccess: (newRequest) => {
+      console.log("✅ [캐시 무효화] 서비스 요청 생성 성공:", newRequest.id);
+
       // 새로운 요청을 캐시에 추가
       queryClient.setQueryData(
         serviceRequestKeys.detail(newRequest.id),
@@ -82,6 +89,16 @@ export function useCreateServiceRequest() {
       queryClient.invalidateQueries({
         queryKey: serviceRequestKeys.statistics(),
       });
+
+      // ✅ My 화면용 쿼리들 무효화 (새로 추가)
+      queryClient.invalidateQueries({
+        queryKey: serviceRequestKeys.myRequests(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: serviceRequestKeys.myRequestsSummary(),
+      });
+
+      console.log("✅ [캐시 무효화] 모든 관련 쿼리 무효화 완료");
     },
     onError: (error) => {
       console.error("서비스 요청 생성 실패:", error);
@@ -400,15 +417,61 @@ export function useServiceRequestDetail(id: string) {
 // ============================================
 
 /**
- * 서비스 요청 폼 처리 (생성 + 사진 업로드)
+ * 서비스 요청 폼 처리 (생성 + 사진 업로드) with Optimistic Update
  */
 export function useServiceRequestForm() {
   const createRequest = useCreateServiceRequest();
   const uploadPhoto = useUploadServiceRequestPhoto();
+  const queryClient = useQueryClient();
 
   const submitRequest = async (formData: ServiceRequestFormData) => {
+    const tempId = `temp-${Date.now()}`;
+    let optimisticRequest: ServiceRequest | null = null;
+
     try {
-      // 1. 서비스 요청 생성
+      // 🚀 Optimistic Update: 임시 요청 객체 생성
+      if (formData.user_id) {
+        optimisticRequest = {
+          id: tempId,
+          service_type: formData.service_type,
+          contact_phone: formData.contact_phone,
+          address: formData.address,
+          address_detail: formData.address_detail,
+          description: formData.description,
+          user_id: formData.user_id,
+          status: "pending",
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          // 임시 사진 데이터
+          photos:
+            formData.photos?.map((photo, index) => ({
+              id: `temp-photo-${index}`,
+              service_request_id: tempId,
+              photo_url: photo.uri || "",
+              is_representative: index === 0,
+              photo_order: index,
+              created_at: new Date().toISOString(),
+            })) || [],
+        } as ServiceRequest;
+
+        console.log(
+          "🚀 [Optimistic Update] 임시 요청 캐시에 추가:",
+          optimisticRequest
+        );
+
+        // 현재 캐시 데이터 가져오기
+        const currentData = queryClient.getQueryData(
+          serviceRequestKeys.myRequests(formData.user_id)
+        ) as ServiceRequest[] | undefined;
+
+        // 임시 요청을 맨 앞에 추가
+        queryClient.setQueryData(
+          serviceRequestKeys.myRequests(formData.user_id),
+          [optimisticRequest, ...(currentData || [])]
+        );
+      }
+
+      // 1. 실제 서비스 요청 생성
       const requestData: CreateServiceRequestData = {
         service_type: formData.service_type,
         contact_phone: formData.contact_phone,
@@ -419,6 +482,27 @@ export function useServiceRequestForm() {
       };
 
       const newRequest = await createRequest.mutateAsync(requestData);
+
+      console.log("✅ [Optimistic Update] 실제 요청 생성 완료:", newRequest.id);
+
+      // 🔄 Optimistic Update 롤백 및 실제 데이터로 교체
+      if (formData.user_id && optimisticRequest) {
+        const currentData = queryClient.getQueryData(
+          serviceRequestKeys.myRequests(formData.user_id)
+        ) as ServiceRequest[] | undefined;
+
+        if (currentData) {
+          // 임시 요청 제거하고 실제 요청으로 교체
+          const updatedData = currentData
+            .filter((req) => req.id !== tempId)
+            .filter((req) => req.id !== newRequest.id); // 중복 방지
+
+          queryClient.setQueryData(
+            serviceRequestKeys.myRequests(formData.user_id),
+            [newRequest, ...updatedData]
+          );
+        }
+      }
 
       // 2. 사진들 업로드
       if (formData.photos && formData.photos.length > 0) {
@@ -431,11 +515,30 @@ export function useServiceRequestForm() {
         );
 
         await Promise.all(uploadPromises);
+
+        console.log("✅ [Optimistic Update] 사진 업로드 완료");
       }
 
       return newRequest;
     } catch (error) {
-      console.error("서비스 요청 폼 제출 실패:", error);
+      console.error("❌ [Optimistic Update] 서비스 요청 폼 제출 실패:", error);
+
+      // 🔄 Optimistic Update 롤백 - 에러 발생 시 임시 데이터 제거
+      if (formData.user_id && optimisticRequest) {
+        const currentData = queryClient.getQueryData(
+          serviceRequestKeys.myRequests(formData.user_id)
+        ) as ServiceRequest[] | undefined;
+
+        if (currentData) {
+          const rollbackData = currentData.filter((req) => req.id !== tempId);
+          queryClient.setQueryData(
+            serviceRequestKeys.myRequests(formData.user_id),
+            rollbackData
+          );
+          console.log("🔄 [Optimistic Update] 에러로 인한 롤백 완료");
+        }
+      }
+
       throw error;
     }
   };
@@ -450,29 +553,6 @@ export function useServiceRequestForm() {
 // ============================================
 // 내보내기
 // ============================================
-
-// 개별 훅들
-export {
-  useCreateServiceRequest,
-  useServiceRequest,
-  useServiceRequests,
-  useInfiniteServiceRequests,
-  useUserServiceRequests,
-  useRecentServiceRequests,
-  useUpdateServiceRequest,
-  useDeleteServiceRequest,
-  useUploadServiceRequestPhoto,
-  useDeleteServiceRequestPhoto,
-  useServiceRequestStats,
-  useServiceRequestRealtime,
-  useUserServiceRequestsRealtime,
-  usePremiumDashboardData,
-  useServiceRequestDetail,
-  useServiceRequestForm,
-};
-
-// 쿼리 키 내보내기
-export { serviceRequestKeys };
 
 // API 함수들도 다시 내보내기 (직접 사용이 필요한 경우)
 export * from "./api";

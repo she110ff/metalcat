@@ -108,20 +108,7 @@ export default function ServiceRequest() {
   });
 
   // ✅ 기본 사진들 추가 (서비스 요청용 샘플 이미지)
-  const [photos, setPhotos] = useState<PhotoItem[]>([
-    {
-      id: "default_service_1",
-      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+1",
-    },
-    {
-      id: "default_service_2",
-      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+2",
-    },
-    {
-      id: "default_service_3",
-      uri: "https://dummyimage.com/400x300/6366F1/FFFFFF&text=서비스+요청+3",
-    },
-  ]);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");

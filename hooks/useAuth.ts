@@ -106,11 +106,8 @@ export const useAuth = () => {
       queryClient.setQueryData(["auth", "user"], null);
       queryClient.invalidateQueries({ queryKey: ["auth"] });
 
-      // 다른 관련 쿼리들도 초기화
-      queryClient.invalidateQueries({ queryKey: ["my-service-requests"] });
-      queryClient.invalidateQueries({
-        queryKey: ["my-service-request-summary"],
-      });
+      // 다른 관련 쿼리들도 초기화 (새로운 키 패턴 사용)
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
 
       console.log("✅ 로그아웃 성공");
     },

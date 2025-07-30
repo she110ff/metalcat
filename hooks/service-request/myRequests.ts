@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabaseClient";
 import { ServiceRequest, ServiceRequestStatus } from "@/types/service-request";
 import { useAuth } from "@/hooks/useAuth";
+import { serviceRequestKeys } from "./index";
 
 // 로컬 에러 처리 함수
 function handleError(error: any, operation: string): never {
@@ -170,7 +171,7 @@ export function useMyServiceRequests(filter?: {
   console.log("  - enabled:", !!user && !isLoading);
 
   return useQuery({
-    queryKey: ["my-service-requests", user?.id, filter],
+    queryKey: serviceRequestKeys.myRequests(user?.id, filter),
     queryFn: () => {
       console.log("📋 [useMyServiceRequests] queryFn 실행 - userId:", user?.id);
       return getMyServiceRequests(user?.id || null, filter);
@@ -188,7 +189,7 @@ export function useMyServiceRequestSummary() {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ["my-service-request-summary", user?.id],
+    queryKey: serviceRequestKeys.myRequestsSummary(user?.id),
     queryFn: () => getMyServiceRequestSummary(user?.id || null),
     staleTime: 1000 * 60 * 5, // 5분 캐시
     refetchOnWindowFocus: true,
