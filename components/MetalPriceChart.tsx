@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Dimensions, StyleSheet } from "react-native";
-import { LineChart, BarChart } from "react-native-chart-kit";
+import { LineChart } from "react-native-chart-kit";
 import { DailyPriceData } from "../data/types/metal-price";
 
 interface MetalPriceChartProps {
@@ -54,38 +54,6 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     ],
   };
 
-  // 가격 변동 차트 데이터 (절대값)
-  const priceChangeData = {
-    labels: data.map((item, index) =>
-      formatDate(item.date, index, data.length)
-    ),
-    datasets: [
-      {
-        data: data.map((item, index) => {
-          if (index === 0) return 0;
-          const change = item.cashPrice - data[index - 1].cashPrice;
-          return change;
-        }),
-        color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`, // 초록색
-        strokeWidth: 2,
-      },
-    ],
-  };
-
-  // 변동률 차트 데이터
-  const changePercentData = {
-    labels: data.map((item, index) =>
-      formatDate(item.date, index, data.length)
-    ),
-    datasets: [
-      {
-        data: data.map((item) => item.changePercent),
-        color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`, // 파란색
-        strokeWidth: 2,
-      },
-    ],
-  };
-
   // 다크 테마 차트 설정
   const darkChartConfig = {
     backgroundColor: "transparent",
@@ -132,56 +100,7 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     </View>
   );
 
-  // 가격 변동 차트
-  const renderPriceChangeChart = () => (
-    <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>일별 가격 변동 (원/KG)</Text>
-      <View style={styles.chartWrapper}>
-        <BarChart
-          data={priceChangeData}
-          width={chartWidth}
-          height={150}
-          chartConfig={{
-            ...darkChartConfig,
-            color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
-          }}
-          style={styles.chart}
-          yAxisLabel=""
-          yAxisSuffix=""
-          showBarTops
-          showValuesOnTopOfBars
-        />
-      </View>
-    </View>
-  );
-
-  // 변동률 차트
-  const renderChangePercentChart = () => (
-    <View style={styles.chartContainer}>
-      <Text style={styles.chartTitle}>변동률 추이 (%)</Text>
-      <View style={styles.chartWrapper}>
-        <LineChart
-          data={changePercentData}
-          width={chartWidth}
-          height={150}
-          chartConfig={{
-            ...darkChartConfig,
-            color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
-          }}
-          bezier
-          style={styles.chart}
-        />
-      </View>
-    </View>
-  );
-
-  return (
-    <View style={styles.container}>
-      {renderMainPriceChart()}
-      {renderPriceChangeChart()}
-      {renderChangePercentChart()}
-    </View>
-  );
+  return <View style={styles.container}>{renderMainPriceChart()}</View>;
 };
 
 const styles = StyleSheet.create({

@@ -293,10 +293,28 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
     return formatMetalPrice(price);
   };
 
-  // USD/톤 가격을 원/KG로 변환하여 포매팅
-  const formatPriceInKrw = (usdPerTon: number) => {
-    const krwPerKg = convertUsdPerTonToKrwPerKg(usdPerTon);
+  // 가격을 원/KG로 포매팅 (단위에 따라 변환 여부 결정)
+  const formatPriceInKrw = (price: number) => {
+    // 이미 원/KG 단위인 경우 변환하지 않음
+    if (data.unit === "원/KG") {
+      return formatMetalPrice(price);
+    }
+
+    // USD/톤 단위인 경우에만 변환
+    const krwPerKg = convertUsdPerTonToKrwPerKg(price);
     return formatMetalPrice(krwPerKg);
+  };
+
+  // 일별 데이터용 cash 가격 포매팅 (소수점 제거)
+  const formatCashPrice = (price: number) => {
+    // 이미 원/KG 단위인 경우 소수점 제거 후 포매팅
+    if (data.unit === "원/KG") {
+      return formatMetalPrice(Math.round(price));
+    }
+
+    // USD/톤 단위인 경우 변환 후 소수점 제거
+    const krwPerKg = convertUsdPerTonToKrwPerKg(price);
+    return formatMetalPrice(Math.round(krwPerKg));
   };
 
   const formatDate = (dateString: string) => {
@@ -348,7 +366,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                     {formatDate(item.date)}
                   </UIText>
                   <UIText className="text-slate-50 text-xs flex-1 text-center font-bold font-mono">
-                    {formatPriceInKrw(item.cashPrice)}
+                    {formatCashPrice(item.cashPrice)}
                   </UIText>
 
                   <HStack className="flex-1 justify-center items-center">
@@ -777,7 +795,7 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
                         textAlign: "center",
                       }}
                     >
-                      ₩{formatPriceInKrw(item.cashPrice)}
+                      ₩{formatCashPrice(item.cashPrice)}
                     </Text>
 
                     <View
