@@ -10,7 +10,7 @@ interface MetalPriceChartProps {
 }
 
 const { width } = Dimensions.get("window");
-const chartWidth = Math.min(width - 60, 350); // 차트 너비 제한
+const chartWidth = width - 80; // 좌우 패딩 40씩 확보
 
 export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
   data,
@@ -24,9 +24,14 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     totalLength: number
   ) => {
     const date = new Date(dateString);
-    // 30일 이상 데이터면 5일 간격, 아니면 3일 간격으로 표시
-    const interval = totalLength > 20 ? 5 : 3;
-    if (index % interval !== 0 && index !== totalLength - 1) {
+    // 데이터 길이에 따라 적응적 간격 설정
+    let interval = 3;
+    if (totalLength > 30) interval = 7;
+    else if (totalLength > 20) interval = 5;
+    else if (totalLength > 15) interval = 4;
+
+    // 첫 번째, 마지막, 간격에 맞는 날짜만 표시
+    if (index !== 0 && index !== totalLength - 1 && index % interval !== 0) {
       return ""; // 간격에 맞지 않으면 빈 문자열
     }
     return date.toLocaleDateString("ko-KR", {
@@ -103,6 +108,11 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
       stroke: "rgba(255, 255, 255, 0.1)",
       strokeWidth: 1,
     },
+    // 라벨이 잘리지 않도록 패딩 설정
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
   };
 
   // 메인 가격 차트 (CASH 가격만)
@@ -193,11 +203,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.02)",
     borderRadius: 16,
-    padding: 10,
+    padding: 15, // 패딩 증가
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.05)",
+    overflow: "hidden", // 차트가 넘치지 않도록
   },
   chart: {
     borderRadius: 16,
+    marginVertical: 8, // 상하 여백 추가
   },
 });
