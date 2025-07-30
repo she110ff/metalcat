@@ -10,6 +10,15 @@ export * from "./queryKeys";
 // Error Utilities
 export * from "./errorUtils";
 
+// API Functions
+export * from "./api";
+
+// React Query Hooks
+export * from "./useLmePrices";
+
+// Supabase Client
+export { supabase, lmeRpc, lmeTables } from "./supabaseClient";
+
 // Types (re-export for convenience)
 export type {
   LatestLmePrice,
@@ -21,6 +30,3 @@ export type {
   LmeProcessedPriceRow,
   CrawlingLogRow,
 } from "../../types/lme";
-
-// 기본 Supabase 클라이언트 설정은 별도 파일에서 관리
-// (곧 만들 예정)

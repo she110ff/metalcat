@@ -20,9 +20,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { MetalPriceCard } from "@/components/dashboard/metal-price-card";
 import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
+import { useLatestLmePricesCompatible } from "@/hooks/lme";
 
 export const Dashboard = () => {
   const router = useRouter();
+
+  // LME 실시간 데이터 Hook
+  const {
+    data: realTimeLmeData,
+    isLoading: isLmeLoading,
+    error: lmeError,
+    refetch: refetchLme,
+  } = useLatestLmePricesCompatible();
 
   // 애니메이션을 위한 Animated Values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -127,17 +136,60 @@ export const Dashboard = () => {
               </Text>
 
               <VStack space="md">
-                {groupMetalData(lmePricesData).map((row, rowIndex) => (
-                  <HStack key={`lme-row-${rowIndex}`} space="md">
-                    {row.map((item, itemIndex) => (
-                      <MetalPriceCard
-                        key={`lme-${rowIndex}-${itemIndex}`}
-                        {...item}
-                        onPress={() => handleMetalPress(item.metalName)}
-                      />
+                {/* 로딩 상태 처리 */}
+                {isLmeLoading && !realTimeLmeData ? (
+                  <VStack space="md">
+                    {[1, 2, 3].map((row) => (
+                      <HStack key={`loading-row-${row}`} space="md">
+                        {[1, 2].map((col) => (
+                          <Box
+                            key={`loading-${row}-${col}`}
+                            className="flex-1 h-20 rounded-2xl bg-white/5 animate-pulse"
+                          />
+                        ))}
+                      </HStack>
                     ))}
-                  </HStack>
-                ))}
+                  </VStack>
+                ) : (
+                  // 실시간 데이터 또는 정적 데이터 표시
+                  groupMetalData(realTimeLmeData || lmePricesData).map(
+                    (row, rowIndex) => (
+                      <HStack key={`lme-row-${rowIndex}`} space="md">
+                        {row.map((item, itemIndex) => (
+                          <MetalPriceCard
+                            key={`lme-${rowIndex}-${itemIndex}`}
+                            {...item}
+                            onPress={() => handleMetalPress(item.metalName)}
+                          />
+                        ))}
+                      </HStack>
+                    )
+                  )
+                )}
+
+                {/* 에러 상태 처리 */}
+                {lmeError && !realTimeLmeData && (
+                  <Box className="rounded-2xl p-4 bg-red-500/10 border border-red-500/20">
+                    <HStack className="items-center justify-between">
+                      <VStack>
+                        <Text className="text-red-400 font-bold">
+                          데이터 로드 실패
+                        </Text>
+                        <Text className="text-red-300 text-sm">
+                          네트워크를 확인하고 다시 시도해주세요
+                        </Text>
+                      </VStack>
+                      <Pressable
+                        onPress={() => refetchLme()}
+                        className="bg-red-500/20 px-3 py-2 rounded-lg"
+                      >
+                        <Text className="text-red-300 text-sm font-bold">
+                          재시도
+                        </Text>
+                      </Pressable>
+                    </HStack>
+                  </Box>
+                )}
               </VStack>
             </VStack>
 
