@@ -41,7 +41,20 @@ const userSchema = z
       .max(50, "이름은 50자 이하로 입력해주세요"),
     // 사업자 정보 (사업자 체크 시 필수)
     companyName: z.string().optional(),
-    businessNumber: z.string().optional(),
+    businessNumber: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim() === "") return true; // 빈 값은 허용 (필수 검증은 별도)
+          // 하이픈 제거 후 10자리 숫자인지 확인
+          const cleaned = val.replace(/-/g, "");
+          return /^\d{10}$/.test(cleaned);
+        },
+        {
+          message: "사업자등록번호는 10자리 숫자여야 합니다 (예: 000-00-00000)",
+        }
+      ),
     businessType: z.string().optional(),
   })
   .superRefine((data, ctx) => {
@@ -49,6 +62,26 @@ const userSchema = z
   });
 
 type UserSchemaDetails = z.infer<typeof userSchema>;
+
+// 사업자등록번호 포맷팅 함수
+const formatBusinessNumber = (value: string): string => {
+  // 숫자만 추출
+  const numbers = value.replace(/[^\d]/g, "");
+
+  // 10자리를 초과하면 자르기
+  const truncated = numbers.slice(0, 10);
+
+  // 000-00-00000 형태로 포맷팅
+  if (truncated.length <= 3) {
+    return truncated;
+  } else if (truncated.length <= 5) {
+    return `${truncated.slice(0, 3)}-${truncated.slice(3)}`;
+  } else {
+    return `${truncated.slice(0, 3)}-${truncated.slice(3, 5)}-${truncated.slice(
+      5
+    )}`;
+  }
+};
 
 export default function ProfileEditScreen() {
   const { isLoggedIn, isLoading, user, updateUser, isUpdatingUser } = useAuth();
@@ -84,12 +117,15 @@ export default function ProfileEditScreen() {
     handleSubmit,
     reset,
     setError,
+    getValues,
   } = useForm<UserSchemaDetails>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       name: user?.name || "",
       companyName: user?.companyName || "",
-      businessNumber: user?.businessNumber || "",
+      businessNumber: user?.businessNumber
+        ? formatBusinessNumber(user.businessNumber)
+        : "",
       businessType: user?.businessType || "",
     },
   });
@@ -100,7 +136,9 @@ export default function ProfileEditScreen() {
       reset({
         name: user.name || "",
         companyName: user.companyName || "",
-        businessNumber: user.businessNumber || "",
+        businessNumber: user.businessNumber
+          ? formatBusinessNumber(user.businessNumber)
+          : "",
         businessType: user.businessType || "",
       });
       setIsBusiness(user.isBusiness || false);
@@ -139,6 +177,16 @@ export default function ProfileEditScreen() {
         setError("businessNumber", { message: "사업자등록번호는 필수입니다" });
         return;
       }
+      // 사업자등록번호 형식 재검증 (하이픈 제거 후 10자리 숫자)
+      const cleanedBusinessNumber = data.businessNumber
+        .trim()
+        .replace(/-/g, "");
+      if (!/^\d{10}$/.test(cleanedBusinessNumber)) {
+        setError("businessNumber", {
+          message: "사업자등록번호는 10자리 숫자여야 합니다 (예: 000-00-00000)",
+        });
+        return;
+      }
       if (!data.businessType?.trim()) {
         setError("businessType", { message: "업종은 필수입니다" });
         return;
@@ -169,29 +217,39 @@ export default function ProfileEditScreen() {
       }
     }
 
+    // 업데이트할 데이터 준비
+    const updateData = {
+      name: data.name.trim(),
+      address: address.trim(),
+      addressDetail: addressDetail.trim() || undefined,
+      avatarUrl: finalAvatarUrl,
+      isBusiness,
+      // 사업자인 경우에만 사업자 정보 포함, 아닌 경우 빈 문자열로 초기화 (DB에서 null로 변환됨)
+      companyName: isBusiness ? data.companyName?.trim() : "",
+      businessNumber: isBusiness
+        ? data.businessNumber?.trim().replace(/-/g, "") // 하이픈 제거하고 숫자만 저장
+        : "",
+      businessType: isBusiness ? data.businessType?.trim() : "",
+    };
+
+    console.log("📝 업데이트할 데이터:", {
+      ...updateData,
+      businessNumber: updateData.businessNumber
+        ? "***숨김***"
+        : updateData.businessNumber,
+    });
+
     // 프로필 업데이트 API 호출
-    updateUser(
-      {
-        name: data.name.trim(),
-        address: address.trim(),
-        addressDetail: addressDetail.trim() || undefined,
-        avatarUrl: finalAvatarUrl,
-        isBusiness,
-        companyName: isBusiness ? data.companyName?.trim() : undefined,
-        businessNumber: isBusiness ? data.businessNumber?.trim() : undefined,
-        businessType: isBusiness ? data.businessType?.trim() : undefined,
+    updateUser(updateData, {
+      onSuccess: () => {
+        console.log("✅ 프로필 업데이트 성공");
+        router.back();
       },
-      {
-        onSuccess: () => {
-          console.log("✅ 프로필 업데이트 성공");
-          router.back();
-        },
-        onError: (error) => {
-          console.error("❌ 프로필 업데이트 실패:", error);
-          alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
-        },
-      }
-    );
+      onError: (error) => {
+        console.error("❌ 프로필 업데이트 실패:", error);
+        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+      },
+    });
   };
 
   if (isLoading) {
@@ -378,7 +436,21 @@ export default function ProfileEditScreen() {
             {/* 사업자 체크박스 */}
             <VStack space="md">
               <Pressable
-                onPress={() => setIsBusiness(!isBusiness)}
+                onPress={() => {
+                  const newBusinessState = !isBusiness;
+                  setIsBusiness(newBusinessState);
+
+                  // 사업자 체크를 해제하면 관련 필드 초기화
+                  if (!newBusinessState) {
+                    reset({
+                      name: getValues("name"),
+                      companyName: "",
+                      businessNumber: "",
+                      businessType: "",
+                    });
+                  }
+                  console.log("🏢 사업자 상태 변경:", newBusinessState);
+                }}
                 className="flex-row items-center"
               >
                 <Checkbox
@@ -441,10 +513,14 @@ export default function ProfileEditScreen() {
                         <InputField
                           placeholder="000-00-00000"
                           value={value}
-                          onChangeText={onChange}
+                          onChangeText={(text) => {
+                            const formatted = formatBusinessNumber(text);
+                            onChange(formatted);
+                          }}
                           onBlur={onBlur}
                           keyboardType="numeric"
                           returnKeyType="next"
+                          maxLength={12} // 000-00-00000 형태 최대 길이
                         />
                       </Input>
                     )}

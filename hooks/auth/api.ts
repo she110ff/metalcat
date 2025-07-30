@@ -434,11 +434,11 @@ export async function updateUser(
     if (updates.isBusiness !== undefined)
       updateData.is_business = updates.isBusiness;
     if (updates.companyName !== undefined)
-      updateData.company_name = updates.companyName;
+      updateData.company_name = updates.companyName || null; // 빈 문자열은 null로 변환
     if (updates.businessNumber !== undefined)
-      updateData.business_number = updates.businessNumber;
+      updateData.business_number = updates.businessNumber || null; // 빈 문자열은 null로 변환
     if (updates.businessType !== undefined)
-      updateData.business_type = updates.businessType;
+      updateData.business_type = updates.businessType || null; // 빈 문자열은 null로 변환
 
     const { data: updatedUser, error } = await supabase
       .from("users")
