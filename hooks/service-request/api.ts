@@ -84,8 +84,13 @@ export async function createServiceRequest(
       address: data.address,
       address_detail: data.address_detail,
       description: data.description,
-      user_id: data.user_id || null, // 폼에서 전달받은 사용자 ID
+      user_id: data.user_id ?? null, // 폼에서 전달받은 사용자 ID (undefined → null)
     };
+
+    console.log("📝 [API] createServiceRequest 호출:");
+    console.log("  - 전달받은 data.user_id:", data.user_id);
+    console.log("  - 최종 requestData.user_id:", requestData.user_id);
+    console.log("  - 요청 타입:", data.service_type);
 
     const { data: request, error } = await supabase
       .from("service_requests")
@@ -94,8 +99,14 @@ export async function createServiceRequest(
       .single();
 
     if (error) {
+      console.error("❌ [API] 서비스 요청 생성 실패:", error);
       handleSupabaseError(error, "서비스 요청 생성");
     }
+
+    console.log("✅ [API] 서비스 요청 생성 성공:");
+    console.log("  - 생성된 ID:", request.id);
+    console.log("  - 저장된 user_id:", request.user_id);
+    console.log("  - 요청 타입:", request.service_type);
 
     return request;
   } catch (error) {
@@ -229,17 +240,13 @@ export async function getUserServiceRequests(
   userId?: string
 ): Promise<ServiceRequest[]> {
   try {
-    // 현재 사용자 ID 사용 (제공되지 않은 경우)
-    let targetUserId = userId;
-    if (!targetUserId) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      targetUserId = user?.id;
-    }
+    console.log("📋 [API] getUserServiceRequests 호출:");
+    console.log("  - 전달받은 userId:", userId);
 
-    if (!targetUserId) {
-      return []; // 인증되지 않은 사용자는 빈 배열 반환
+    // userId가 제공되지 않은 경우 빈 배열 반환
+    if (!userId) {
+      console.log("📋 [API] userId가 없어서 빈 배열 반환");
+      return [];
     }
 
     const { data: requests, error } = await supabase
@@ -250,12 +257,24 @@ export async function getUserServiceRequests(
         photos:service_request_photos(*)
       `
       )
-      .eq("user_id", targetUserId)
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
+      console.error("❌ [API] 사용자 서비스 요청 조회 실패:", error);
       handleSupabaseError(error, "사용자 서비스 요청 조회");
     }
+
+    console.log("✅ [API] 사용자 서비스 요청 조회 성공:");
+    console.log("  - 조회된 요청 수:", requests?.length || 0);
+    console.log(
+      "  - 요청 목록:",
+      requests?.map((r) => ({
+        id: r.id,
+        type: r.service_type,
+        status: r.status,
+      }))
+    );
 
     return requests || [];
   } catch (error) {
@@ -548,16 +567,38 @@ export async function getRecentServiceRequests(
   limit: number = 5
 ): Promise<ServiceRequest[]> {
   try {
-    const { data, error } = await supabase.rpc("get_user_recent_requests", {
-      user_uuid: userId || null,
-      limit_count: limit,
-    });
+    console.log("📋 [API] getRecentServiceRequests 호출:");
+    console.log("  - 전달받은 userId:", userId);
+    console.log("  - limit:", limit);
+
+    // userId가 없으면 빈 배열 반환
+    if (!userId) {
+      console.log("📋 [API] userId가 없어서 빈 배열 반환");
+      return [];
+    }
+
+    // 직접 쿼리로 최근 요청 조회 (RPC 함수 대신)
+    const { data: requests, error } = await supabase
+      .from("service_requests")
+      .select(
+        `
+        *,
+        photos:service_request_photos(*)
+      `
+      )
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
 
     if (error) {
+      console.error("❌ [API] 최근 서비스 요청 조회 실패:", error);
       handleSupabaseError(error, "최근 서비스 요청 조회");
     }
 
-    return data || [];
+    console.log("✅ [API] 최근 서비스 요청 조회 성공:");
+    console.log("  - 조회된 요청 수:", requests?.length || 0);
+
+    return requests || [];
   } catch (error) {
     console.error("최근 서비스 요청 조회 실패:", error);
     throw error;

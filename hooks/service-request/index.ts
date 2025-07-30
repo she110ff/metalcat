@@ -415,6 +415,7 @@ export function useServiceRequestForm() {
         address: formData.address,
         address_detail: formData.address_detail,
         description: formData.description,
+        user_id: formData.user_id, // 사용자 ID 전달
       };
 
       const newRequest = await createRequest.mutateAsync(requestData);

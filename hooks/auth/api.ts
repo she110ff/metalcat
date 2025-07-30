@@ -284,15 +284,35 @@ export async function signinWithPhone(
  */
 export async function getCurrentUser(): Promise<User | null> {
   try {
-    // 1. 로컬 토큰 확인
-    const token = await AsyncStorage.getItem("supabase.auth.token");
-    if (!token) {
-      return null;
+    // 1. 새로운 시스템 토큰 확인
+    let token = await AsyncStorage.getItem("supabase.auth.token");
+    let userData: string | null = null;
+
+    if (token) {
+      // 새로운 시스템 사용자 데이터 확인
+      userData = await AsyncStorage.getItem("auth.user");
+      console.log("🔍 새로운 시스템 키에서 데이터 확인:", !!userData);
+    } else {
+      // 기존 시스템 키로 fallback 확인
+      token = await AsyncStorage.getItem("authToken");
+      if (token) {
+        userData = await AsyncStorage.getItem("userData");
+        console.log(
+          "🔄 기존 시스템 키에서 사용자 데이터 발견, 마이그레이션 진행"
+        );
+
+        // 기존 키에서 새로운 키로 마이그레이션
+        if (userData) {
+          await AsyncStorage.setItem("supabase.auth.token", token);
+          await AsyncStorage.setItem("auth.user", userData);
+          // 기존 키는 정리하지 않음 (다른 곳에서 아직 사용할 수 있음)
+          console.log("✅ 데이터 마이그레이션 완료");
+        }
+      }
     }
 
-    // 2. 저장된 사용자 정보 조회
-    const userData = await AsyncStorage.getItem("auth.user");
-    if (!userData) {
+    if (!token || !userData) {
+      console.log("📤 사용자 토큰 또는 데이터 없음");
       return null;
     }
 

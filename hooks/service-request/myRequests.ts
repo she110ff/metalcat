@@ -30,7 +30,15 @@ export async function getMyServiceRequests(
   }
 ) {
   try {
-    console.log("📋 나의 서비스 요청 목록 조회 시작:", filter);
+    console.log("📋 [getMyServiceRequests] 요청 목록 조회 시작:");
+    console.log("  - userId:", userId);
+    console.log("  - filter:", filter);
+
+    // userId가 없는 경우 빈 결과 반환
+    if (!userId) {
+      console.log("📋 [getMyServiceRequests] userId가 없어서 빈 배열 반환");
+      return [];
+    }
 
     let query = supabase
       .from("service_requests")
@@ -45,36 +53,52 @@ export async function getMyServiceRequests(
         )
       `
       )
+      .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
-    // 실제 사용자 ID로 필터링
-    if (userId) {
-      query = query.eq("user_id", userId);
-    } else {
-      // 로그인하지 않은 경우 빈 결과 반환
-      return [];
-    }
+    console.log(
+      "📋 [getMyServiceRequests] 쿼리 생성 완료, user_id로 필터링:",
+      userId
+    );
 
     // 상태 필터
     if (filter?.status && filter.status.length > 0) {
       query = query.in("status", filter.status);
+      console.log("📋 [getMyServiceRequests] 상태 필터 적용:", filter.status);
     }
 
     // 개수 제한
     if (filter?.limit) {
       query = query.limit(filter.limit);
+      console.log("📋 [getMyServiceRequests] 개수 제한 적용:", filter.limit);
     }
 
+    console.log("📋 [getMyServiceRequests] 쿼리 실행 중...");
     const { data, error } = await query;
 
     if (error) {
+      console.error("📋 [getMyServiceRequests] 쿼리 에러:", error);
       handleError(error, "나의 요청 목록 조회");
     }
 
-    console.log("📋 목록 조회 성공:", data?.length, "건");
+    console.log("📋 [getMyServiceRequests] 쿼리 성공:");
+    console.log("  - 조회된 요청 수:", data?.length || 0);
+    if (data && data.length > 0) {
+      console.log(
+        "  - 요청 목록:",
+        data.map((r) => ({
+          id: r.id,
+          type: r.service_type,
+          status: r.status,
+          user_id: r.user_id,
+          created_at: r.created_at,
+        }))
+      );
+    }
+
     return data || [];
   } catch (error) {
-    console.error("나의 요청 목록 조회 실패:", error);
+    console.error("📋 [getMyServiceRequests] 예외 발생:", error);
     throw error;
   }
 }
@@ -136,14 +160,24 @@ export function useMyServiceRequests(filter?: {
   status?: ServiceRequestStatus[];
   limit?: number;
 }) {
-  const { user } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
+
+  console.log("📋 [useMyServiceRequests] 상태 확인:");
+  console.log("  - user:", user);
+  console.log("  - user?.id:", user?.id);
+  console.log("  - isLoggedIn:", isLoggedIn);
+  console.log("  - isLoading:", isLoading);
+  console.log("  - enabled:", !!user && !isLoading);
 
   return useQuery({
     queryKey: ["my-service-requests", user?.id, filter],
-    queryFn: () => getMyServiceRequests(user?.id || null, filter),
+    queryFn: () => {
+      console.log("📋 [useMyServiceRequests] queryFn 실행 - userId:", user?.id);
+      return getMyServiceRequests(user?.id || null, filter);
+    },
     staleTime: 1000 * 60 * 2, // 2분 캐시
     refetchOnWindowFocus: true,
-    enabled: !!user, // 사용자가 로그인한 경우에만 실행
+    enabled: !!user && !isLoading, // 사용자가 로그인하고 로딩이 완료된 경우에만 실행
   });
 }
 

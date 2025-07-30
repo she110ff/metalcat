@@ -1,24 +1,18 @@
 import React from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { ScrollView, View, ActivityIndicator } from "react-native";
+import { ScrollView, View } from "react-native";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
-import { Crown, Clock, CheckCircle, AlertCircle } from "lucide-react-native";
+import { Crown } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { usePremiumDashboardData } from "@/hooks/service-request";
-import { STATUS_LABELS, STATUS_COLORS } from "@/types/service-request";
 
 export default function Premium() {
   const router = useRouter();
-
-  // 프리미엄 대시보드 데이터 로드
-  const { activeRequests, recentRequests, stats, isLoading, error } =
-    usePremiumDashboardData();
 
   return (
     <LinearGradient
@@ -78,99 +72,6 @@ export default function Premium() {
                 프리미엄 금속 서비스
               </Text>
             </VStack>
-
-            {/* 로딩 상태 */}
-            {isLoading && (
-              <Box className="items-center py-8">
-                <ActivityIndicator size="large" color="#FCD34D" />
-                <Text className="text-white/60 mt-4">
-                  데이터를 불러오는 중...
-                </Text>
-              </Box>
-            )}
-
-            {/* 에러 상태 */}
-            {error && (
-              <Box
-                className="rounded-3xl p-6"
-                style={{
-                  backgroundColor: "rgba(248, 113, 113, 0.15)",
-                  borderWidth: 1,
-                  borderColor: "rgba(248, 113, 113, 0.3)",
-                }}
-              >
-                <HStack className="items-center" space="sm">
-                  <AlertCircle size={20} color="#F87171" />
-                  <Text className="text-red-400 font-bold">
-                    오류가 발생했습니다
-                  </Text>
-                </HStack>
-                <Text className="text-white/60 text-sm mt-2">
-                  데이터를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.
-                </Text>
-              </Box>
-            )}
-
-            {/* 진행 중인 요청 섹션 */}
-            {!isLoading && !error && activeRequests.length > 0 && (
-              <VStack space="md">
-                <Text className="text-white text-lg font-bold">
-                  진행 중인 서비스 요청
-                </Text>
-                {activeRequests.map((request) => (
-                  <Pressable
-                    key={request.id}
-                    onPress={() =>
-                      router.push(`/service-request/detail/${request.id}`)
-                    }
-                  >
-                    <Box
-                      className="rounded-3xl p-4"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.05)",
-                        borderWidth: 1,
-                        borderColor: "rgba(255, 255, 255, 0.1)",
-                      }}
-                    >
-                      <HStack className="justify-between items-start">
-                        <VStack space="xs" className="flex-1">
-                          <Text className="text-white font-bold">
-                            {request.service_type === "appraisal"
-                              ? "현장 방문 감정"
-                              : "즉시 매입 서비스"}
-                          </Text>
-                          <Text
-                            className="text-white/60 text-sm"
-                            numberOfLines={2}
-                          >
-                            {request.description}
-                          </Text>
-                          <Text className="text-white/40 text-xs">
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </Text>
-                        </VStack>
-                        <Box
-                          className="px-3 py-1 rounded-full"
-                          style={{
-                            backgroundColor:
-                              STATUS_COLORS[request.status] + "20",
-                            borderWidth: 1,
-                            borderColor: STATUS_COLORS[request.status] + "40",
-                          }}
-                        >
-                          <Text
-                            className="text-xs font-bold"
-                            style={{ color: STATUS_COLORS[request.status] }}
-                          >
-                            {STATUS_LABELS[request.status]}
-                          </Text>
-                        </Box>
-                      </HStack>
-                    </Box>
-                  </Pressable>
-                ))}
-              </VStack>
-            )}
 
             {/* Premium Appraisal Service */}
             <Box

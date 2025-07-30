@@ -47,25 +47,44 @@ export default function ServiceRequest() {
   );
 
   // ✅ 현재 사용자 정보
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, isLoading } = useAuth();
 
-  // 디버깅용 - AsyncStorage 직접 확인
+  // 디버깅용 - 상세한 상태 확인
   React.useEffect(() => {
-    const checkAsyncStorage = async () => {
+    const checkUserState = async () => {
       try {
-        const token = await AsyncStorage.getItem("authToken");
-        const userData = await AsyncStorage.getItem("userData");
-        console.log("🔍 AsyncStorage 토큰:", token);
-        console.log("🔍 AsyncStorage 사용자 데이터:", userData);
-        if (userData) {
-          console.log("🔍 파싱된 사용자 데이터:", JSON.parse(userData));
+        console.log("🔍 [서비스요청] useAuth 상태:");
+        console.log("  - user:", user);
+        console.log("  - user?.id:", user?.id);
+        console.log("  - isLoggedIn:", isLoggedIn);
+        console.log("  - isLoading:", isLoading);
+
+        // AsyncStorage 직접 확인 (디버깅용)
+        const newToken = await AsyncStorage.getItem("supabase.auth.token");
+        const newUserData = await AsyncStorage.getItem("auth.user");
+        const oldToken = await AsyncStorage.getItem("authToken");
+        const oldUserData = await AsyncStorage.getItem("userData");
+
+        console.log("🔍 [서비스요청] AsyncStorage 상태:");
+        console.log("  - 새로운 토큰:", !!newToken);
+        console.log("  - 새로운 사용자 데이터:", !!newUserData);
+        console.log("  - 기존 토큰:", !!oldToken);
+        console.log("  - 기존 사용자 데이터:", !!oldUserData);
+
+        if (newUserData) {
+          const parsed = JSON.parse(newUserData);
+          console.log("  - 새로운 사용자 ID:", parsed.id);
+        }
+        if (oldUserData) {
+          const parsed = JSON.parse(oldUserData);
+          console.log("  - 기존 사용자 ID:", parsed.id);
         }
       } catch (error) {
-        console.error("🔍 AsyncStorage 확인 실패:", error);
+        console.error("🔍 사용자 상태 확인 실패:", error);
       }
     };
-    checkAsyncStorage();
-  }, []);
+    checkUserState();
+  }, [user, isLoggedIn, isLoading]);
 
   // ✅ 서비스 요청 폼 처리 훅
   const {
@@ -155,6 +174,20 @@ export default function ServiceRequest() {
       return;
     }
 
+    // 사용자 로딩 상태 확인
+    if (isLoading) {
+      Alert.alert(
+        "잠시만요",
+        "사용자 정보를 확인하고 있습니다. 잠시 후 다시 시도해주세요."
+      );
+      return;
+    }
+
+    // 사용자 정보 확인 (비회원도 요청 가능하지만 ID 확인은 필요)
+    if (!user?.id) {
+      console.warn("⚠️ 사용자 ID가 없습니다. 비회원 요청으로 처리합니다.");
+    }
+
     try {
       // 서비스 요청 데이터 구성
       const formData: ServiceRequestFormData = {
@@ -164,12 +197,15 @@ export default function ServiceRequest() {
         address_detail: addressDetail,
         description: description,
         photos: photos,
-        user_id: user?.id || null, // 현재 로그인한 사용자 ID
+        user_id: user?.id, // 현재 로그인한 사용자 ID
       };
 
-      console.log("📞 현재 사용자 정보:", user);
-      console.log("📞 사용자 ID:", user?.id);
-      console.log("📞 서비스 요청 데이터:", formData);
+      console.log("📞 [서비스요청] 제출 시점 상태:");
+      console.log("  - 현재 사용자 정보:", user);
+      console.log("  - 사용자 ID:", user?.id);
+      console.log("  - 로그인 상태:", isLoggedIn);
+      console.log("  - 로딩 상태:", isLoading);
+      console.log("📞 [서비스요청] 전송할 데이터:", formData);
 
       // DB에 저장 (사진 업로드 포함)
       const newRequest = await submitRequest(formData);
@@ -430,11 +466,12 @@ export default function ServiceRequest() {
         >
           <Pressable
             onPress={handleSubmit}
-            disabled={!isFormComplete || isSubmitting}
+            disabled={!isFormComplete || isSubmitting || isLoading}
             style={{
-              backgroundColor: isFormComplete
-                ? "rgba(147, 51, 234, 0.9)"
-                : "rgba(107, 114, 128, 0.5)",
+              backgroundColor:
+                isFormComplete && !isLoading
+                  ? "rgba(147, 51, 234, 0.9)"
+                  : "rgba(107, 114, 128, 0.5)",
               paddingVertical: 16,
               paddingHorizontal: 24,
               borderRadius: 16,
@@ -451,7 +488,9 @@ export default function ServiceRequest() {
                 fontFamily: "NanumGothic",
               }}
             >
-              {isSubmitting
+              {isLoading
+                ? "사용자 정보 확인 중..."
+                : isSubmitting
                 ? "신청 중..."
                 : isFormComplete
                 ? `${
@@ -459,6 +498,30 @@ export default function ServiceRequest() {
                   } 신청하기 ✓`
                 : "모든 필수 항목을 입력해주세요"}
             </Text>
+            {isLoggedIn && user?.id && (
+              <Text
+                style={{
+                  color: "#10B981",
+                  fontSize: 12,
+                  marginTop: 2,
+                  fontFamily: "NanumGothic",
+                }}
+              >
+                회원 요청 (ID: {user.id.slice(0, 8)}...)
+              </Text>
+            )}
+            {(!isLoggedIn || !user?.id) && !isLoading && (
+              <Text
+                style={{
+                  color: "#F59E0B",
+                  fontSize: 12,
+                  marginTop: 2,
+                  fontFamily: "NanumGothic",
+                }}
+              >
+                비회원 요청
+              </Text>
+            )}
           </Pressable>
         </View>
       </SafeAreaView>

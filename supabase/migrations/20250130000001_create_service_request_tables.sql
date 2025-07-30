@@ -5,7 +5,7 @@
 -- 서비스 요청 메인 테이블
 CREATE TABLE service_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id), -- 향후 인증 시스템 연동
+  user_id UUID, -- 커스텀 users 테이블 참조 (외래키는 별도 migration에서 설정)
   service_type TEXT NOT NULL CHECK (service_type IN ('appraisal', 'purchase')),
   status TEXT NOT NULL DEFAULT 'pending'
     CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed', 'cancelled')),
