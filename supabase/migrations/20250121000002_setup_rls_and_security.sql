@@ -5,7 +5,7 @@
 -- Row Level Security (RLS) 활성화
 ALTER TABLE lme_processed_prices ENABLE ROW LEVEL SECURITY;
 ALTER TABLE crawling_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE system_settings ENABLE ROW LEVEL SECURITY;
+-- system_settings 테이블 제거로 RLS 비활성화
 
 -- =================================
 -- lme_processed_prices 테이블 정책
@@ -65,59 +65,13 @@ ON crawling_logs FOR UPDATE
 TO service_role 
 USING (true);
 
--- =================================
--- system_settings 테이블 정책
--- =================================
-
--- 읽기 정책: 인증된 사용자는 모든 설정 조회 가능
-CREATE POLICY "authenticated_read_system_settings" 
-ON system_settings FOR SELECT 
-TO authenticated 
-USING (true);
-
--- 관리자용 읽기 정책: 모든 설정 조회 가능
-CREATE POLICY "admin_read_all_system_settings" 
-ON system_settings FOR SELECT 
-TO authenticated 
-USING (
-  -- 추후 역할 기반 접근 제어 구현시 확장
-  true
-);
-
--- 쓰기 정책: service_role만 설정 변경 가능
-CREATE POLICY "service_role_write_system_settings" 
-ON system_settings FOR ALL 
-TO service_role 
-USING (true);
+-- system_settings 테이블이 제거되어 관련 RLS 정책도 제거됨
 
 -- =================================
 -- 추가 보안 설정
 -- =================================
 
--- 데이터베이스 함수 생성: 안전한 설정값 조회
-CREATE OR REPLACE FUNCTION get_system_setting(setting_key TEXT)
-RETURNS TEXT
-SECURITY DEFINER
-SET search_path = public
-LANGUAGE plpgsql
-AS $$
-DECLARE
-    setting_value TEXT;
-BEGIN
-    -- 설정값 조회
-    SELECT value 
-    INTO setting_value
-    FROM system_settings 
-    WHERE key = setting_key;
-    
-    -- 설정이 존재하지 않으면 NULL 반환
-    IF NOT FOUND THEN
-        RETURN NULL;
-    END IF;
-    
-    RETURN setting_value;
-END;
-$$;
+-- get_system_setting 함수 제거됨 (환경변수 사용)
 
 -- 최신 LME 가격 조회 함수
 CREATE OR REPLACE FUNCTION get_latest_lme_prices()
@@ -210,7 +164,6 @@ END;
 $$;
 
 -- 함수 실행 권한 설정
-GRANT EXECUTE ON FUNCTION get_system_setting(TEXT) TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION get_latest_lme_prices() TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION get_crawling_status() TO authenticated;
 
@@ -218,7 +171,7 @@ GRANT EXECUTE ON FUNCTION get_crawling_status() TO authenticated;
 COMMENT ON POLICY "authenticated_read_lme_processed_prices" ON lme_processed_prices IS '인증된 사용자의 처리된 LME 가격 데이터 읽기 권한';
 COMMENT ON POLICY "public_read_lme_processed_prices" ON lme_processed_prices IS '익명 사용자의 최근 30일 LME 가격 데이터 읽기 권한 (공개 API용)';
 
-COMMENT ON FUNCTION get_system_setting(TEXT) IS '시스템 설정값을 안전하게 조회하는 함수 (암호화된 값은 service_role만 접근 가능)';
+-- get_system_setting 함수 코멘트 제거됨
 COMMENT ON FUNCTION get_latest_lme_prices() IS '각 금속별 최신 LME 가격 정보를 반환하는 함수';
 COMMENT ON FUNCTION get_crawling_status() IS '크롤링 시스템의 현재 상태와 성능 지표를 반환하는 함수';
 

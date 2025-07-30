@@ -2,12 +2,12 @@
 
 # LME 자동 크롤링 스크립트
 
-# 환경 변수 로드
+# 환경 변수 로드 (한글 주석 필터링)
 # .env.local 파일에서 환경 변수 로드 (우선순위)
 if [ -f .env.local ]; then
-  export $(grep -v '^#' .env.local | xargs)
+  export $(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env.local | sed 's/[[:space:]]*#.*$//' | xargs)
 elif [ -f .env ]; then
-  export $(grep -v '^#' .env | xargs)
+  export $(grep -E '^[A-Za-z_][A-Za-z0-9_]*=' .env | sed 's/[[:space:]]*#.*$//' | xargs)
 fi
 
 # 필수 환경 변수 확인
@@ -21,9 +21,13 @@ if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
   exit 1
 fi
 
+# 크롤링 간격 설정 (환경변수 사용)
+CRAWLER_INTERVAL=${LME_CRAWLER_INTERVAL:-60}
+
 echo "🕐 LME 자동 크롤링 시작 - $(date)"
 echo "📍 Supabase URL: $SUPABASE_URL"
-echo "1분마다 실행됩니다. Ctrl+C로 중단하세요."
+echo "⏱️  실행 간격: ${CRAWLER_INTERVAL}초"
+echo "🔄 ${CRAWLER_INTERVAL}초마다 실행됩니다. Ctrl+C로 중단하세요."
 echo ""
 
 # 카운터
@@ -56,6 +60,7 @@ while true; do
     echo ""
     ((count++))
     
-    # 1분 대기
-    sleep 60
+    # 환경변수 간격으로 대기
+    echo "⏳ ${CRAWLER_INTERVAL}초 대기 중..."
+    sleep $CRAWLER_INTERVAL
 done

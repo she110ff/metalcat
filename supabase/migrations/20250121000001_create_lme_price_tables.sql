@@ -56,14 +56,7 @@ CREATE TABLE IF NOT EXISTS crawling_logs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. 시스템 설정 테이블
-CREATE TABLE IF NOT EXISTS system_settings (
-  key VARCHAR(100) PRIMARY KEY,
-  value TEXT NOT NULL,
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- 시스템 설정은 환경변수로 관리 (system_settings 테이블 제거됨)
 
 -- 인덱스 생성
 -- 처리된 데이터 조회 최적화
@@ -83,20 +76,11 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 각 테이블에 업데이트 트리거 적용
-CREATE TRIGGER update_system_settings_updated_at BEFORE UPDATE ON system_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- 기본 시스템 설정 값 추가
-INSERT INTO system_settings (key, value, description) VALUES
-('crawler_interval_minutes', '5', 'LME 크롤링 실행 간격 (분)'),
-('default_exchange_rate', '1320', '기본 USD/KRW 환율'),
-('max_retry_attempts', '3', '크롤링 재시도 최대 횟수')
-ON CONFLICT (key) DO NOTHING;
+-- system_settings 테이블이 제거되어 트리거와 기본값 설정도 제거됨
 
 -- 코멘트 추가
 COMMENT ON TABLE lme_processed_prices IS 'LME 가격 데이터 (처리된 형태)';
 COMMENT ON TABLE crawling_logs IS '크롤링 실행 로그';
-COMMENT ON TABLE system_settings IS '시스템 설정값 저장';
 
 COMMENT ON COLUMN lme_processed_prices.change_type IS '가격 변화 방향: positive(상승), negative(하락), unchanged(변화없음)';
 COMMENT ON COLUMN crawling_logs.status IS '실행 상태: running(실행중), success(성공), failed(실패), partial(부분성공), timeout(타임아웃)'; 

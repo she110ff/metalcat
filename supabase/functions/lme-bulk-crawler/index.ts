@@ -7,6 +7,31 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// 환율 API 호출 함수
+async function getExchangeRate(): Promise<number> {
+  try {
+    const response = await fetch(
+      "https://api.exchangerate-api.com/v4/latest/USD"
+    );
+    const data = await response.json();
+    const rate = data.rates?.KRW;
+
+    if (rate && rate > 0) {
+      console.log(`💱 실시간 환율 조회: ${rate} KRW/USD`);
+      return rate;
+    }
+  } catch (error) {
+    console.warn("환율 API 호출 실패:", error);
+  }
+
+  // 환율 API 실패시 환경변수 또는 기본값 사용
+  const fallbackRate = parseFloat(
+    Deno.env.get("DEFAULT_EXCHANGE_RATE") || "1320"
+  );
+  console.log(`💱 기본 환율 사용: ${fallbackRate} KRW/USD`);
+  return fallbackRate;
+}
+
 interface LmeData {
   metal_code: string;
   metal_name_kr: string;
@@ -40,7 +65,8 @@ function parseKoreanDate(dateStr: string): string | null {
 
 // 단일 페이지 크롤링 함수
 async function crawlSinglePage(
-  pageNumber: number
+  pageNumber: number,
+  exchangeRate?: number
 ): Promise<{ data: LmeData[]; dates: string[] }> {
   const baseUrl =
     Deno.env.get("LME_SOURCE_URL") ||
@@ -91,7 +117,9 @@ async function crawlSinglePage(
 
   const lmeData: LmeData[] = [];
   const extractedDates: string[] = [];
-  const exchangeRate = 1320; // 기본 환율
+
+  // 환율 설정 (파라미터로 전달되지 않으면 기본값 사용)
+  const currentExchangeRate = exchangeRate || (await getExchangeRate());
 
   // 7개씩 그룹화 (날짜 + 6개 금속)
   let processedRows = 0;
@@ -132,7 +160,7 @@ async function crawlSinglePage(
       }
 
       // KRW/kg 변환 (USD/ton -> KRW/kg)
-      const priceKrwPerKg = (priceUsd * exchangeRate) / 1000;
+      const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
 
       // 간단한 변화량 계산
       const changePercent = (Math.random() - 0.5) * 2; // -1% ~ +1% 랜덤
@@ -209,10 +237,24 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // URL 파라미터 확인
+    // 파라미터 확인 (JSON body 우선, URL 파라미터 fallback)
     const url = new URL(req.url);
-    const clearData = url.searchParams.get("clear") === "true";
-    const maxPages = parseInt(url.searchParams.get("pages") || "10");
+    let requestBody: any = {};
+
+    try {
+      const contentType = req.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+        requestBody = await req.json();
+      }
+    } catch (error) {
+      console.log("JSON 파싱 실패, URL 파라미터만 사용:", error);
+    }
+
+    const clearData =
+      requestBody.clearData ?? url.searchParams.get("clear") === "true";
+    const maxPages = parseInt(
+      requestBody.maxPages?.toString() || url.searchParams.get("pages") || "10"
+    );
 
     // Supabase 클라이언트 생성
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -254,6 +296,9 @@ Deno.serve(async (req) => {
         await clearAllData(supabase);
       }
 
+      // 실시간 환율 조회
+      const exchangeRate = await getExchangeRate();
+
       // 다중 페이지 크롤링 실행
       const allLmeData: LmeData[] = [];
       const crawlResults: CrawlResult[] = [];
@@ -262,7 +307,7 @@ Deno.serve(async (req) => {
 
       for (let page = 1; page <= maxPages; page++) {
         try {
-          const result = await crawlSinglePage(page);
+          const result = await crawlSinglePage(page, exchangeRate);
 
           if (result.data.length > 0) {
             allLmeData.push(...result.data);
@@ -318,20 +363,27 @@ Deno.serve(async (req) => {
         `📊 중복 제거: ${allLmeData.length} → ${uniqueData.length}개`
       );
 
-      // 데이터베이스에 삽입
+      // UPSERT를 사용한 데이터 삽입/업데이트 (중복 시 업데이트)
       const insertData = uniqueData.map((item) => ({
         ...item,
-        exchange_rate: 1320,
-        exchange_rate_source: "bulk_crawler",
+        exchange_rate: exchangeRate,
+        exchange_rate_source: "api",
+        processed_at: new Date().toISOString(),
       }));
 
-      const { error: insertError } = await supabase
-        .from("lme_processed_prices")
-        .insert(insertData);
+      console.log(`📥 UPSERT로 ${insertData.length}개 데이터 처리 중...`);
 
-      if (insertError) {
-        throw new Error(`데이터 삽입 실패: ${insertError.message}`);
+      const { error: upsertError } = await supabase
+        .from("lme_processed_prices")
+        .upsert(insertData, {
+          onConflict: "metal_code,price_date", // 유니크 제약조건과 일치
+        });
+
+      if (upsertError) {
+        throw new Error(`UPSERT 실패: ${upsertError.message}`);
       }
+
+      console.log(`✅ UPSERT 성공: ${insertData.length}개 데이터 처리 완료`);
 
       // 성공 로그 업데이트
       const duration = Date.now() - startTime;

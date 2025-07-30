@@ -7,6 +7,41 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// 환율 API 호출 함수
+async function getExchangeRate(): Promise<number> {
+  try {
+    const response = await fetch(
+      "https://api.exchangerate-api.com/v4/latest/USD"
+    );
+    const data = await response.json();
+    const rate = data.rates?.KRW;
+
+    if (rate && rate > 0) {
+      console.log(`💱 실시간 환율 조회: ${rate} KRW/USD`);
+      return rate;
+    }
+  } catch (error) {
+    console.warn("환율 API 호출 실패:", error);
+  }
+
+  // 환율 API 실패시 환경변수 또는 기본값 사용
+  const fallbackRate = parseFloat(
+    Deno.env.get("DEFAULT_EXCHANGE_RATE") || "1320"
+  );
+  console.log(`💱 기본 환율 사용: ${fallbackRate} KRW/USD`);
+  return fallbackRate;
+}
+
+// 환경변수에서 설정값 로드
+const getConfig = () => {
+  return {
+    maxRetries: parseInt(Deno.env.get("MAX_RETRY_ATTEMPTS") || "3"),
+    crawlerIntervalSeconds: parseInt(
+      Deno.env.get("LME_CRAWLER_INTERVAL") || "60"
+    ),
+  };
+};
+
 interface LmeData {
   metal_code: string;
   metal_name_kr: string;
@@ -19,7 +54,7 @@ interface LmeData {
 }
 
 // 실제 LME 데이터 크롤링 함수
-async function crawlLmeData(): Promise<LmeData[]> {
+async function crawlLmeData(exchangeRate?: number): Promise<LmeData[]> {
   const baseUrl =
     Deno.env.get("LME_SOURCE_URL") ||
     "https://www.nonferrous.or.kr/stats/?act=sub3";
@@ -83,7 +118,9 @@ async function crawlLmeData(): Promise<LmeData[]> {
     };
 
     const lmeData: LmeData[] = [];
-    const exchangeRate = 1320; // 기본 환율
+
+    // 환율 설정 (파라미터로 전달되지 않으면 기본값 사용)
+    const currentExchangeRate = exchangeRate || (await getExchangeRate());
 
     // 날짜 변환 함수 (한국 형식 → ISO 형식)
     function parseKoreanDate(dateStr: string): string | null {
@@ -141,7 +178,7 @@ async function crawlLmeData(): Promise<LmeData[]> {
         );
 
         // KRW/kg 변환 (USD/ton -> KRW/kg)
-        const priceKrwPerKg = (priceUsd * exchangeRate) / 1000;
+        const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
 
         // 간단한 변화량 계산 (실제로는 전일 대비 계산이 필요)
         const changePercent = (Math.random() - 0.5) * 2; // -1% ~ +1% 랜덤
@@ -224,37 +261,38 @@ Deno.serve(async (req) => {
     const logId = logData.id;
 
     try {
-      // 2. 실제 LME 데이터 크롤링
-      const lmeData = await crawlLmeData();
+      // 2. 실시간 환율 조회
+      const exchangeRate = await getExchangeRate();
+
+      // 3. 실제 LME 데이터 크롤링 (환율 전달)
+      const lmeData = await crawlLmeData(exchangeRate);
 
       if (lmeData.length === 0) {
         throw new Error("크롤링된 데이터가 없습니다");
       }
 
-      // 3. 기존 데이터 중복 방지 (같은 날짜 데이터가 있으면 삭제)
-      const tradeDates = [...new Set(lmeData.map((item) => item.price_date))];
-      for (const tradeDate of tradeDates) {
-        await supabase
-          .from("lme_processed_prices")
-          .delete()
-          .eq("price_date", tradeDate);
-      }
-
-      // 4. 새 데이터 삽입 (실제 거래 날짜 사용)
+      // 4. UPSERT를 사용한 데이터 삽입/업데이트 (중복 시 업데이트)
       const insertData = lmeData.map((item) => ({
         ...item,
-        exchange_rate: 1320,
-        exchange_rate_source: "crawler",
+        exchange_rate: exchangeRate,
+        exchange_rate_source: "api",
+        processed_at: new Date().toISOString(),
         // price_date는 이미 item에 실제 거래 날짜가 포함됨
       }));
 
-      const { error: insertError } = await supabase
-        .from("lme_processed_prices")
-        .insert(insertData);
+      console.log(`📥 UPSERT로 ${insertData.length}개 데이터 처리 중...`);
 
-      if (insertError) {
-        throw new Error(`데이터 삽입 실패: ${insertError.message}`);
+      const { error: upsertError } = await supabase
+        .from("lme_processed_prices")
+        .upsert(insertData, {
+          onConflict: "metal_code,price_date", // 유니크 제약조건과 일치
+        });
+
+      if (upsertError) {
+        throw new Error(`UPSERT 실패: ${upsertError.message}`);
       }
+
+      console.log(`✅ UPSERT 성공: ${insertData.length}개 데이터 처리 완료`);
 
       // 5. 성공 로그 업데이트
       const duration = Date.now() - startTime;
