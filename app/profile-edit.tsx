@@ -322,7 +322,11 @@ export default function ProfileEditScreen() {
                   source={{
                     uri:
                       avatarImage ||
-                      getAvatarUrl(user?.avatarUrl, user?.name, 200),
+                      getAvatarUrl(
+                        user?.avatarUrl,
+                        user?.name || user?.phoneNumber,
+                        200
+                      ),
                   }}
                 />
                 <AvatarBadge className="justify-center items-center bg-background-500">

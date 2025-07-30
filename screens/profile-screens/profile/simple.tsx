@@ -204,7 +204,11 @@ const MainContent = () => {
             <AvatarImage
               alt="Profile Image"
               source={{
-                uri: getAvatarUrl(user?.avatarUrl, user?.name, 150),
+                uri: getAvatarUrl(
+                  user?.avatarUrl,
+                  user?.name || user?.phoneNumber,
+                  150
+                ),
               }}
             />
             <AvatarBadge />
