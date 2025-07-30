@@ -201,17 +201,7 @@ const MainContent = () => {
             <Text size="2xl" className="font-roboto text-dark">
               {user?.name || "사용자"}
             </Text>
-            <VStack space="xs">
-              <Text size="sm" className="text-gray-600">
-                📞 {user?.phoneNumber || "전화번호 없음"}
-              </Text>
-              {user?.address && (
-                <Text size="sm" className="text-gray-600" numberOfLines={2}>
-                  📍 {user.address}
-                  {user.addressDetail && ` ${user.addressDetail}`}
-                </Text>
-              )}
-            </VStack>
+
             <HStack space="sm" className="items-center">
               <Button
                 variant="outline"
