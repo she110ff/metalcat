@@ -22,6 +22,8 @@ import {
 } from "@/components/DaumAddressSearch";
 import { PhotoPicker, PhotoItem } from "@/components/PhotoPicker";
 import { useImagePicker } from "@/hooks/useImagePicker";
+import { useServiceRequestForm } from "@/hooks/service-request";
+import { ServiceType, ServiceRequestFormData } from "@/types/service-request";
 import { Image } from "react-native";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
@@ -30,7 +32,7 @@ export default function ServiceRequest() {
   const params = useLocalSearchParams();
 
   // ✅ URL 파라미터에서 타입을 읽어와 자동 설정
-  const getInitialServiceType = (): "appraisal" | "purchase" => {
+  const getInitialServiceType = (): ServiceType => {
     const typeParam = params.type as string;
     if (typeParam === "purchase") {
       return "purchase";
@@ -38,9 +40,16 @@ export default function ServiceRequest() {
     return "appraisal"; // 기본값
   };
 
-  const [serviceType, setServiceType] = useState<"appraisal" | "purchase">(
+  const [serviceType, setServiceType] = useState<ServiceType>(
     getInitialServiceType()
   );
+
+  // ✅ 서비스 요청 폼 처리 훅
+  const {
+    submitRequest,
+    isLoading: isSubmitting,
+    error: submitError,
+  } = useServiceRequestForm();
 
   // 대표 이미지 선택을 위한 useImagePicker 훅 사용
   const {
@@ -79,7 +88,6 @@ export default function ServiceRequest() {
     useState<DaumAddressResult | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [description, setDescription] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 필수 입력 항목 완성도 체크
   const checkRequiredFields = () => {
@@ -124,21 +132,23 @@ export default function ServiceRequest() {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
       // 서비스 요청 데이터 구성
-      const serviceRequestData = {
-        type: serviceType,
-        photos: photos,
-        phoneNumber: phoneNumber,
+      const formData: ServiceRequestFormData = {
+        service_type: serviceType,
+        contact_phone: phoneNumber,
         address: address,
-        addressDetail: addressDetail,
+        address_detail: addressDetail,
         description: description,
-        timestamp: new Date().toISOString(),
+        photos: photos,
       };
 
-      console.log("📞 서비스 요청 데이터:", serviceRequestData);
+      console.log("📞 서비스 요청 데이터:", formData);
+
+      // DB에 저장 (사진 업로드 포함)
+      const newRequest = await submitRequest(formData);
+
+      console.log("✅ 서비스 요청 생성 완료:", newRequest);
 
       // 성공 메시지 표시
       Alert.alert(
@@ -157,12 +167,17 @@ export default function ServiceRequest() {
       );
     } catch (error) {
       console.error("서비스 신청 오류:", error);
+
+      // 에러 메시지 개선
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "알 수 없는 오류가 발생했습니다.";
+
       Alert.alert(
         "오류",
-        "서비스 신청 중 문제가 발생했습니다. 다시 시도해주세요."
+        `서비스 신청 중 문제가 발생했습니다.\n\n${errorMessage}\n\n다시 시도해주세요.`
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
