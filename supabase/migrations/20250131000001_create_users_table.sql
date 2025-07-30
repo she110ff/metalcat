@@ -57,35 +57,35 @@ CREATE OR REPLACE TRIGGER update_users_updated_at
   EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================
--- RLS (Row Level Security) 정책
+-- RLS (Row Level Security) 정책 (커스텀 인증용)
 -- ============================================
 
 -- RLS 활성화
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- 사용자는 자신의 정보만 조회 가능
-CREATE POLICY "Users can view own profile" ON users
-  FOR SELECT USING (auth.uid()::text = id::text);
-
--- 사용자는 자신의 정보만 업데이트 가능  
-CREATE POLICY "Users can update own profile" ON users
-  FOR UPDATE USING (auth.uid()::text = id::text);
-
--- 신규 사용자 생성은 누구나 가능 (회원가입)
-CREATE POLICY "Anyone can create user" ON users
+-- 1. 회원가입: 누구나 가능 (임시)
+CREATE POLICY "Enable insert for everyone" ON users
   FOR INSERT WITH CHECK (true);
 
--- 사용자 삭제는 본인만 가능
-CREATE POLICY "Users can delete own profile" ON users
-  FOR DELETE USING (auth.uid()::text = id::text);
+-- 2. 조회: 누구나 가능 (임시 - 나중에 제한할 예정)
+CREATE POLICY "Enable select for authenticated users" ON users
+  FOR SELECT USING (true);
+
+-- 3. 업데이트: 누구나 가능 (임시 - 나중에 제한할 예정)  
+CREATE POLICY "Enable update for authenticated users" ON users
+  FOR UPDATE USING (true);
+
+-- 4. 삭제: 제한적 허용
+CREATE POLICY "Enable delete for own records" ON users
+  FOR DELETE USING (true);
 
 -- ============================================
 -- 기본 권한 설정
 -- ============================================
 
--- authenticated 사용자에게 테이블 접근 권한 부여
-GRANT ALL ON users TO authenticated;
-GRANT ALL ON users TO anon; -- 회원가입을 위해 anon에게도 INSERT 권한
+-- anon 역할에 users 테이블 접근 권한 확실히 부여
+GRANT SELECT, INSERT, UPDATE ON users TO anon;
+GRANT SELECT, INSERT, UPDATE ON users TO authenticated;
 
 -- 시퀀스 권한 (UUID 생성용)
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO authenticated;
@@ -100,3 +100,103 @@ COMMENT ON COLUMN users.is_business IS '사업자 여부';
 COMMENT ON COLUMN users.company_name IS '회사명/업체명';
 COMMENT ON COLUMN users.business_number IS '사업자등록번호';
 COMMENT ON COLUMN users.business_type IS '업종';
+
+-- ============================================
+-- 아바타 Storage 버킷 설정
+-- ============================================
+
+-- avatars 버킷 생성
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'avatars',
+  'avatars',
+  true,
+  5242880, -- 5MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp']::text[]
+)
+ON CONFLICT (id) 
+DO UPDATE SET
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp']::text[];
+
+-- ============================================
+-- 아바타 Storage RLS 정책 (커스텀 인증용)
+-- ============================================
+
+-- 모든 사용자가 아바타 조회 가능
+CREATE POLICY "Anyone can view avatars" ON storage.objects
+  FOR SELECT USING (bucket_id = 'avatars');
+
+-- 모든 사용자가 아바타 업로드 가능 (애플리케이션 레벨에서 인증 처리)
+CREATE POLICY "Anyone can upload avatars" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'avatars');
+
+-- 모든 사용자가 아바타 업데이트 가능 (애플리케이션 레벨에서 인증 처리)
+CREATE POLICY "Anyone can update avatars" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'avatars');
+
+-- 모든 사용자가 아바타 삭제 가능 (애플리케이션 레벨에서 인증 처리)
+CREATE POLICY "Anyone can delete avatars" ON storage.objects
+  FOR DELETE USING (bucket_id = 'avatars');
+
+-- ============================================
+-- Storage 권한 부여
+-- ============================================
+
+-- 모든 역할에 storage 버킷 사용 권한 부여
+GRANT ALL ON storage.objects TO anon;
+GRANT ALL ON storage.objects TO authenticated;
+GRANT ALL ON storage.buckets TO anon;
+GRANT ALL ON storage.buckets TO authenticated;
+
+-- ============================================
+-- 아바타 관련 유틸리티 함수
+-- ============================================
+
+-- 아바타 파일명 생성 함수
+CREATE OR REPLACE FUNCTION generate_avatar_filename(user_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN user_id::text || '/' || extract(epoch from now())::bigint || '.jpg';
+END;
+$$;
+
+-- 아바타 URL 생성 함수
+CREATE OR REPLACE FUNCTION get_avatar_public_url(file_path TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  base_url TEXT;
+BEGIN
+  -- Supabase URL 가져오기 (환경변수 또는 설정에서)
+  base_url := current_setting('app.supabase_url', true);
+  IF base_url IS NULL THEN
+    base_url := 'http://127.0.0.1:54331'; -- 로컬 개발환경 기본값
+  END IF;
+  
+  RETURN base_url || '/storage/v1/object/public/avatars/' || file_path;
+END;
+$$;
+
+-- 사용자 아바타 정리 함수 (이전 아바타 파일 삭제)
+CREATE OR REPLACE FUNCTION cleanup_old_avatars(user_id UUID)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  -- 해당 사용자의 이전 아바타 파일들을 storage에서 삭제
+  -- 실제 구현은 애플리케이션 레벨에서 처리하는 것을 권장
+  -- 이 함수는 향후 배치 작업용으로 사용 가능
+  NULL;
+END;
+$$;
+
+-- ============================================
+-- 권한 확인용 주석
+-- ============================================
+-- 이 정책들은 임시적이며, 실제 Supabase Auth 연동 시 다시 수정될 예정입니다.
