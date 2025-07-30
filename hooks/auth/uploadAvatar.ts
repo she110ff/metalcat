@@ -191,7 +191,7 @@ export async function uploadUserAvatar(
         .from("avatars")
         .upload(fileName, fileData, {
           cacheControl: "3600",
-          upsert: true, // 같은 이름 파일이 있으면 덮어쓰기
+          upsert: false, // 새 파일로 업로드 (기존 파일은 이전에 삭제됨)
           contentType: "image/jpeg",
         });
 
