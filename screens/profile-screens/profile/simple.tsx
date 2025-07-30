@@ -18,6 +18,7 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { cn } from "@gluestack-ui/nativewind-utils/cn";
 import { Platform } from "react-native";
+import { getAvatarUrl, testAvatarGeneration } from "@/utils/avatar";
 
 const MainContent = () => {
   const router = useRouter();
@@ -30,6 +31,11 @@ const MainContent = () => {
   console.log("🔍 My 화면 - 로그인 상태:", isLoggedIn);
   console.log("🔍 My 화면 - 사용자 정보:", user);
   console.log("🔍 My 화면 - 사용자 ID:", user?.id);
+
+  // 아바타 생성 테스트 (한 번만 실행)
+  React.useEffect(() => {
+    testAvatarGeneration();
+  }, []);
 
   // 서비스 요청 목록 조회 (premium 탭용)
   const { data: myRequests, isLoading: requestsLoading } =
@@ -195,12 +201,23 @@ const MainContent = () => {
       <Box className="w-full px-6 mb-5 mt-6">
         <HStack space="lg" className="items-center">
           <Avatar size="lg" className="bg-primary-600">
+            <AvatarImage
+              alt="Profile Image"
+              source={{
+                uri: getAvatarUrl(user?.avatarUrl, user?.name, 150),
+              }}
+            />
             <AvatarBadge />
           </Avatar>
           <VStack space="md" className="flex-1">
             <Text size="2xl" className="font-roboto text-dark">
               {user?.name || "사용자"}
             </Text>
+            {user?.isBusiness && user?.companyName && (
+              <Text size="sm" className="text-gray-600 font-medium">
+                🏢 {user.companyName}
+              </Text>
+            )}
 
             <HStack space="sm" className="items-center">
               <Button

@@ -34,7 +34,13 @@ export interface User {
   name: string;
   address: string;
   addressDetail?: string;
+  avatarUrl?: string;
   isPhoneVerified: boolean;
+  // 사업자 정보
+  isBusiness: boolean;
+  companyName?: string;
+  businessNumber?: string;
+  businessType?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -192,7 +198,12 @@ export async function signupWithPhone(
       name: newUser.name,
       address: newUser.address,
       addressDetail: newUser.address_detail,
+      avatarUrl: newUser.avatar_url,
       isPhoneVerified: newUser.is_phone_verified,
+      isBusiness: newUser.is_business || false,
+      companyName: newUser.company_name,
+      businessNumber: newUser.business_number,
+      businessType: newUser.business_type,
       createdAt: newUser.created_at,
       updatedAt: newUser.updated_at,
     };
@@ -261,7 +272,12 @@ export async function signinWithPhone(
       name: user.name,
       address: user.address,
       addressDetail: user.address_detail,
+      avatarUrl: user.avatar_url,
       isPhoneVerified: user.is_phone_verified,
+      isBusiness: user.is_business || false,
+      companyName: user.company_name,
+      businessNumber: user.business_number,
+      businessType: user.business_type,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -334,7 +350,12 @@ export async function getCurrentUser(): Promise<User | null> {
         name: user.name,
         address: user.address,
         addressDetail: user.address_detail,
+        avatarUrl: user.avatar_url,
         isPhoneVerified: user.is_phone_verified,
+        isBusiness: user.is_business || false,
+        companyName: user.company_name,
+        businessNumber: user.business_number,
+        businessType: user.business_type,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
       };
@@ -349,7 +370,12 @@ export async function getCurrentUser(): Promise<User | null> {
       name: latestUser.name,
       address: latestUser.address,
       addressDetail: latestUser.address_detail,
+      avatarUrl: latestUser.avatar_url,
       isPhoneVerified: latestUser.is_phone_verified,
+      isBusiness: latestUser.is_business || false,
+      companyName: latestUser.company_name,
+      businessNumber: latestUser.business_number,
+      businessType: latestUser.business_type,
       createdAt: latestUser.created_at,
       updatedAt: latestUser.updated_at,
     };
@@ -396,13 +422,27 @@ export async function updateUser(
       throw new AuthError("로그인이 필요합니다.");
     }
 
+    // 업데이트할 데이터 준비
+    const updateData: any = {};
+
+    if (updates.name !== undefined) updateData.name = updates.name;
+    if (updates.address !== undefined) updateData.address = updates.address;
+    if (updates.addressDetail !== undefined)
+      updateData.address_detail = updates.addressDetail;
+    if (updates.avatarUrl !== undefined)
+      updateData.avatar_url = updates.avatarUrl;
+    if (updates.isBusiness !== undefined)
+      updateData.is_business = updates.isBusiness;
+    if (updates.companyName !== undefined)
+      updateData.company_name = updates.companyName;
+    if (updates.businessNumber !== undefined)
+      updateData.business_number = updates.businessNumber;
+    if (updates.businessType !== undefined)
+      updateData.business_type = updates.businessType;
+
     const { data: updatedUser, error } = await supabase
       .from("users")
-      .update({
-        name: updates.name,
-        address: updates.address,
-        address_detail: updates.addressDetail,
-      })
+      .update(updateData)
       .eq("id", currentUser.id)
       .select()
       .single();
@@ -420,7 +460,12 @@ export async function updateUser(
       name: updatedUser.name,
       address: updatedUser.address,
       addressDetail: updatedUser.address_detail,
+      avatarUrl: updatedUser.avatar_url,
       isPhoneVerified: updatedUser.is_phone_verified,
+      isBusiness: updatedUser.is_business || false,
+      companyName: updatedUser.company_name,
+      businessNumber: updatedUser.business_number,
+      businessType: updatedUser.business_type,
       createdAt: updatedUser.created_at,
       updatedAt: updatedUser.updated_at,
     };

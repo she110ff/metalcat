@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -31,16 +31,13 @@ import {
   DaumAddressResult,
 } from "@/components/DaumAddressSearch";
 import { Check } from "lucide-react-native";
+import { getAvatarUrl } from "@/utils/avatar";
 
 const userSchema = z
   .object({
-    lastName: z
+    name: z
       .string()
-      .min(1, "성은 필수입니다")
-      .max(50, "성은 50자 이하로 입력해주세요"),
-    firstName: z
-      .string()
-      .min(1, "이름은 필수입니다")
+      .min(2, "이름은 2글자 이상 입력해주세요")
       .max(50, "이름은 50자 이하로 입력해주세요"),
     // 사업자 정보 (사업자 체크 시 필수)
     companyName: z.string().optional(),
@@ -54,17 +51,16 @@ const userSchema = z
 type UserSchemaDetails = z.infer<typeof userSchema>;
 
 export default function ProfileEditScreen() {
-  const { isLoggedIn, isLoading } = useAuth();
+  const { isLoggedIn, isLoading, user, updateUser, isUpdatingUser } = useAuth();
   const router = useRouter();
-  const [isLastNameFocused, setIsLastNameFocused] = useState(false);
-  const [isFirstNameFocused, setIsFirstNameFocused] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
 
   // 사업자 체크 및 관련 필드들
-  const [isBusiness, setIsBusiness] = useState(false);
+  const [isBusiness, setIsBusiness] = useState(user?.isBusiness || false);
 
   // 주소 관련 state
-  const [address, setAddress] = useState("");
-  const [addressDetail, setAddressDetail] = useState("");
+  const [address, setAddress] = useState(user?.address || "");
+  const [addressDetail, setAddressDetail] = useState(user?.addressDetail || "");
   const [selectedAddress, setSelectedAddress] =
     useState<DaumAddressResult | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
@@ -91,13 +87,27 @@ export default function ProfileEditScreen() {
   } = useForm<UserSchemaDetails>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      lastName: "Leslie",
-      firstName: "Alexander",
-      companyName: "",
-      businessNumber: "",
-      businessType: "",
+      name: user?.name || "",
+      companyName: user?.companyName || "",
+      businessNumber: user?.businessNumber || "",
+      businessType: user?.businessType || "",
     },
   });
+
+  // 사용자 데이터가 로드되면 폼과 state 업데이트
+  useEffect(() => {
+    if (user) {
+      reset({
+        name: user.name || "",
+        companyName: user.companyName || "",
+        businessNumber: user.businessNumber || "",
+        businessType: user.businessType || "",
+      });
+      setIsBusiness(user.isBusiness || false);
+      setAddress(user.address || "");
+      setAddressDetail(user.addressDetail || "");
+    }
+  }, [user, reset]);
 
   // 주소 검색 관련 함수들
   const openAddressModal = () => {
@@ -135,13 +145,53 @@ export default function ProfileEditScreen() {
       }
     }
 
-    console.log("Profile updated:", data);
-    console.log("Avatar image:", avatarImage);
-    console.log("Address:", address);
-    console.log("Address detail:", addressDetail);
-    console.log("Is business:", isBusiness);
-    // TODO: API 호출로 프로필 업데이트
-    router.back();
+    // 주소 검증
+    if (!address.trim()) {
+      alert("주소를 입력해주세요");
+      return;
+    }
+
+    // 아바타 URL 처리 (로컬 파일은 나중에 업로드 기능 구현 시 처리)
+    let finalAvatarUrl = user?.avatarUrl;
+    if (avatarImage) {
+      // 로컬 파일 경로인지 확인 (file://, content://, ph:// 등)
+      if (
+        avatarImage.startsWith("http://") ||
+        avatarImage.startsWith("https://")
+      ) {
+        finalAvatarUrl = avatarImage;
+      } else {
+        // 로컬 파일인 경우 현재는 업데이트하지 않음 (추후 서버 업로드 기능 구현 필요)
+        console.log(
+          "📷 로컬 이미지 선택됨. 서버 업로드 기능 구현 후 지원 예정:",
+          avatarImage
+        );
+      }
+    }
+
+    // 프로필 업데이트 API 호출
+    updateUser(
+      {
+        name: data.name.trim(),
+        address: address.trim(),
+        addressDetail: addressDetail.trim() || undefined,
+        avatarUrl: finalAvatarUrl,
+        isBusiness,
+        companyName: isBusiness ? data.companyName?.trim() : undefined,
+        businessNumber: isBusiness ? data.businessNumber?.trim() : undefined,
+        businessType: isBusiness ? data.businessType?.trim() : undefined,
+      },
+      {
+        onSuccess: () => {
+          console.log("✅ 프로필 업데이트 성공");
+          router.back();
+        },
+        onError: (error) => {
+          console.error("❌ 프로필 업데이트 실패:", error);
+          alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -209,17 +259,14 @@ export default function ProfileEditScreen() {
           <Box className="w-full -mt-16 px-6 mb-6 items-center">
             <Pressable onPress={selectAvatarImage} disabled={imageLoading}>
               <Avatar size="2xl" className="bg-primary-600">
-                {avatarImage ? (
-                  <AvatarImage
-                    alt="Profile Image"
-                    source={{ uri: avatarImage }}
-                  />
-                ) : (
-                  <AvatarImage
-                    alt="Profile Image"
-                    source={require("@/assets/profile-screens/profile/image.png")}
-                  />
-                )}
+                <AvatarImage
+                  alt="Profile Image"
+                  source={{
+                    uri:
+                      avatarImage ||
+                      getAvatarUrl(user?.avatarUrl, user?.name, 200),
+                  }}
+                />
                 <AvatarBadge className="justify-center items-center bg-background-500">
                   <Icon as={EditPhotoIcon} />
                 </AvatarBadge>
@@ -230,68 +277,48 @@ export default function ProfileEditScreen() {
                 </Box>
               )}
             </Pressable>
+
+            {/* 로컬 이미지 선택 시 안내 메시지 */}
+            {avatarImage && !avatarImage.startsWith("http") && (
+              <Box className="mt-2 px-4 py-2 bg-yellow-100 rounded-lg">
+                <Text className="text-yellow-800 text-xs text-center">
+                  ⚠️ 이미지 업로드 기능은 추후 제공될 예정입니다
+                </Text>
+              </Box>
+            )}
           </Box>
 
           {/* 폼 */}
           <VStack className="px-6" space="lg">
-            {/* 성/이름 */}
+            {/* 이름 */}
             <VStack space="md">
               <Text className="text-typography-900 text-lg font-medium">
                 이름
               </Text>
-              <HStack className="items-center justify-between" space="md">
-                <VStack className="flex-1" space="sm">
-                  <Text className="text-typography-600 text-sm">성</Text>
-                  <Controller
-                    name="lastName"
-                    control={control}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input>
-                        <InputField
-                          placeholder="성"
-                          value={value}
-                          onChangeText={onChange}
-                          onBlur={onBlur}
-                          onFocus={() => setIsLastNameFocused(true)}
-                          onSubmitEditing={handleKeyPress}
-                          returnKeyType="next"
-                        />
-                      </Input>
-                    )}
-                  />
-                  {errors.lastName && (
-                    <Text className="text-error-500 text-xs">
-                      {errors.lastName.message}
-                    </Text>
+              <VStack space="sm">
+                <Controller
+                  name="name"
+                  control={control}
+                  render={({ field: { onChange, onBlur, value } }) => (
+                    <Input>
+                      <InputField
+                        placeholder="이름을 입력하세요"
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        onFocus={() => setIsNameFocused(true)}
+                        onSubmitEditing={handleKeyPress}
+                        returnKeyType="next"
+                      />
+                    </Input>
                   )}
-                </VStack>
-
-                <VStack className="flex-1" space="sm">
-                  <Text className="text-typography-600 text-sm">이름</Text>
-                  <Controller
-                    name="firstName"
-                    control={control}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                      <Input>
-                        <InputField
-                          placeholder="이름"
-                          value={value}
-                          onChangeText={onChange}
-                          onBlur={onBlur}
-                          onFocus={() => setIsFirstNameFocused(true)}
-                          onSubmitEditing={handleKeyPress}
-                          returnKeyType="next"
-                        />
-                      </Input>
-                    )}
-                  />
-                  {errors.firstName && (
-                    <Text className="text-error-500 text-xs">
-                      {errors.firstName.message}
-                    </Text>
-                  )}
-                </VStack>
-              </HStack>
+                />
+                {errors.name && (
+                  <Text className="text-error-500 text-xs">
+                    {errors.name.message}
+                  </Text>
+                )}
+              </VStack>
             </VStack>
 
             {/* 전화번호 (수정 불가) */}
@@ -302,8 +329,8 @@ export default function ProfileEditScreen() {
               <VStack space="sm">
                 <Input>
                   <InputField
-                    placeholder="010-1234-5678"
-                    value="010-1234-5678"
+                    placeholder="전화번호 없음"
+                    value={user?.phoneNumber || "전화번호 없음"}
                     editable={false}
                     className="text-typography-400"
                   />
@@ -463,11 +490,17 @@ export default function ProfileEditScreen() {
               <Button
                 onPress={handleSubmit(onSubmit)}
                 className="bg-primary-600"
-                disabled={imageLoading}
+                disabled={imageLoading || isUpdatingUser}
               >
-                <ButtonText>저장하기</ButtonText>
+                <ButtonText>
+                  {isUpdatingUser ? "저장 중..." : "저장하기"}
+                </ButtonText>
               </Button>
-              <Button variant="outline" onPress={() => router.back()}>
+              <Button
+                variant="outline"
+                onPress={() => router.back()}
+                disabled={isUpdatingUser}
+              >
                 <ButtonText>취소</ButtonText>
               </Button>
             </VStack>
