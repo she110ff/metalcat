@@ -32,6 +32,12 @@ import {
 } from "@/components/DaumAddressSearch";
 import { Check } from "lucide-react-native";
 import { getAvatarUrl } from "@/utils/avatar";
+import {
+  uploadUserAvatar,
+  AvatarUploadError,
+  AvatarUploadResult,
+  UploadProgress,
+} from "@/hooks/auth/uploadAvatar";
 
 const userSchema = z
   .object({
@@ -97,6 +103,17 @@ export default function ProfileEditScreen() {
   const [selectedAddress, setSelectedAddress] =
     useState<DaumAddressResult | null>(null);
   const [showAddressSearch, setShowAddressSearch] = useState(false);
+
+  // 아바타 업로드 관련 state
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
+    loaded: 0,
+    total: 0,
+    percentage: 0,
+  });
+  const [uploadedAvatarUrl, setUploadedAvatarUrl] = useState<string | null>(
+    null
+  );
 
   // 이미지 선택 훅 사용
   const {
@@ -166,7 +183,90 @@ export default function ProfileEditScreen() {
     Keyboard.dismiss();
   };
 
-  const onSubmit = (data: UserSchemaDetails) => {
+  // 아바타 업로드 처리 함수
+  const handleAvatarUpload = async (
+    imageUri: string
+  ): Promise<string | null> => {
+    if (!user) {
+      alert("사용자 정보를 확인할 수 없습니다.");
+      return null;
+    }
+
+    setIsUploadingAvatar(true);
+    setUploadProgress({ loaded: 0, total: 100, percentage: 0 });
+
+    try {
+      console.log("📸 아바타 업로드 시작:", imageUri);
+
+      const result: AvatarUploadResult = await uploadUserAvatar(
+        imageUri,
+        user.id,
+        (progress: UploadProgress) => {
+          setUploadProgress(progress);
+          console.log(`📊 업로드 진행률: ${progress.percentage}%`);
+        }
+      );
+
+      console.log("📸 아바타 업로드 성공:", result);
+
+      const uploadedUrl = result.publicUrl;
+      setUploadedAvatarUrl(uploadedUrl);
+
+      // 즉시 사용자 정보 업데이트
+      updateUser(
+        { avatarUrl: uploadedUrl },
+        {
+          onSuccess: () => {
+            console.log("✅ 아바타 URL 데이터베이스 업데이트 성공");
+            alert("아바타가 성공적으로 업데이트되었습니다! 🎉");
+          },
+          onError: (error) => {
+            console.error("❌ 아바타 URL 데이터베이스 업데이트 실패:", error);
+            alert(
+              "아바타는 업로드되었지만 프로필 업데이트에 실패했습니다. 다시 시도해주세요."
+            );
+          },
+        }
+      );
+
+      return uploadedUrl;
+    } catch (error) {
+      console.error("📸 아바타 업로드 실패:", error);
+
+      let errorMessage = "아바타 업로드에 실패했습니다.";
+
+      if (error instanceof AvatarUploadError) {
+        switch (error.code) {
+          case "FILE_TOO_LARGE":
+            errorMessage =
+              "파일 크기가 너무 큽니다. 5MB 이하의 이미지를 선택해주세요.";
+            break;
+          case "FILE_NOT_FOUND":
+            errorMessage =
+              "선택한 이미지를 찾을 수 없습니다. 다시 선택해주세요.";
+            break;
+          case "OPTIMIZATION_FAILED":
+            errorMessage =
+              "이미지 처리 중 오류가 발생했습니다. 다른 이미지를 시도해주세요.";
+            break;
+          case "UPLOAD_FAILED":
+            errorMessage =
+              "서버 업로드에 실패했습니다. 네트워크 연결을 확인해주세요.";
+            break;
+          default:
+            errorMessage = error.message;
+        }
+      }
+
+      alert(errorMessage);
+      return null;
+    } finally {
+      setIsUploadingAvatar(false);
+      setUploadProgress({ loaded: 0, total: 0, percentage: 0 });
+    }
+  };
+
+  const onSubmit = async (data: UserSchemaDetails) => {
     // 사업자 체크 시 필수 필드 검증
     if (isBusiness) {
       if (!data.companyName?.trim()) {
@@ -199,22 +299,24 @@ export default function ProfileEditScreen() {
       return;
     }
 
-    // 아바타 URL 처리 (로컬 파일은 나중에 업로드 기능 구현 시 처리)
-    let finalAvatarUrl = user?.avatarUrl;
-    if (avatarImage) {
-      // 로컬 파일 경로인지 확인 (file://, content://, ph:// 등)
-      if (
-        avatarImage.startsWith("http://") ||
-        avatarImage.startsWith("https://")
-      ) {
-        finalAvatarUrl = avatarImage;
+    // 아바타 업로드 처리
+    let finalAvatarUrl = uploadedAvatarUrl || user?.avatarUrl;
+
+    // 새로 선택한 로컬 이미지가 있는 경우 업로드 먼저 처리
+    if (avatarImage && !avatarImage.startsWith("http")) {
+      console.log("📸 로컬 이미지 업로드 필요:", avatarImage);
+
+      const uploadedUrl = await handleAvatarUpload(avatarImage);
+      if (uploadedUrl) {
+        finalAvatarUrl = uploadedUrl;
+        console.log("📸 아바타 업로드 완료, 프로필 업데이트 계속 진행");
       } else {
-        // 로컬 파일인 경우 현재는 업데이트하지 않음 (추후 서버 업로드 기능 구현 필요)
-        console.log(
-          "📷 로컬 이미지 선택됨. 서버 업로드 기능 구현 후 지원 예정:",
-          avatarImage
-        );
+        console.log("📸 아바타 업로드 실패, 프로필 업데이트 중단");
+        return; // 업로드 실패시 프로필 업데이트 중단
       }
+    } else if (avatarImage && avatarImage.startsWith("http")) {
+      // HTTP URL인 경우 그대로 사용
+      finalAvatarUrl = avatarImage;
     }
 
     // 업데이트할 데이터 준비
@@ -315,12 +417,16 @@ export default function ProfileEditScreen() {
 
           {/* 아바타 */}
           <Box className="w-full -mt-16 px-6 mb-6 items-center">
-            <Pressable onPress={selectAvatarImage} disabled={imageLoading}>
+            <Pressable
+              onPress={selectAvatarImage}
+              disabled={imageLoading || isUploadingAvatar || isUpdatingUser}
+            >
               <Avatar size="2xl" className="bg-primary-600">
                 <AvatarImage
                   alt="Profile Image"
                   source={{
                     uri:
+                      uploadedAvatarUrl ||
                       avatarImage ||
                       getAvatarUrl(
                         user?.avatarUrl,
@@ -333,21 +439,54 @@ export default function ProfileEditScreen() {
                   <Icon as={EditPhotoIcon} />
                 </AvatarBadge>
               </Avatar>
+
+              {/* 이미지 선택 로딩 */}
               {imageLoading && (
                 <Box className="absolute inset-0 bg-black/50 rounded-full items-center justify-center">
-                  <Text className="text-white text-sm">로딩...</Text>
+                  <Text className="text-white text-sm">이미지 선택 중...</Text>
+                </Box>
+              )}
+
+              {/* 아바타 업로드 진행 상태 */}
+              {isUploadingAvatar && (
+                <Box className="absolute inset-0 bg-black/70 rounded-full items-center justify-center">
+                  <VStack className="items-center" space="xs">
+                    <Text className="text-white text-xs font-medium">
+                      업로드 중...
+                    </Text>
+                    <Text className="text-white text-xs">
+                      {uploadProgress.percentage}%
+                    </Text>
+                    <Box className="w-16 h-1 bg-white/30 rounded-full">
+                      <Box
+                        className="h-full bg-white rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress.percentage}%` }}
+                      />
+                    </Box>
+                  </VStack>
                 </Box>
               )}
             </Pressable>
 
-            {/* 로컬 이미지 선택 시 안내 메시지 */}
-            {avatarImage && !avatarImage.startsWith("http") && (
-              <Box className="mt-2 px-4 py-2 bg-yellow-100 rounded-lg">
-                <Text className="text-yellow-800 text-xs text-center">
-                  ⚠️ 이미지 업로드 기능은 추후 제공될 예정입니다
+            {/* 아바타 상태 메시지 */}
+            {uploadedAvatarUrl && (
+              <Box className="mt-2 px-4 py-2 bg-green-100 rounded-lg">
+                <Text className="text-green-800 text-xs text-center">
+                  ✅ 아바타가 업로드되었습니다
                 </Text>
               </Box>
             )}
+
+            {avatarImage &&
+              !avatarImage.startsWith("http") &&
+              !isUploadingAvatar &&
+              !uploadedAvatarUrl && (
+                <Box className="mt-2 px-4 py-2 bg-blue-100 rounded-lg">
+                  <Text className="text-blue-800 text-xs text-center">
+                    📸 저장 시 아바타가 업로드됩니다
+                  </Text>
+                </Box>
+              )}
           </Box>
 
           {/* 폼 */}
@@ -570,16 +709,20 @@ export default function ProfileEditScreen() {
               <Button
                 onPress={handleSubmit(onSubmit)}
                 className="bg-primary-600"
-                disabled={imageLoading || isUpdatingUser}
+                disabled={imageLoading || isUpdatingUser || isUploadingAvatar}
               >
                 <ButtonText>
-                  {isUpdatingUser ? "저장 중..." : "저장하기"}
+                  {isUploadingAvatar
+                    ? "아바타 업로드 중..."
+                    : isUpdatingUser
+                    ? "저장 중..."
+                    : "저장하기"}
                 </ButtonText>
               </Button>
               <Button
                 variant="outline"
                 onPress={() => router.back()}
-                disabled={isUpdatingUser}
+                disabled={isUpdatingUser || isUploadingAvatar}
               >
                 <ButtonText>취소</ButtonText>
               </Button>
