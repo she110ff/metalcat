@@ -89,6 +89,7 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
 
 # typescript
@@ -125,5 +126,5 @@ Desktop.ini
 expo-env.d.ts
 # @end expo-cli
 
-# eas.json
-# app.json
+eas.json
+app.json

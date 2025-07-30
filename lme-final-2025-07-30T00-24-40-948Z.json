@@ -1,0 +1,1201 @@
+{
+  "crawlingInfo": {
+    "timestamp": "2025-07-30T00:24:40.949Z",
+    "url": "https://www.nonferrous.or.kr/stats/?act=sub3",
+    "responseTime": 70,
+    "htmlLength": 10656,
+    "dataCount": 120
+  },
+  "apiResponse": {
+    "success": true,
+    "timestamp": "2025-07-30T00:24:40.949Z",
+    "source": "korean_nonferrous_official",
+    "dataQuality": "very_high",
+    "exchangeRate": 1320,
+    "responseTime": 70,
+    "latest_prices": [
+      {
+        "metalCode": "SN",
+        "metalNameKr": "주석",
+        "metalNameEn": "Sn",
+        "cashPrice": 33610,
+        "priceDate": "2025-07-29",
+        "changeAmount": -490,
+        "changePercent": -1.44,
+        "priceKrwPerKg": 44365
+      },
+      {
+        "metalCode": "NI",
+        "metalNameKr": "니켈",
+        "metalNameEn": "Ni",
+        "cashPrice": 14950,
+        "priceDate": "2025-07-29",
+        "changeAmount": -100,
+        "changePercent": -0.66,
+        "priceKrwPerKg": 19734
+      },
+      {
+        "metalCode": "CU",
+        "metalNameKr": "구리",
+        "metalNameEn": "Cu",
+        "cashPrice": 9733.5,
+        "priceDate": "2025-07-29",
+        "changeAmount": -49.5,
+        "changePercent": -0.51,
+        "priceKrwPerKg": 12848
+      },
+      {
+        "metalCode": "ZN",
+        "metalNameKr": "아연",
+        "metalNameEn": "Zn",
+        "cashPrice": 2791,
+        "priceDate": "2025-07-29",
+        "changeAmount": -25,
+        "changePercent": -0.89,
+        "priceKrwPerKg": 3684
+      },
+      {
+        "metalCode": "AL",
+        "metalNameKr": "알루미늄",
+        "metalNameEn": "Al",
+        "cashPrice": 2609,
+        "priceDate": "2025-07-29",
+        "changeAmount": -23.5,
+        "changePercent": -0.89,
+        "priceKrwPerKg": 3444
+      },
+      {
+        "metalCode": "PB",
+        "metalNameKr": "납",
+        "metalNameEn": "Pb",
+        "cashPrice": 1983.5,
+        "priceDate": "2025-07-29",
+        "changeAmount": -24,
+        "changePercent": -1.2,
+        "priceKrwPerKg": 2618
+      }
+    ],
+    "statistics": {
+      "totalRecords": 120,
+      "dateRange": {
+        "earliest": "2025-07-29",
+        "latest": "2025-07-02",
+        "totalDays": 20
+      },
+      "metals": 6,
+      "responseTime": 70
+    },
+    "metadata": {
+      "crawlingMethod": "verified_td_extraction",
+      "reliability": "very_high",
+      "updateFrequency": "daily",
+      "note": "한국비철금속협회에서 제공하는 공식 LME 시세 데이터"
+    }
+  },
+  "rawData": [
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9733.5,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 9,733.5",
+      "changeAmount": -49.5,
+      "changePercent": -0.51,
+      "previousPrice": 9783,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2609,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 2,609.0",
+      "changeAmount": -23.5,
+      "changePercent": -0.89,
+      "previousPrice": 2632.5,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2791,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 2,791.0",
+      "changeAmount": -25,
+      "changePercent": -0.89,
+      "previousPrice": 2816,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1983.5,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 1,983.5",
+      "changeAmount": -24,
+      "changePercent": -1.2,
+      "previousPrice": 2007.5,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14950,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 14,950.0",
+      "changeAmount": -100,
+      "changePercent": -0.66,
+      "previousPrice": 15050,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33610,
+      "priceDate": "2025-07-29",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 29: 33,610.0",
+      "changeAmount": -490,
+      "changePercent": -1.44,
+      "previousPrice": 34100,
+      "previousDate": "2025-07-28"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9783,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 9,783.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2632.5,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 2,632.5"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2816,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 2,816.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2007.5,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 2,007.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15050,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 15,050.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 34100,
+      "priceDate": "2025-07-28",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 28: 34,100.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9788,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 9,788.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2657,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 2,657.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2844.5,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 2,844.5"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2008,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 2,008.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15245,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 15,245.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 34995,
+      "priceDate": "2025-07-25",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 25: 34,995.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9861,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 9,861.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2646.5,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 2,646.5"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2854,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 2,854.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2007,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 2,007.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15330,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 15,330.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 34955,
+      "priceDate": "2025-07-24",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 24: 34,955.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9862,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 9,862.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2645,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 2,645.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2862,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 2,862.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2007,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 2,007.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15330,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 15,330.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 34550,
+      "priceDate": "2025-07-23",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 23: 34,550.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9818.5,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 9,818.5"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2638.5,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 2,638.5"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2822,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 2,822.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1978,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 1,978.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15280,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 15,280.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33800,
+      "priceDate": "2025-07-22",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 22: 33,800.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9773.5,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 9,773.5"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2649,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 2,649.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2846,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 2,846.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1976.5,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 1,976.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15275,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 15,275.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33775,
+      "priceDate": "2025-07-21",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 21: 33,775.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9667,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 9,667.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2591.5,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 2,591.5"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2780.5,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 2,780.5"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1978,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 1,978.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14900,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 14,900.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33160,
+      "priceDate": "2025-07-18",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 18: 33,160.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9586,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 9,586.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2557,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 2,557.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2701,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 2,701.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1940,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 1,940.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14800,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 14,800.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 32735,
+      "priceDate": "2025-07-17",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 17: 32,735.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9563,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 9,563.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2568,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 2,568.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2677,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 2,677.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1953,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 1,953.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14800,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 14,800.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 32700,
+      "priceDate": "2025-07-16",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 16: 32,700.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9564,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 9,564.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2594,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 2,594.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2699,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 2,699.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1967,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 1,967.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14840,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 14,840.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33400,
+      "priceDate": "2025-07-15",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 15: 33,400.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9555,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 9,555.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2586,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 2,586.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2711,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 2,711.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1965.5,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 1,965.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14885,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 14,885.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33555,
+      "priceDate": "2025-07-14",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 14: 33,555.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9637.5,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 9,637.5"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2591.5,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 2,591.5"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2743,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 2,743.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 1995,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 1,995.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14955,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 14,955.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33500,
+      "priceDate": "2025-07-11",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 11: 33,500.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9752,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 9,752.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2609,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 2,609.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2783,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 2,783.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2029,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 2,029.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15100,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 15,100.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33800,
+      "priceDate": "2025-07-10",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 10: 33,800.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9635,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 9,635.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2580,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 2,580.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2717.5,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 2,717.5"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2017,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 2,017.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14825,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 14,825.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33325,
+      "priceDate": "2025-07-09",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 09: 33,325.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9925,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 9,925.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2587,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 2,587.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2699,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 2,699.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2032.5,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 2,032.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14940,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 14,940.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33525,
+      "priceDate": "2025-07-08",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 08: 33,525.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9893,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 9,893.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2566,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 2,566.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2672,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 2,672.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2013,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 2,013.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 14920,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 14,920.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33535,
+      "priceDate": "2025-07-07",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 07: 33,535.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 9970.5,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 9,970.5"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2587,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 2,587.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2714,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 2,714.0"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2041,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 2,041.0"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15120,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 15,120.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33775,
+      "priceDate": "2025-07-04",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 04: 33,775.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 10120,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 10,120.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2604,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 2,604.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2727.5,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 2,727.5"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2030.5,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 2,030.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15250,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 15,250.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33850,
+      "priceDate": "2025-07-03",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 03: 33,850.0"
+    },
+    {
+      "metalCode": "CU",
+      "metalNameKr": "구리",
+      "metalNameEn": "Cu",
+      "cashPrice": 10045,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 10,045.0"
+    },
+    {
+      "metalCode": "AL",
+      "metalNameKr": "알루미늄",
+      "metalNameEn": "Al",
+      "cashPrice": 2602,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 2,602.0"
+    },
+    {
+      "metalCode": "ZN",
+      "metalNameKr": "아연",
+      "metalNameEn": "Zn",
+      "cashPrice": 2710.5,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 2,710.5"
+    },
+    {
+      "metalCode": "PB",
+      "metalNameKr": "납",
+      "metalNameEn": "Pb",
+      "cashPrice": 2022.5,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 2,022.5"
+    },
+    {
+      "metalCode": "NI",
+      "metalNameKr": "니켈",
+      "metalNameEn": "Ni",
+      "cashPrice": 15085,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 15,085.0"
+    },
+    {
+      "metalCode": "SN",
+      "metalNameKr": "주석",
+      "metalNameEn": "Sn",
+      "cashPrice": 33645,
+      "priceDate": "2025-07-02",
+      "source": "korean_nonferrous_verified",
+      "rawText": "2025. 07. 02: 33,645.0"
+    }
+  ]
+}
