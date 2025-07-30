@@ -82,6 +82,7 @@ export interface ServiceRequestFormData {
   address_detail?: string;
   description: string;
   photos: PhotoItem[];
+  user_id?: string; // 현재 로그인한 사용자 ID
 }
 
 export interface CreateServiceRequestData {

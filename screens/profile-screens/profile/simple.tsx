@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useMyServiceRequests } from "@/hooks/service-request/myRequests";
+import { SimpleRequestCard } from "@/components/service-request/SimpleRequestCard";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { ChevronLeftIcon, EditIcon, Icon } from "@/components/ui/icon";
@@ -21,6 +23,16 @@ const MainContent = () => {
   const [activeTab, setActiveTab] = useState<"auction" | "bidding" | "premium">(
     "auction"
   );
+
+  // 현재 사용자 정보 확인용
+  const { user, isLoggedIn } = useAuth();
+  console.log("🔍 My 화면 - 로그인 상태:", isLoggedIn);
+  console.log("🔍 My 화면 - 사용자 정보:", user);
+  console.log("🔍 My 화면 - 사용자 ID:", user?.id);
+
+  // 서비스 요청 목록 조회 (premium 탭용)
+  const { data: myRequests, isLoading: requestsLoading } =
+    useMyServiceRequests();
 
   // 간단한 샘플 데이터
   const myAuctions = [
@@ -62,6 +74,53 @@ const MainContent = () => {
   ];
 
   const renderTabContent = () => {
+    if (activeTab === "premium") {
+      // 프리미엄 탭: 서비스 요청 목록
+      if (requestsLoading) {
+        return (
+          <Box className="flex-1 items-center justify-center py-8">
+            <Text className="text-gray-500">로딩 중...</Text>
+          </Box>
+        );
+      }
+
+      if (!myRequests || myRequests.length === 0) {
+        return (
+          <VStack space="md" className="items-center py-8">
+            <Text className="text-gray-500 text-center">
+              아직 서비스 요청이 없습니다
+            </Text>
+            <Button
+              variant="outline"
+              onPress={() => router.push("/service-request")}
+              className="mt-4"
+            >
+              <ButtonText>서비스 요청하기</ButtonText>
+            </Button>
+          </VStack>
+        );
+      }
+
+      return (
+        <VStack space="md">
+          <Text className="text-lg font-bold text-gray-900">
+            📋 나의 서비스 요청 ({myRequests.length}건)
+          </Text>
+          {myRequests.map((request) => (
+            <SimpleRequestCard
+              key={request.id}
+              request={request}
+              onPress={() => {
+                // 나중에 상세 화면으로 이동 (현재는 없음)
+                console.log("요청 상세:", request.id);
+              }}
+            />
+          ))}
+        </VStack>
+      );
+    }
+
+    // 기존 탭들 (auction, bidding): 기존 코드 유지
     return (
       <VStack space="md">
         {myAuctions.map((auction) => (

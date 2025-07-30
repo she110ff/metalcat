@@ -77,14 +77,14 @@ export async function createServiceRequest(
       throw new Error(validation.errors.join(", "));
     }
 
-    // 현재 사용자 ID 가져오기 (없으면 null로 설정)
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    // 전달받은 user_id 사용 (React Native useAuth에서 전달됨)
     const requestData = {
-      ...data,
-      user_id: user?.id || data.user_id || null,
+      service_type: data.service_type,
+      contact_phone: data.contact_phone,
+      address: data.address,
+      address_detail: data.address_detail,
+      description: data.description,
+      user_id: data.user_id || null, // 폼에서 전달받은 사용자 ID
     };
 
     const { data: request, error } = await supabase

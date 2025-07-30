@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ScrollView, View, Alert, TextInput, Platform } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
@@ -24,6 +25,7 @@ import { PhotoPicker, PhotoItem } from "@/components/PhotoPicker";
 import { useImagePicker } from "@/hooks/useImagePicker";
 import { useServiceRequestForm } from "@/hooks/service-request";
 import { ServiceType, ServiceRequestFormData } from "@/types/service-request";
+import { useAuth } from "@/hooks/useAuth";
 import { Image } from "react-native";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 
@@ -43,6 +45,27 @@ export default function ServiceRequest() {
   const [serviceType, setServiceType] = useState<ServiceType>(
     getInitialServiceType()
   );
+
+  // ✅ 현재 사용자 정보
+  const { user, isLoggedIn } = useAuth();
+
+  // 디버깅용 - AsyncStorage 직접 확인
+  React.useEffect(() => {
+    const checkAsyncStorage = async () => {
+      try {
+        const token = await AsyncStorage.getItem("authToken");
+        const userData = await AsyncStorage.getItem("userData");
+        console.log("🔍 AsyncStorage 토큰:", token);
+        console.log("🔍 AsyncStorage 사용자 데이터:", userData);
+        if (userData) {
+          console.log("🔍 파싱된 사용자 데이터:", JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error("🔍 AsyncStorage 확인 실패:", error);
+      }
+    };
+    checkAsyncStorage();
+  }, []);
 
   // ✅ 서비스 요청 폼 처리 훅
   const {
@@ -141,8 +164,11 @@ export default function ServiceRequest() {
         address_detail: addressDetail,
         description: description,
         photos: photos,
+        user_id: user?.id || null, // 현재 로그인한 사용자 ID
       };
 
+      console.log("📞 현재 사용자 정보:", user);
+      console.log("📞 사용자 ID:", user?.id);
       console.log("📞 서비스 요청 데이터:", formData);
 
       // DB에 저장 (사진 업로드 포함)
