@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, useRouter } from "expo-router";
 import {
   TrendingUp,
   Calculator,
@@ -6,8 +6,21 @@ import {
   Crown,
   User,
 } from "lucide-react-native";
+import { useAuth } from "@/hooks/useAuth";
+import { TouchableOpacity } from "react-native";
 
 export default function TabLayout() {
+  const { isLoggedIn, isLoading } = useAuth();
+  const router = useRouter();
+
+  const handleAuthRequiredTab = (tabName: string) => {
+    if (!isLoading && !isLoggedIn) {
+      router.push("/login");
+      return false;
+    }
+    return true;
+  };
+
   return (
     <Tabs
       screenOptions={{
@@ -66,6 +79,19 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Gavel size={22} color={color} strokeWidth={2.5} />
           ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={(e) => {
+                if (!isLoading && !isLoggedIn) {
+                  e.preventDefault();
+                  router.push("/login");
+                } else {
+                  props.onPress?.(e);
+                }
+              }}
+            />
+          ),
         }}
       />
       <Tabs.Screen
@@ -83,6 +109,19 @@ export default function TabLayout() {
           title: "My",
           tabBarIcon: ({ color }) => (
             <User size={22} color={color} strokeWidth={2.5} />
+          ),
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...props}
+              onPress={(e) => {
+                if (!isLoading && !isLoggedIn) {
+                  e.preventDefault();
+                  router.push("/login");
+                } else {
+                  props.onPress?.(e);
+                }
+              }}
+            />
           ),
         }}
       />

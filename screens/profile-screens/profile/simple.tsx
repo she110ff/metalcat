@@ -9,6 +9,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
+import { Alert } from "react-native";
 import { Heading } from "@/components/ui/heading";
 import { Image } from "react-native";
 import { ScrollView } from "@/components/ui/scroll-view";
@@ -25,7 +26,7 @@ const MainContent = () => {
   );
 
   // 현재 사용자 정보 확인용
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, logout, isLoggingOut } = useAuth();
   console.log("🔍 My 화면 - 로그인 상태:", isLoggedIn);
   console.log("🔍 My 화면 - 사용자 정보:", user);
   console.log("🔍 My 화면 - 사용자 ID:", user?.id);
@@ -33,6 +34,24 @@ const MainContent = () => {
   // 서비스 요청 목록 조회 (premium 탭용)
   const { data: myRequests, isLoading: requestsLoading } =
     useMyServiceRequests();
+
+  // 로그아웃 처리
+  const handleLogout = () => {
+    Alert.alert("로그아웃", "정말 로그아웃하시겠습니까?", [
+      {
+        text: "취소",
+        style: "cancel",
+      },
+      {
+        text: "로그아웃",
+        style: "destructive",
+        onPress: () => {
+          logout();
+          router.replace("/(tabs)/");
+        },
+      },
+    ]);
+  };
 
   // 간단한 샘플 데이터
   const myAuctions = [
@@ -172,7 +191,7 @@ const MainContent = () => {
     >
       {/* 배너 이미지 제거 */}
 
-      {/* 아바타 및 Edit Profile 섹션 - negative margin 제거 */}
+      {/* 아바타 및 프로필 정보 섹션 */}
       <Box className="w-full px-6 mb-5 mt-6">
         <HStack space="lg" className="items-center">
           <Avatar size="lg" className="bg-primary-600">
@@ -180,17 +199,41 @@ const MainContent = () => {
           </Avatar>
           <VStack space="md" className="flex-1">
             <Text size="2xl" className="font-roboto text-dark">
-              Alexander Leslie
+              {user?.name || "사용자"}
             </Text>
-            <Button
-              variant="outline"
-              action="secondary"
-              onPress={() => router.push("/profile-edit")}
-              className="gap-3 relative self-start"
-            >
-              <ButtonText className="text-dark">Edit Profile</ButtonText>
-              <ButtonIcon as={EditIcon} />
-            </Button>
+            <VStack space="xs">
+              <Text size="sm" className="text-gray-600">
+                📞 {user?.phoneNumber || "전화번호 없음"}
+              </Text>
+              {user?.address && (
+                <Text size="sm" className="text-gray-600" numberOfLines={2}>
+                  📍 {user.address}
+                  {user.addressDetail && ` ${user.addressDetail}`}
+                </Text>
+              )}
+            </VStack>
+            <HStack space="sm" className="items-center">
+              <Button
+                variant="outline"
+                action="secondary"
+                onPress={() => router.push("/profile-edit")}
+                className="gap-3 relative flex-1"
+              >
+                <ButtonText className="text-dark">프로필 수정</ButtonText>
+                <ButtonIcon as={EditIcon} />
+              </Button>
+              <Button
+                variant="outline"
+                action="negative"
+                onPress={handleLogout}
+                disabled={isLoggingOut}
+                className="gap-3 relative"
+              >
+                <ButtonText className="text-red-600">
+                  {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                </ButtonText>
+              </Button>
+            </HStack>
           </VStack>
         </HStack>
       </Box>
@@ -312,12 +355,14 @@ export const SimpleProfile = () => {
       className="h-full w-full bg-background-0"
       style={{ justifyContent: "flex-start" }}
     >
-      {/* 간단한 모바일 헤더 */}
+      {/* 헤더 */}
       <Box className="py-6 px-4 border-b border-border-300 bg-background-0">
-        <HStack className="items-center" space="md">
+        <HStack className="items-center justify-between">
           <Pressable onPress={() => router.back()}>
             <Text className="text-lg font-medium">뒤로</Text>
           </Pressable>
+          <Text className="text-xl font-bold">My</Text>
+          <Box style={{ width: 40 }} />
         </HStack>
       </Box>
 
