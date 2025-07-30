@@ -201,7 +201,7 @@ export const Dashboard = () => {
               <Pressable
                 onPress={() => router.push("/(tabs)/premium")}
                 accessible={true}
-                accessibilityLabel="프리미엄 서비스 오픈 이벤트, 3달간 무료"
+                accessibilityLabel="무료 현장 방문 금속 감정 서비스, 비회원 가능"
                 accessibilityRole="button"
                 accessibilityHint="프리미엄 페이지로 이동하려면 탭하세요"
                 className="active:scale-[0.98] transform transition-transform duration-150"
@@ -233,29 +233,36 @@ export const Dashboard = () => {
                     <HStack className="items-center justify-between">
                       <VStack className="flex-1 mr-4">
                         <HStack className="items-center mb-2">
-                          <Ionicons name="star" size={24} color="#FFFFFF" />
-                          <Text className="text-white text-lg font-black ml-2 tracking-wide animate-pulse-slow">
-                            오픈 이벤트
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color="#4CAF50"
+                          />
+                          <Text className="text-white text-lg font-black ml-2 tracking-wide">
+                            무료 서비스
                           </Text>
-                          <Ionicons name="star" size={24} color="#FFFFFF" />
+                          <Ionicons name="person" size={20} color="#4CAF50" />
+                          <Text className="text-white text-sm font-bold ml-1">
+                            비회원 가능
+                          </Text>
                         </HStack>
                         <Text className="text-white text-2xl font-black tracking-wide mb-1 drop-shadow-lg">
-                          3달간 프리미엄 서비스
+                          현장 방문 금속 감정
                         </Text>
-                        <Text className="text-white text-3xl font-black tracking-wider drop-shadow-lg">
-                          무료! 🎉
+                        <Text className="text-white text-2xl font-black tracking-wider drop-shadow-lg">
+                          쉽고 빠르게! ⚡
                         </Text>
                         <Text className="text-white/80 text-sm mt-2 font-semibold">
-                          지금 가입하고 특별 혜택을 받아보세요
+                          전문가가 직접 방문 • 정밀 분석 • 시장 기준 견적
                         </Text>
                       </VStack>
 
                       <VStack className="items-center">
                         <Box className="w-16 h-16 rounded-full items-center justify-center bg-white/20 mb-2 animate-pulse-slow">
-                          <Ionicons name="star" size={32} color="#FFFFFF" />
+                          <Ionicons name="search" size={28} color="#FFFFFF" />
                         </Box>
                         <Text className="text-white text-xs font-bold tracking-wide text-center">
-                          PREMIUM
+                          무료 감정
                         </Text>
                       </VStack>
                     </HStack>
