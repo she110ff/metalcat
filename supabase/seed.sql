@@ -400,3 +400,676 @@ INSERT INTO lme_processed_prices (
 -- SELECT metal_code, COUNT(*) as count FROM lme_processed_prices GROUP BY metal_code ORDER BY metal_code;
 -- SELECT MIN(price_date) as oldest, MAX(price_date) as newest FROM lme_processed_prices;
 -- SELECT COUNT(*) as total_records FROM lme_processed_prices;
+
+-- ============================================
+-- 🏗️ 경매 시스템 시드 데이터 (구버전 - 비활성화)
+-- 작성일: 2025-02-01
+-- 목적: 기존 sample-data.ts와 동일한 테스트 데이터 생성
+-- 참고: 새로운 카테고리별 테이블 구조로 인해 비활성화됨
+-- ============================================
+
+/*
+
+-- 테스트용 사용자 생성 (기존 사용자가 없는 경우만)
+INSERT INTO users (id, phone_number, name, address, is_phone_verified, created_at) VALUES
+  ('550e8400-e29b-41d4-a716-446655440001', '010-1111-1111', '서울철강', '서울특별시 강남구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440002', '010-2222-2222', '부산철강', '부산광역시 해운대구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440003', '010-3333-3333', '울산메탈', '울산광역시 남구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440004', '010-4444-4444', '창원스크랩', '경상남도 창원시', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440005', '010-5555-5555', '광주철강', '광주광역시 서구', true, NOW())
+ON CONFLICT (phone_number) DO NOTHING;
+
+-- 경매 테이블 시드 데이터 (기존 sampleScrapAuctions와 동일)
+INSERT INTO auctions (
+  id, user_id, title, description, auction_category, transaction_type,
+  starting_price, desired_price, current_bid, price_per_unit, total_bid_amount,
+  product_type, quantity, sales_environment, address,
+  end_time, status, bidders, view_count, created_at
+) VALUES 
+(
+  'scrap1', 
+  '550e8400-e29b-41d4-a716-446655440001',
+  '알루미늄 고품질 스크랩 2.5톤',
+  '고품질 알루미늄 스크랩입니다. 깨끗하게 분리되어 있어 품질이 우수합니다. 60까지 다 섞여 있습니다.',
+  'scrap',
+  'normal',
+  5000000,  -- starting_price
+  5500000,  -- desired_price  
+  5500000,  -- current_bid
+  2200,     -- price_per_unit
+  5500000,  -- total_bid_amount
+  -- product_type (ScrapProductType 객체)
+  '{
+    "id": "aluminum",
+    "name": "알루미늄",
+    "category": "비철금속",
+    "description": "고순도 알루미늄 스크랩",
+    "auctionCategory": "scrap"
+  }'::jsonb,
+  -- quantity (QuantityInfo 객체)
+  '{
+    "quantity": 2500,
+    "unit": "kg"
+  }'::jsonb,
+  -- sales_environment (SalesEnvironment 객체)
+  '{
+    "delivery": "seller",
+    "shippingCost": "seller", 
+    "accessibility": "easy",
+    "loading": "seller",
+    "sacksNeeded": false
+  }'::jsonb,
+  -- address (AddressInfo 객체)
+  '{
+    "postalCode": "48058",
+    "addressType": "road",
+    "address": "경상남도 김해시 삼계로 208",
+    "detailAddress": "삼계공단 내"
+  }'::jsonb,
+  NOW() + INTERVAL '2 days 14 hours', -- end_time
+  'active',
+  3, -- bidders
+  45, -- view_count
+  NOW() - INTERVAL '2 hours'
+),
+(
+  'scrap2',
+  '550e8400-e29b-41d4-a716-446655440002', 
+  '스테인리스 스틸 3.2톤',
+  '고급 스테인리스 스틸 스크랩입니다. SUS304 등급으로 품질이 보장됩니다.',
+  'scrap',
+  'normal',
+  8000000,  -- starting_price
+  9000000,  -- desired_price
+  8960000,  -- current_bid
+  2800,     -- price_per_unit
+  8960000,  -- total_bid_amount
+  -- product_type
+  '{
+    "id": "stainless", 
+    "name": "스테인리스",
+    "category": "비철금속",
+    "description": "SUS304 고급 스테인리스 스틸",
+    "auctionCategory": "scrap"
+  }'::jsonb,
+  -- quantity
+  '{
+    "quantity": 3200,
+    "unit": "kg"
+  }'::jsonb,
+  -- sales_environment
+  '{
+    "delivery": "buyer",
+    "shippingCost": "buyer",
+    "accessibility": "normal", 
+    "loading": "both",
+    "sacksNeeded": true
+  }'::jsonb,
+  -- address
+  '{
+    "postalCode": "48460", 
+    "addressType": "road",
+    "address": "부산광역시 남구 용소로 45", 
+    "detailAddress": "부산공단 2호"
+  }'::jsonb,
+  NOW() + INTERVAL '5 days 6 hours', -- end_time
+  'active',
+  3, -- bidders
+  78, -- view_count
+  NOW() - INTERVAL '5 hours'
+),
+(
+  'scrap3',
+  '550e8400-e29b-41d4-a716-446655440005',
+  '황동 스크랩 950kg (경매 종료)',
+  '고품질 황동 스크랩입니다. 전기 부품에서 분리된 깨끗한 황동입니다.',
+  'scrap', 
+  'urgent',
+  4500000,  -- starting_price
+  4800000,  -- desired_price
+  4750000,  -- current_bid
+  5000,     -- price_per_unit
+  4750000,  -- total_bid_amount
+  -- product_type
+  '{
+    "id": "brass",
+    "name": "황동",
+    "category": "비철금속", 
+    "description": "전기부품 분리 황동",
+    "auctionCategory": "scrap"
+  }'::jsonb,
+  -- quantity
+  '{
+    "quantity": 950,
+    "unit": "kg"
+  }'::jsonb,
+  -- sales_environment
+  '{
+    "delivery": "seller",
+    "shippingCost": "buyer",
+    "accessibility": "difficult",
+    "loading": "buyer", 
+    "sacksNeeded": true
+  }'::jsonb,
+  -- address
+  '{
+    "postalCode": "61945",
+    "addressType": "road", 
+    "address": "광주광역시 서구 상무대로 312",
+    "detailAddress": "광주공단 1동"
+  }'::jsonb,
+  NOW() - INTERVAL '1 day', -- end_time (종료됨)
+  'ended',
+  3, -- bidders
+  124, -- view_count
+  NOW() - INTERVAL '3 days'
+),
+(
+  'machinery1',
+  '550e8400-e29b-41d4-a716-446655440003',
+  '굴삭기 DH220LC-9 (2018년식)',
+  '두산 굴삭기입니다. 정기점검 완료, 엔진 및 유압 상태 양호. 가동시간 3,200시간.',
+  'machinery',
+  'normal', 
+  85000000, -- starting_price
+  95000000, -- desired_price
+  87000000, -- current_bid
+  NULL,     -- price_per_unit (기계는 개당)
+  87000000, -- total_bid_amount
+  -- product_type (MachineryProductType 객체)
+  '{
+    "id": "excavator",
+    "name": "굴삭기", 
+    "category": "건설장비",
+    "description": "중형 굴삭기",
+    "auctionCategory": "machinery"
+  }'::jsonb,
+  -- quantity
+  '{
+    "quantity": 1,
+    "unit": "대"
+  }'::jsonb,
+  -- sales_environment
+  '{
+    "delivery": "buyer",
+    "shippingCost": "buyer",
+    "accessibility": "easy",
+    "loading": "seller",
+    "sacksNeeded": false
+  }'::jsonb,
+  -- address
+  '{
+    "postalCode": "44776",
+    "addressType": "road",
+    "address": "울산광역시 남구 테크노산업로 55",
+    "detailAddress": "울산공단 3호"
+  }'::jsonb,
+  NOW() + INTERVAL '4 days 10 hours', -- end_time
+  'active',
+  2, -- bidders
+  67, -- view_count
+  NOW() - INTERVAL '1 day'
+),
+(
+  'materials1',
+  '550e8400-e29b-41d4-a716-446655440004',
+  'H빔 200x200 20개 (신품급)',
+  '신축 현장에서 미사용 H빔입니다. 길이 6m, 총 20개. 표면 녹 없음.',
+  'materials',
+  'normal',
+  12000000, -- starting_price  
+  15000000, -- desired_price
+  13500000, -- current_bid
+  675000,   -- price_per_unit (개당)
+  13500000, -- total_bid_amount
+  -- product_type (MaterialProductType 객체)
+  '{
+    "id": "h_beam",
+    "name": "H빔",
+    "category": "구조용강재",
+    "description": "H형강 200x200", 
+    "auctionCategory": "materials"
+  }'::jsonb,
+  -- quantity
+  '{
+    "quantity": 20,
+    "unit": "개"
+  }'::jsonb,
+  -- sales_environment
+  '{
+    "delivery": "both",
+    "shippingCost": "seller",
+    "accessibility": "normal",
+    "loading": "both", 
+    "sacksNeeded": false
+  }'::jsonb,
+  -- address
+  '{
+    "postalCode": "51573", 
+    "addressType": "road",
+    "address": "경상남도 창원시 성산구 창원대로 90",
+    "detailAddress": "창원공단 5호"
+  }'::jsonb,
+  NOW() + INTERVAL '3 days 8 hours', -- end_time
+  'active',
+  4, -- bidders
+  89, -- view_count
+  NOW() - INTERVAL '6 hours'
+),
+(
+  'demolition1',
+  '550e8400-e29b-41d4-a716-446655440001',
+  '상가건물 철거 (지상 3층)',
+  '강남구 상가건물 철거 작업입니다. 지상 3층, 연면적 400평. 콘크리트 구조.',
+  'demolition',
+  'normal',
+  25000000, -- starting_price
+  30000000, -- desired_price  
+  27000000, -- current_bid
+  67500,    -- price_per_unit (평당)
+  27000000, -- total_bid_amount
+  -- product_type (DemolitionProductType 객체)
+  '{
+    "id": "commercial_building",
+    "name": "상가건물 철거",
+    "category": "상업시설",
+    "description": "중규모 상가건물",
+    "auctionCategory": "demolition"
+  }'::jsonb,
+  -- quantity
+  '{
+    "quantity": 400,
+    "unit": "평"
+  }'::jsonb,
+  -- sales_environment: 철거는 null
+  NULL,
+  -- address
+  '{
+    "postalCode": "06292",
+    "addressType": "road", 
+    "address": "서울특별시 강남구 테헤란로 123",
+    "detailAddress": "강남빌딩 3층"
+  }'::jsonb,
+  NOW() + INTERVAL '6 days 12 hours', -- end_time
+  'active',
+  2, -- bidders
+  156, -- view_count
+  NOW() - INTERVAL '8 hours'
+);
+
+-- 경매 사진 데이터
+INSERT INTO auction_photos (id, auction_id, uri, is_representative, type) VALUES
+  ('photo_scrap1_1', 'scrap1', 'https://picsum.photos/seed/scrap1-1/800/600', true, 'full'),
+  ('photo_scrap1_2', 'scrap1', 'https://picsum.photos/seed/scrap1-2/800/600', false, 'closeup'),
+  ('photo_scrap1_3', 'scrap1', 'https://picsum.photos/seed/scrap1-3/800/600', false, 'detail'),
+  
+  ('photo_scrap2_1', 'scrap2', 'https://picsum.photos/seed/scrap2-1/800/600', true, 'full'),
+  ('photo_scrap2_2', 'scrap2', 'https://picsum.photos/seed/scrap2-2/800/600', false, 'closeup'),
+  
+  ('photo_scrap3_1', 'scrap3', 'https://picsum.photos/seed/scrap3-1/800/600', true, 'full'),
+  ('photo_scrap3_2', 'scrap3', 'https://picsum.photos/seed/scrap3-2/800/600', false, 'detail'),
+  
+  ('photo_machinery1_1', 'machinery1', 'https://picsum.photos/seed/machinery1-1/800/600', true, 'full'),
+  ('photo_machinery1_2', 'machinery1', 'https://picsum.photos/seed/machinery1-2/800/600', false, 'closeup'),
+  
+  ('photo_materials1_1', 'materials1', 'https://picsum.photos/seed/materials1-1/800/600', true, 'full'),
+  ('photo_materials1_2', 'materials1', 'https://picsum.photos/seed/materials1-2/800/600', false, 'detail'),
+  
+  ('photo_demolition1_1', 'demolition1', 'https://picsum.photos/seed/demolition1-1/800/600', true, 'full'),
+  ('photo_demolition1_2', 'demolition1', 'https://picsum.photos/seed/demolition1-2/800/600', false, 'closeup');
+
+-- 입찰 데이터 (기존 BidInfo와 동일)
+INSERT INTO auction_bids (
+  id, auction_id, user_id, user_name, amount, price_per_unit, location, bid_time, is_top_bid
+) VALUES
+  -- 알루미늄 경매 입찰
+  ('aluminum_bid1', 'scrap1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 5500000, 2200, '부산광역시', NOW() - INTERVAL '30 minutes', true),
+  ('aluminum_bid2', 'scrap1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 5300000, 2120, '울산광역시', NOW() - INTERVAL '1 hour', false),
+  ('aluminum_bid3', 'scrap1', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 5100000, 2040, '경남 창원시', NOW() - INTERVAL '90 minutes', false),
+  
+  -- 스테인리스 경매 입찰
+  ('stainless_bid1', 'scrap2', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 8960000, 2800, '부산광역시', NOW() - INTERVAL '1 minute', true),
+  ('stainless_bid2', 'scrap2', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 8800000, 2750, '울산광역시', NOW() - INTERVAL '3 minutes', false),
+  ('stainless_bid3', 'scrap2', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 8640000, 2700, '경남 창원시', NOW() - INTERVAL '6 minutes', false),
+  
+  -- 황동 경매 입찰 (종료됨)
+  ('brass_bid1', 'scrap3', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 4750000, 5000, '광주광역시', NOW() - INTERVAL '1 day', true),
+  ('brass_bid2', 'scrap3', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 4700000, 4947, '서울특별시', NOW() - INTERVAL '1 day 1 hour', false),
+  ('brass_bid3', 'scrap3', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 4650000, 4895, '경남 창원시', NOW() - INTERVAL '1 day 2 hours', false),
+  
+  -- 굴삭기 경매 입찰
+  ('excavator_bid1', 'machinery1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 87000000, NULL, '서울특별시', NOW() - INTERVAL '2 hours', true),
+  ('excavator_bid2', 'machinery1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 86000000, NULL, '부산광역시', NOW() - INTERVAL '4 hours', false),
+  
+  -- H빔 경매 입찰  
+  ('hbeam_bid1', 'materials1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 13500000, 675000, '서울특별시', NOW() - INTERVAL '15 minutes', true),
+  ('hbeam_bid2', 'materials1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 13200000, 660000, '부산광역시', NOW() - INTERVAL '45 minutes', false),
+  ('hbeam_bid3', 'materials1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 13000000, 650000, '울산광역시', NOW() - INTERVAL '1 hour 15 minutes', false),
+  ('hbeam_bid4', 'materials1', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 12800000, 640000, '광주광역시', NOW() - INTERVAL '2 hours', false),
+  
+  -- 상가건물 철거 입찰
+  ('demolition_bid1', 'demolition1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 27000000, 67500, '부산광역시', NOW() - INTERVAL '1 hour', true),
+  ('demolition_bid2', 'demolition1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 26500000, 66250, '울산광역시', NOW() - INTERVAL '3 hours', false);
+
+-- 경매 통계 업데이트 (최종 확인)
+UPDATE auctions SET 
+  current_bid = (SELECT MAX(amount) FROM auction_bids WHERE auction_id = auctions.id),
+  bidders = (SELECT COUNT(DISTINCT user_id) FROM auction_bids WHERE auction_id = auctions.id)
+WHERE id IN ('scrap1', 'scrap2', 'scrap3', 'machinery1', 'materials1', 'demolition1');
+
+-- 📊 경매 시드 데이터 통계
+-- 총 경매: 6개 (고철 3개, 기계 1개, 자재 1개, 철거 1개)
+-- 총 입찰: 17개
+-- 총 사진: 12개 (경매당 2개씩)
+-- 테스트 사용자: 5명
+
+-- 🔍 경매 데이터 확인 쿼리
+-- SELECT auction_category, COUNT(*) as count FROM auctions GROUP BY auction_category;
+-- SELECT COUNT(*) as total_auctions FROM auctions;
+-- SELECT COUNT(*) as total_bids FROM auction_bids;
+-- SELECT COUNT(*) as total_photos FROM auction_photos;
+
+*/
+
+-- ============================================
+-- 🌱 개선된 경매 시스템 시드 데이터
+-- 작성일: 2025-02-01
+-- 목적: 카테고리별 테이블 분리 구조에 맞는 테스트 데이터
+-- ============================================
+
+-- 테스트용 사용자 생성 (기존 사용자가 없는 경우만)
+INSERT INTO users (id, phone_number, name, address, is_phone_verified, created_at) VALUES
+  ('550e8400-e29b-41d4-a716-446655440001', '010-1111-1111', '서울철강', '서울특별시 강남구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440002', '010-2222-2222', '부산철강', '부산광역시 해운대구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440003', '010-3333-3333', '울산메탈', '울산광역시 남구', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440004', '010-4444-4444', '창원스크랩', '경상남도 창원시', true, NOW()),
+  ('550e8400-e29b-41d4-a716-446655440005', '010-5555-5555', '광주철강', '광주광역시 서구', true, NOW())
+ON CONFLICT (phone_number) DO NOTHING;
+
+-- 1. 공통 경매 정보 삽입
+INSERT INTO auctions (
+  id, user_id, title, description, auction_category, transaction_type,
+  current_bid, starting_price, total_bid_amount, status, end_time,
+  bidder_count, view_count, address_info, created_at, updated_at
+) VALUES
+-- 고철 경매 3개
+(
+  'scrap1',
+  '550e8400-e29b-41d4-a716-446655440001',
+  '알루미늄 고품질 스크랩 2.5톤',
+  '99% 순도의 알루미늄 스크랩입니다. 건축 현장에서 발생한 깨끗한 재료로, 불순물이 거의 없어 재활용 가치가 높습니다.',
+  'scrap',
+  'normal',
+  5500000, -- current_bid
+  5000000, -- starting_price
+  5500000, -- total_bid_amount
+  'active',
+  NOW() + INTERVAL '5 days',
+  3, -- bidder_count
+  87, -- view_count
+  '{"postalCode": "06292", "addressType": "road", "address": "서울특별시 강남구 역삼동 테헤란로 123", "detailAddress": "현대빌딩 지하 1층"}',
+  NOW() - INTERVAL '2 days',
+  NOW() - INTERVAL '1 hour'
+),
+(
+  'scrap2',
+  '550e8400-e29b-41d4-a716-446655440002',
+  '스테인리스 스틸 3.2톤',
+  '304 스테인리스 스틸 스크랩입니다. 주방용품 제조업체에서 발생한 고품질 재료입니다.',
+  'scrap',
+  'urgent',
+  8960000, -- current_bid
+  8000000, -- starting_price
+  8960000, -- total_bid_amount
+  'ending',
+  NOW() + INTERVAL '1 day',
+  5, -- bidder_count
+  156, -- view_count
+  '{"postalCode": "48058", "addressType": "road", "address": "부산광역시 해운대구 센텀동로 99", "detailAddress": "센텀시티 A동 창고"}',
+  NOW() - INTERVAL '6 days',
+  NOW() - INTERVAL '30 minutes'
+),
+(
+  'scrap3',
+  '550e8400-e29b-41d4-a716-446655440003',
+  '황동 스크랩 950kg (경매 종료)',
+  '황동 배관 및 피팅 스크랩입니다. 경매가 종료되었습니다.',
+  'scrap',
+  'normal',
+  4750000, -- current_bid
+  4000000, -- starting_price
+  4750000, -- total_bid_amount
+  'ended',
+  NOW() - INTERVAL '1 day',
+  4, -- bidder_count
+  203, -- view_count
+  '{"postalCode": "44676", "addressType": "road", "address": "울산광역시 남구 돋질로 123", "detailAddress": "울산공업단지 내"}',
+  NOW() - INTERVAL '10 days',
+  NOW() - INTERVAL '1 day'
+),
+
+-- 중고기계 경매 1개
+(
+  'machinery1',
+  '550e8400-e29b-41d4-a716-446655440003',
+  '굴삭기 DH220LC-9 (2018년식)',
+  '두산 굴삭기입니다. 정기점검 완료, 엔진 및 유압 상태 양호. 가동시간 3,200시간.',
+  'machinery',
+  'normal',
+  87000000, -- current_bid
+  85000000, -- starting_price
+  87000000, -- total_bid_amount
+  'active',
+  NOW() + INTERVAL '3 days',
+  2, -- bidder_count
+  43, -- view_count
+  '{"postalCode": "51329", "addressType": "road", "address": "경상남도 창원시 의창구 원이대로 123", "detailAddress": "창원공단 내 중장비 야드"}',
+  NOW() - INTERVAL '3 days',
+  NOW() - INTERVAL '2 hours'
+),
+
+-- 중고자재 경매 1개  
+(
+  'materials1',
+  '550e8400-e29b-41d4-a716-446655440004',
+  'H빔 200x200 20개 (신품급)',
+  '건축현장에서 미사용 상태로 보관된 H빔입니다. 녹이 전혀 없는 신품급 상태입니다.',
+  'materials',
+  'normal',
+  13500000, -- current_bid
+  12000000, -- starting_price
+  13500000, -- total_bid_amount
+  'active',
+  NOW() + INTERVAL '4 days',
+  3, -- bidder_count
+  67, -- view_count
+  '{"postalCode": "61937", "addressType": "road", "address": "광주광역시 서구 상무중앙로 123", "detailAddress": "서부공단 자재창고"}',
+  NOW() - INTERVAL '1 day',
+  NOW() - INTERVAL '3 hours'
+),
+
+-- 철거 경매 1개
+(
+  'demolition1',
+  '550e8400-e29b-41d4-a716-446655440005',
+  '상가건물 철거 (지상 3층)',
+  '강남구 소재 상가건물 철거 프로젝트입니다. 철근콘크리트 구조 3층 건물입니다.',
+  'demolition',
+  'normal',
+  27000000, -- current_bid
+  25000000, -- starting_price
+  27000000, -- total_bid_amount
+  'active',
+  NOW() + INTERVAL '7 days',
+  2, -- bidder_count
+  124, -- view_count
+  '{"postalCode": "06349", "addressType": "road", "address": "서울특별시 강남구 신사동 가로수길 456", "detailAddress": "신사동 상가건물"}',
+  NOW() - INTERVAL '2 days',
+  NOW() - INTERVAL '5 hours'
+);
+
+-- 2. 카테고리별 특화 정보 삽입
+-- 고철 특화 정보
+INSERT INTO scrap_auctions (
+  auction_id, product_type, weight_kg, weight_unit, price_per_unit,
+  sales_environment, special_notes, created_at
+) VALUES
+(
+  'scrap1',
+  '{"id": "aluminum_pure", "name": "알루미늄 (고순도)", "category": "비철금속", "description": "99% 이상 순도의 알루미늄 스크랩", "auctionCategory": "scrap"}',
+  2500, -- 2.5톤
+  'kg',
+  2200, -- 원/kg
+  '{"delivery": "buyer", "shippingCost": "buyer", "accessibility": "easy", "loading": "seller", "sacksNeeded": false}',
+  '포장 상태 우수, 즉시 운반 가능',
+  NOW() - INTERVAL '2 days'
+),
+(
+  'scrap2',
+  '{"id": "stainless_304", "name": "스테인리스 스틸 304", "category": "스테인리스", "description": "304 등급 스테인리스 스틸", "auctionCategory": "scrap"}',
+  3200, -- 3.2톤
+  'kg',
+  2800, -- 원/kg
+  '{"delivery": "both", "shippingCost": "negotiable", "accessibility": "normal", "loading": "both", "sacksNeeded": true}',
+  '깨끗한 상태, 분류 완료',
+  NOW() - INTERVAL '6 days'
+),
+(
+  'scrap3',
+  '{"id": "brass_pipe", "name": "황동 배관재", "category": "황동", "description": "건축용 황동 배관 및 피팅", "auctionCategory": "scrap"}',
+  950, -- 950kg
+  'kg',
+  5000, -- 원/kg
+  '{"delivery": "seller", "shippingCost": "seller", "accessibility": "difficult", "loading": "buyer", "sacksNeeded": true}',
+  '경매 종료됨 - 낙찰 완료',
+  NOW() - INTERVAL '10 days'
+);
+
+-- 중고기계 특화 정보
+INSERT INTO machinery_auctions (
+  auction_id, product_type, product_name, manufacturer, model_name, manufacturing_date,
+  quantity, quantity_unit, desired_price, sales_environment, created_at
+) VALUES
+(
+  'machinery1',
+  '{"id": "excavator_mid", "name": "중형 굴삭기", "category": "건설장비", "description": "20톤급 중형 굴삭기", "auctionCategory": "machinery"}',
+  '굴삭기 DH220LC-9',
+  '두산인프라코어',
+  'DH220LC-9',
+  '2018-03-15',
+  1, -- 1대
+  '대',
+  95000000, -- 희망가 9500만원
+  '{"delivery": "buyer", "shippingCost": "buyer", "accessibility": "normal", "loading": "seller", "sacksNeeded": false}',
+  NOW() - INTERVAL '3 days'
+);
+
+-- 중고자재 특화 정보
+INSERT INTO materials_auctions (
+  auction_id, product_type, quantity, quantity_unit, desired_price,
+  sales_environment, created_at
+) VALUES
+(
+  'materials1',
+  '{"id": "h_beam_200", "name": "H빔 200x200", "category": "철골자재", "description": "건축용 H형강", "auctionCategory": "materials"}',
+  20, -- 20개
+  '개',
+  15000000, -- 희망가 1500만원
+  '{"delivery": "buyer", "shippingCost": "buyer", "accessibility": "easy", "loading": "both", "sacksNeeded": false}',
+  NOW() - INTERVAL '1 day'
+);
+
+-- 철거 특화 정보
+INSERT INTO demolition_auctions (
+  auction_id, product_type, demolition_area, area_unit, price_per_unit,
+  building_purpose, demolition_method, structure_type, waste_disposal, floor_count,
+  created_at
+) VALUES
+(
+  'demolition1',
+  '{"id": "commercial_building", "name": "상업시설 철거", "category": "상업건물", "description": "상가건물 전체 철거", "auctionCategory": "demolition"}',
+  400, -- 400평
+  'pyeong',
+  67500, -- 원/평
+  'commercial',
+  'full',
+  'reinforced-concrete',
+  'company',
+  3, -- 3층
+  NOW() - INTERVAL '2 days'
+);
+
+-- 3. 경매 사진 정보 삽입
+INSERT INTO auction_photos (
+  auction_id, photo_url, photo_type, photo_order, is_representative, created_at
+) VALUES
+-- 고철 사진들
+('scrap1', 'https://dummyimage.com/800x600/10B981/FFFFFF&text=알루미늄+스크랩+1', 'full', 0, true, NOW()),
+('scrap1', 'https://dummyimage.com/800x600/10B981/FFFFFF&text=알루미늄+스크랩+2', 'closeup', 1, false, NOW()),
+('scrap1', 'https://dummyimage.com/800x600/10B981/FFFFFF&text=알루미늄+스크랩+3', 'detail', 2, false, NOW()),
+
+('scrap2', 'https://dummyimage.com/800x600/EF4444/FFFFFF&text=스테인리스+1', 'full', 0, true, NOW()),
+('scrap2', 'https://dummyimage.com/800x600/EF4444/FFFFFF&text=스테인리스+2', 'closeup', 1, false, NOW()),
+
+('scrap3', 'https://dummyimage.com/800x600/F59E0B/FFFFFF&text=황동+스크랩+1', 'full', 0, true, NOW()),
+('scrap3', 'https://dummyimage.com/800x600/F59E0B/FFFFFF&text=황동+스크랩+2', 'detail', 1, false, NOW()),
+
+-- 중고기계 사진들
+('machinery1', 'https://dummyimage.com/800x600/8B5CF6/FFFFFF&text=굴삭기+전체', 'full', 0, true, NOW()),
+('machinery1', 'https://dummyimage.com/800x600/8B5CF6/FFFFFF&text=굴삭기+엔진', 'closeup', 1, false, NOW()),
+('machinery1', 'https://dummyimage.com/800x600/8B5CF6/FFFFFF&text=굴삭기+내부', 'detail', 2, false, NOW()),
+
+-- 중고자재 사진들
+('materials1', 'https://dummyimage.com/800x600/06B6D4/FFFFFF&text=H빔+전체', 'full', 0, true, NOW()),
+('materials1', 'https://dummyimage.com/800x600/06B6D4/FFFFFF&text=H빔+규격', 'detail', 1, false, NOW()),
+
+-- 철거 사진들
+('demolition1', 'https://dummyimage.com/800x600/DC2626/FFFFFF&text=건물+외관', 'full', 0, true, NOW()),
+('demolition1', 'https://dummyimage.com/800x600/DC2626/FFFFFF&text=건물+내부', 'closeup', 1, false, NOW());
+
+-- 4. 입찰 정보 삽입
+INSERT INTO auction_bids (
+  auction_id, user_id, user_name, amount, price_per_unit, location, 
+  bid_time, is_top_bid, created_at
+) VALUES
+-- 고철 scrap1 입찰들
+('scrap1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 5000000, 2000, '부산 해운대구', NOW() - INTERVAL '2 days', false, NOW() - INTERVAL '2 days'),
+('scrap1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 5200000, 2080, '울산 남구', NOW() - INTERVAL '1 day', false, NOW() - INTERVAL '1 day'),
+('scrap1', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 5500000, 2200, '경남 창원시', NOW() - INTERVAL '1 hour', true, NOW() - INTERVAL '1 hour'),
+
+-- 고철 scrap2 입찰들  
+('scrap2', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 8000000, 2500, '서울 강남구', NOW() - INTERVAL '5 days', false, NOW() - INTERVAL '5 days'),
+('scrap2', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 8500000, 2656, '울산 남구', NOW() - INTERVAL '3 days', false, NOW() - INTERVAL '3 days'),
+('scrap2', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 8700000, 2719, '경남 창원시', NOW() - INTERVAL '2 days', false, NOW() - INTERVAL '2 days'),
+('scrap2', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 8960000, 2800, '광주 서구', NOW() - INTERVAL '30 minutes', true, NOW() - INTERVAL '30 minutes'),
+
+-- 고철 scrap3 입찰들 (경매 종료)
+('scrap3', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 4200000, 4421, '부산 해운대구', NOW() - INTERVAL '8 days', false, NOW() - INTERVAL '8 days'),
+('scrap3', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 4500000, 4737, '서울 강남구', NOW() - INTERVAL '6 days', false, NOW() - INTERVAL '6 days'),
+('scrap3', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 4750000, 5000, '경남 창원시', NOW() - INTERVAL '2 days', true, NOW() - INTERVAL '2 days'),
+
+-- 중고기계 machinery1 입찰들
+('machinery1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 85000000, NULL, '서울 강남구', NOW() - INTERVAL '2 days', false, NOW() - INTERVAL '2 days'),
+('machinery1', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 87000000, NULL, '광주 서구', NOW() - INTERVAL '2 hours', true, NOW() - INTERVAL '2 hours'),
+
+-- 중고자재 materials1 입찰들
+('materials1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 12500000, 625000, '부산 해운대구', NOW() - INTERVAL '12 hours', false, NOW() - INTERVAL '12 hours'),
+('materials1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 13000000, 650000, '울산 남구', NOW() - INTERVAL '6 hours', false, NOW() - INTERVAL '6 hours'),
+('materials1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 13500000, 675000, '서울 강남구', NOW() - INTERVAL '3 hours', true, NOW() - INTERVAL '3 hours'),
+
+-- 철거 demolition1 입찰들
+('demolition1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 25500000, 63750, '울산 남구', NOW() - INTERVAL '1 day', false, NOW() - INTERVAL '1 day'),
+('demolition1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 27000000, 67500, '부산 해운대구', NOW() - INTERVAL '5 hours', true, NOW() - INTERVAL '5 hours');
+
+-- 📊 개선된 구조 경매 시드 데이터 통계
+-- 총 경매: 6개 (고철 3개, 기계 1개, 자재 1개, 철거 1개)  
+-- 총 입찰: 17개
+-- 총 사진: 12개
+-- 테스트 사용자: 5명
+-- 카테고리별 테이블: 각각 분리 저장으로 성능 최적화
+
+-- 🔍 데이터 확인 쿼리  
+-- SELECT auction_category, COUNT(*) as count FROM auctions GROUP BY auction_category;
+-- SELECT COUNT(*) as total_auctions FROM auctions;
+-- SELECT COUNT(*) as total_bids FROM auction_bids;  
+-- SELECT COUNT(*) as total_photos FROM auction_photos;
