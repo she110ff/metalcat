@@ -39,8 +39,6 @@ export const AuctionDetail = () => {
   const { id } = useLocalSearchParams();
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
-  console.log("🔍 경매 상세 화면 진입, ID:", id);
-
   // TanStack Query로 경매 상세 데이터 조회
   const { data: auction, isLoading, error } = useAuction(id as string);
 
@@ -62,8 +60,7 @@ export const AuctionDetail = () => {
     error: error?.message,
     requestedId: id,
   });
-  console.log("🔍 경매 상세 화면 진입, ID:", id);
-  console.log("🔍 경매 상세 화면 진입, isLoading:", isLoading);
+
   if (isLoading) {
     return (
       <LinearGradient
@@ -84,8 +81,7 @@ export const AuctionDetail = () => {
       </LinearGradient>
     );
   }
-  console.log("🔍 경매 상세 화면 진입, error:", error);
-  console.log("🔍 경매 상세 화면 진입, auction:", auction);
+
   if (error || !auction) {
     console.error("❌ 경매 데이터 로딩 실패:", error);
     return (
@@ -217,7 +213,6 @@ export const AuctionDetail = () => {
   // 이미지 슬라이드 렌더링 함수
   const renderImageItem = ({ item }: { item: any }) => {
     const isLoaded = loadedImages.has(item.id);
-    console.log("🔍 이미지 슬라이드 렌더링, item:", item);
     return (
       <Box style={{ width: screenWidth, height: 256 }}>
         <Image
@@ -243,7 +238,7 @@ export const AuctionDetail = () => {
   const renderImageIndicator = () => {
     const photos = auction?.photos || [];
     if (photos.length <= 1) return null;
-    console.log("🔍 이미지 인디케이터 렌더링, photos:", photos);
+
     return (
       <HStack
         className="absolute bottom-4 left-0 right-0 justify-center"
