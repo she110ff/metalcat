@@ -21,7 +21,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
   global: {
     headers: {
-      "Content-Type": "application/json",
+      "x-application-name": "metacat2-auction",
     },
   },
 });

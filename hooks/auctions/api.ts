@@ -6,6 +6,153 @@
 
 import { supabase, auctionTables, auctionStorage } from "./supabaseClient";
 import { AuctionItem, AuctionCategory, BidInfo } from "@/data/types/auction";
+import * as FileSystem from "expo-file-system";
+
+// ============================================
+// 이미지 업로드 유틸리티 함수
+// ============================================
+
+/**
+ * 로컬 이미지를 Supabase Storage에 업로드하고 공개 URL 반환
+ * 프리미엄 서비스의 안정적인 업로드 방식 사용
+ */
+async function uploadImageToStorage(
+  imageUri: string,
+  auctionId: string,
+  photoIndex: number
+): Promise<string | null> {
+  try {
+    // 로컬 URI가 아닌 경우 (이미 외부 URL인 경우) 그대로 반환
+    if (imageUri.startsWith("http://") || imageUri.startsWith("https://")) {
+      console.log(
+        "📤 외부 URL이므로 업로드 스킵:",
+        imageUri.substring(0, 50) + "..."
+      );
+      return imageUri;
+    }
+
+    console.log("📸 경매 사진 업로드 시작:", {
+      auctionId,
+      photoIndex,
+      fileUri: imageUri.substring(0, 50) + "...",
+    });
+
+    // 파일 확장자 추출 (기본값: jpg)
+    const ext = imageUri.split(".").pop()?.toLowerCase() || "jpg";
+    const fileName = `${auctionId}/photo_${photoIndex}_${Date.now()}.${ext}`;
+
+    // 확장자에 따른 MIME 타입 매핑
+    const getMimeType = (extension: string): string => {
+      switch (extension) {
+        case "png":
+          return "image/png";
+        case "jpg":
+        case "jpeg":
+          return "image/jpeg";
+        case "webp":
+          return "image/webp";
+        case "gif":
+          return "image/gif";
+        default:
+          return "image/jpeg";
+      }
+    };
+
+    const mimeType = getMimeType(ext);
+    console.log("📸 파일 정보:", { ext, fileName, mimeType });
+
+    let fileData;
+
+    try {
+      console.log("📸 expo-file-system으로 파일 읽기 시도...");
+
+      // 파일을 base64로 읽기 (프리미엄 서비스와 동일한 방식)
+      const base64 = await FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // base64를 decode해서 ArrayBuffer로 변환 (프리미엄 서비스와 동일)
+      const binaryString = atob(base64);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // 프리미엄 서비스와 동일: ArrayBuffer 사용
+      fileData = bytes.buffer;
+
+      console.log("📸 파일 데이터 읽기 성공:", {
+        originalSize: base64.length,
+        bufferSize: fileData.byteLength,
+        type: "ArrayBuffer from base64",
+      });
+    } catch (fileSystemError) {
+      console.error(
+        "📸 FileSystem 읽기 실패, Blob 방식으로 시도:",
+        fileSystemError
+      );
+
+      try {
+        // fetch로 Blob 생성 시도 (두 번째 fallback)
+        const response = await fetch(imageUri);
+        if (response.ok) {
+          fileData = await response.blob();
+          console.log("📸 Blob 생성 성공:", {
+            size: fileData.size,
+            type: fileData.type || "blob",
+          });
+        } else {
+          throw new Error(`Fetch 실패: ${response.status}`);
+        }
+      } catch (fetchError) {
+        console.error(
+          "📸 Blob 생성도 실패, FormData 방식으로 최종 시도:",
+          fetchError
+        );
+
+        // 최후의 수단: FormData 방식 (세 번째 fallback)
+        fileData = {
+          uri: imageUri,
+          type: mimeType,
+          name: fileName,
+        } as any;
+      }
+    }
+
+    // Supabase Storage에 업로드 (옵션 단순화)
+    console.log("📸 Storage 업로드 시작:", {
+      fileName,
+      mimeType,
+      dataType: typeof fileData,
+    });
+
+    const { data, error: uploadError } = await auctionStorage
+      .photos()
+      .upload(fileName, fileData, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: mimeType,
+      });
+
+    if (uploadError) {
+      console.error("❌ 경매 사진 업로드 실패:", uploadError);
+      throw uploadError;
+    }
+
+    console.log("📸 Storage 업로드 성공:", data);
+
+    // 공개 URL 생성
+    const { data: urlData } = auctionStorage.photos().getPublicUrl(fileName);
+
+    console.log("📸 공개 URL 생성:", urlData.publicUrl);
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error("❌ 경매 사진 업로드 중 오류:", error);
+    console.log("⚠️ 업로드 실패, 원본 URI 반환 (로컬에서만 표시됨)");
+    // 업로드 실패 시 원본 URI 반환 (로컬에서는 표시됨)
+    return imageUri;
+  }
+}
 
 // ============================================
 // 유틸리티 함수
@@ -361,7 +508,7 @@ export async function getAuctionById(id: string): Promise<AuctionItem | null> {
 }
 
 /**
- * 경매 생성 (기존 인터페이스 완전 호환)
+ * 경매 생성 (카테고리별 테이블 구조 지원 - 기존 인터페이스 완전 호환)
  */
 export async function createAuction(
   auctionData: Partial<AuctionItem>
@@ -377,41 +524,248 @@ export async function createAuction(
     const endTime =
       auctionData.endTime || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    const insertData = {
-      ...transformAuctionItemToDatabaseRow({
-        ...auctionData,
-        endTime,
-        status: "active",
-        viewCount: 0,
-        bidders: 0,
-      }),
-      status: "active",
-    };
-
-    const { data: auction, error } = await auctionTables
-      .auctions()
-      .insert(insertData)
-      .select(
-        `
-        *,
-        auction_photos(*),
-        auction_bids(*)
-      `
-      )
-      .single();
-
-    if (error) {
-      handleSupabaseError(error, "경매 생성");
+    // 1. 공통 경매 데이터 구성
+    // userId 검증 및 기본값 설정
+    let validUserId = auctionData.userId;
+    if (!validUserId || validUserId === "user_1") {
+      validUserId = "550e8400-e29b-41d4-a716-446655440001"; // 기본 사용자 ID
+      console.log("⚠️ [Auction API] 기본 사용자 ID 사용:", validUserId);
     }
 
-    const transformedAuction = transformDatabaseRowToAuctionItem(auction);
+    const commonAuctionData = {
+      user_id: validUserId,
+      title: auctionData.title || "",
+      description: auctionData.description || "",
+      auction_category: auctionData.auctionCategory || "scrap",
+      transaction_type: (auctionData as any).transactionType || "normal",
+      current_bid: auctionData.currentBid || 0,
+      starting_price: (auctionData as any).startingPrice || 0,
+      total_bid_amount: auctionData.totalBidAmount || 0,
+      status: "active",
+      end_time: endTime.toISOString(),
+      bidder_count: auctionData.bidders || 0,
+      view_count: auctionData.viewCount || 0,
+      address_info: (auctionData as any).address || {},
+    };
+
+    // 2. 공통 경매 테이블에 먼저 저장
+    const { data: auction, error: auctionError } = await supabase
+      .from("auctions")
+      .insert(commonAuctionData)
+      .select("id")
+      .single();
+
+    if (auctionError) {
+      handleSupabaseError(auctionError, "공통 경매 데이터 생성");
+    }
+
+    const auctionId = auction.id;
+
+    // 3. 카테고리별 특화 데이터 저장
+    await saveCategory();
+
+    // 4. 사진 업로드 및 데이터 저장
+    if (auctionData.photos && auctionData.photos.length > 0) {
+      console.log("📸 사진 업로드 시작:", auctionData.photos.length + "장");
+
+      const uploadedPhotos = [];
+
+      // 각 사진을 순차적으로 업로드
+      for (let index = 0; index < auctionData.photos.length; index++) {
+        const photo = auctionData.photos[index];
+
+        try {
+          // 이미지를 Supabase Storage에 업로드하고 공개 URL 받기
+          const uploadedUrl = await uploadImageToStorage(
+            photo.uri,
+            auctionId,
+            index
+          );
+
+          if (uploadedUrl) {
+            uploadedPhotos.push({
+              auction_id: auctionId,
+              photo_url: uploadedUrl, // 업로드된 공개 URL 사용
+              photo_type: photo.type || "full",
+              photo_order: index,
+              is_representative: photo.isRepresentative || false,
+            });
+
+            console.log(
+              `✅ 사진 ${index + 1}/${auctionData.photos.length} 업로드 완료`
+            );
+          } else {
+            console.warn(
+              `⚠️ 사진 ${index + 1} 업로드 실패, 원본 URI 사용:`,
+              photo.uri
+            );
+            // 업로드 실패 시 원본 URI 사용 (로컬에서는 표시됨)
+            uploadedPhotos.push({
+              auction_id: auctionId,
+              photo_url: photo.uri,
+              photo_type: photo.type || "full",
+              photo_order: index,
+              is_representative: photo.isRepresentative || false,
+            });
+          }
+        } catch (uploadError) {
+          console.error(`❌ 사진 ${index + 1} 업로드 중 오류:`, uploadError);
+          // 오류 발생 시에도 원본 URI로 저장
+          uploadedPhotos.push({
+            auction_id: auctionId,
+            photo_url: photo.uri,
+            photo_type: photo.type || "full",
+            photo_order: index,
+            is_representative: photo.isRepresentative || false,
+          });
+        }
+      }
+
+      // 업로드된 사진 정보를 데이터베이스에 저장
+      if (uploadedPhotos.length > 0) {
+        const { error: photoError } = await supabase
+          .from("auction_photos")
+          .insert(uploadedPhotos);
+
+        if (photoError) {
+          console.warn("사진 메타데이터 저장 중 오류:", photoError);
+        } else {
+          console.log("✅ 모든 사진 메타데이터 저장 완료");
+        }
+      }
+    }
+
+    // 5. 생성된 경매 조회 (통합 뷰 사용)
+    const { data: createdAuction, error: fetchError } = await supabase
+      .from("auction_list_view")
+      .select("*")
+      .eq("id", auctionId)
+      .single();
+
+    if (fetchError) {
+      handleSupabaseError(fetchError, "생성된 경매 조회");
+    }
+
+    const transformedAuction = transformViewRowToAuctionItem(createdAuction);
 
     console.log("✅ [Auction API] 경매 생성 성공:", {
       id: transformedAuction.id,
       title: transformedAuction.title,
+      category: transformedAuction.auctionCategory,
     });
 
     return transformedAuction;
+
+    // 카테고리별 특화 데이터 저장 함수
+    async function saveCategory() {
+      const category = auctionData.auctionCategory;
+
+      switch (category) {
+        case "scrap":
+          await saveScrapSpecificData();
+          break;
+        case "machinery":
+          await saveMachinerySpecificData();
+          break;
+        case "materials":
+          await saveMaterialsSpecificData();
+          break;
+        case "demolition":
+          await saveDemolitionSpecificData();
+          break;
+        default:
+          throw new Error(`지원하지 않는 카테고리: ${category}`);
+      }
+    }
+
+    // 고철 특화 데이터 저장
+    async function saveScrapSpecificData() {
+      const scrapData = {
+        auction_id: auctionId,
+        product_type: auctionData.productType || {},
+        weight_kg: (auctionData as any).quantity?.quantity || 0,
+        weight_unit: (auctionData as any).quantity?.unit || "kg",
+        price_per_unit: (auctionData as any).pricePerUnit || 0,
+        sales_environment: (auctionData as any).salesEnvironment || {},
+        special_notes: (auctionData as any).specialNotes || "",
+      };
+
+      const { error } = await supabase.from("scrap_auctions").insert(scrapData);
+
+      if (error) {
+        handleSupabaseError(error, "고철 특화 데이터 저장");
+      }
+    }
+
+    // 중고기계 특화 데이터 저장
+    async function saveMachinerySpecificData() {
+      const machineryData = {
+        auction_id: auctionId,
+        product_type: auctionData.productType || {},
+        product_name: (auctionData as any).productName || "",
+        manufacturer: (auctionData as any).manufacturer || "",
+        model_name: (auctionData as any).modelName || "",
+        manufacturing_date: (auctionData as any).manufacturingDate || null,
+        quantity: (auctionData as any).quantity?.quantity || 1,
+        quantity_unit: (auctionData as any).quantity?.unit || "대",
+        desired_price: (auctionData as any).desiredPrice || 0,
+        sales_environment: (auctionData as any).salesEnvironment || {},
+      };
+
+      const { error } = await supabase
+        .from("machinery_auctions")
+        .insert(machineryData);
+
+      if (error) {
+        handleSupabaseError(error, "중고기계 특화 데이터 저장");
+      }
+    }
+
+    // 중고자재 특화 데이터 저장
+    async function saveMaterialsSpecificData() {
+      const materialsData = {
+        auction_id: auctionId,
+        product_type: auctionData.productType || {},
+        quantity: (auctionData as any).quantity?.quantity || 1,
+        quantity_unit: (auctionData as any).quantity?.unit || "개",
+        desired_price: (auctionData as any).desiredPrice || 0,
+        sales_environment: (auctionData as any).salesEnvironment || {},
+      };
+
+      const { error } = await supabase
+        .from("materials_auctions")
+        .insert(materialsData);
+
+      if (error) {
+        handleSupabaseError(error, "중고자재 특화 데이터 저장");
+      }
+    }
+
+    // 철거 특화 데이터 저장
+    async function saveDemolitionSpecificData() {
+      const demolitionInfo = (auctionData as any).demolitionInfo || {};
+
+      const demolitionData = {
+        auction_id: auctionId,
+        product_type: auctionData.productType || {},
+        demolition_area: (auctionData as any).demolitionArea || 0,
+        area_unit: (auctionData as any).areaUnit || "sqm",
+        price_per_unit: (auctionData as any).pricePerUnit || 0,
+        building_purpose: demolitionInfo.buildingPurpose || "residential",
+        demolition_method: demolitionInfo.demolitionMethod || "full",
+        structure_type: demolitionInfo.structureType || "masonry",
+        waste_disposal: demolitionInfo.wasteDisposal || "self",
+        floor_count: demolitionInfo.floorCount || 1,
+      };
+
+      const { error } = await supabase
+        .from("demolition_auctions")
+        .insert(demolitionData);
+
+      if (error) {
+        handleSupabaseError(error, "철거 특화 데이터 저장");
+      }
+    }
   } catch (error) {
     console.error("경매 생성 실패:", error);
     throw error;

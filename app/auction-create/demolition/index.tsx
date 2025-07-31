@@ -21,27 +21,8 @@ export default function DemolitionAuctionCreate() {
   const [demolitionArea, setDemolitionArea] = useState("100");
   const [areaUnit, setAreaUnit] = useState<"sqm" | "pyeong">("sqm");
 
-  // ✅ 기본 사진들 추가 (철거 경매용 샘플 이미지)
-  const [photos, setPhotos] = useState<PhotoInfo[]>([
-    {
-      id: "default_1",
-      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+1",
-      isRepresentative: true,
-      type: "full",
-    },
-    {
-      id: "default_2",
-      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+2",
-      isRepresentative: false,
-      type: "full",
-    },
-    {
-      id: "default_3",
-      uri: "https://dummyimage.com/400x300/8B5CF6/FFFFFF&text=철거+현장+3",
-      isRepresentative: false,
-      type: "full",
-    },
-  ]);
+  // 빈 상태로 시작 - 사용자가 직접 사진을 선택해야 함
+  const [photos, setPhotos] = useState<PhotoInfo[]>([]);
 
   const handleBack = () => {
     router.back();

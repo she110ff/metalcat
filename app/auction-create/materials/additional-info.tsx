@@ -17,6 +17,7 @@ import { router, useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { useCreateAuction } from "@/hooks/useAuctions";
+import { useAuth } from "@/hooks/useAuth";
 import {
   calculateAuctionEndTime,
   getAuctionDurationInfo,
@@ -38,6 +39,7 @@ export default function MaterialsAdditionalInfoScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const createAuctionMutation = useCreateAuction();
+  const { user, isLoading: isLoadingAuth } = useAuth();
 
   // 첫 번째 단계 데이터 파싱
   const [firstStepData, setFirstStepData] = useState<FirstStepData | null>(
@@ -141,6 +143,22 @@ export default function MaterialsAdditionalInfoScreen() {
 
   // 경매 등록 처리
   const handleSubmit = async () => {
+    // 1. 로그인 상태 확인
+    if (!user) {
+      Alert.alert("로그인 필요", "경매를 등록하려면 먼저 로그인해주세요.", [
+        {
+          text: "취소",
+          style: "cancel",
+        },
+        {
+          text: "로그인",
+          onPress: () => router.push("/login"),
+        },
+      ]);
+      return;
+    }
+
+    // 2. 필수 필드 검증
     if (!checkRequiredFields()) {
       Alert.alert("입력 확인", "모든 필수 항목을 입력해주세요.");
       return;
@@ -198,7 +216,7 @@ export default function MaterialsAdditionalInfoScreen() {
         bidders: 0,
         viewCount: 0,
         bids: [],
-        userId: "user_1", // 실제로는 현재 로그인한 사용자 ID
+        userId: user?.id, // 현재 로그인한 사용자 ID
       };
 
       console.log("💾 완전한 경매 데이터 저장:", completeAuctionData);
@@ -798,7 +816,7 @@ export default function MaterialsAdditionalInfoScreen() {
               <Button
                 variant="solid"
                 onPress={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isLoadingAuth || !user}
                 className="w-full"
                 style={{
                   backgroundColor: isSubmitting

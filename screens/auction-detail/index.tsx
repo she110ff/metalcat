@@ -180,9 +180,9 @@ export const AuctionDetail = () => {
           (auction as any).quantity?.unit || "kg"
         }`
       : "1건",
-    productName: (auction as any).productName,
-    manufacturer: (auction as any).manufacturer,
-    modelName: (auction as any).modelName,
+    productName: (auction as any).productName || "정보 없음",
+    manufacturer: (auction as any).manufacturer || "정보 없음",
+    modelName: (auction as any).modelName || "정보 없음",
     manufacturingDate: (auction as any).manufacturingDate,
     salesEnvironment: (auction as any).salesEnvironment,
     // 누락된 속성들 추가
@@ -191,7 +191,7 @@ export const AuctionDetail = () => {
     transactionType:
       (auction as any).auctionCategory === "demolition" &&
       (auction as any).demolitionInfo
-        ? (auction as any).demolitionInfo.transactionType || "normal"
+        ? (auction as any).demolitionInfo?.transactionType || "normal"
         : (auction as any).transactionType || "normal",
   };
 
@@ -383,52 +383,62 @@ export const AuctionDetail = () => {
                       auctionDetail.productName
                         ? auctionDetail.productName
                         : auctionDetail.auctionCategory === "demolition" &&
-                          auction?.demolitionInfo?.demolitionTitle
-                        ? auction.demolitionInfo.demolitionTitle
+                          (auction as any)?.demolitionInfo?.demolitionTitle &&
+                          Object.keys((auction as any).demolitionInfo || {})
+                            .length > 0
+                        ? (auction as any).demolitionInfo?.demolitionTitle
                         : auctionDetail.title}
                     </Text>
                     {auctionDetail.auctionCategory === "machinery" ? (
                       <VStack space="xs">
                         <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
-                          {auctionDetail.weight}
+                          {auctionDetail.weight || "1건"}
                           {auctionDetail.manufacturer &&
                             ` • ${auctionDetail.manufacturer}`}
                         </Text>
                         {auctionDetail.modelName && (
                           <Text className="text-purple-200/60 text-xs tracking-wider">
-                            모델: {auctionDetail.modelName}
+                            모델: {auctionDetail.modelName || "정보 없음"}
                           </Text>
                         )}
                       </VStack>
                     ) : auctionDetail.auctionCategory === "demolition" &&
-                      auction?.demolitionInfo ? (
+                      (auction as any)?.demolitionInfo &&
+                      Object.keys((auction as any).demolitionInfo || {})
+                        .length > 0 ? (
                       <VStack space="xs">
                         <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
-                          {auction.demolitionInfo.buildingPurpose ===
+                          {(auction as any).demolitionInfo?.buildingPurpose ===
                           "residential"
                             ? "주거용"
-                            : auction.demolitionInfo.buildingPurpose ===
-                              "commercial"
+                            : (auction as any).demolitionInfo
+                                ?.buildingPurpose === "commercial"
                             ? "산업/상업용"
                             : "공공시설"}
                           •{" "}
                           {(auction as any)?.demolitionArea?.toLocaleString() ||
                             "미상"}{" "}
-                          {(auction as any)?.areaUnit === "sqm" ? "㎡" : "평"}
+                          {(auction as any)?.areaUnit === "sqm"
+                            ? "㎡"
+                            : (auction as any)?.areaUnit === "pyeong"
+                            ? "평"
+                            : ""}
                         </Text>
                         <Text className="text-purple-200/60 text-xs tracking-wider">
-                          {auction.demolitionInfo.demolitionMethod === "full"
+                          {(auction as any).demolitionInfo?.demolitionMethod ===
+                          "full"
                             ? "전면 철거"
-                            : auction.demolitionInfo.demolitionMethod ===
-                              "partial"
+                            : (auction as any).demolitionInfo
+                                ?.demolitionMethod === "partial"
                             ? "부분 철거"
                             : "내부 철거"}
-                          • {auction.demolitionInfo.floorCount}층
+                          • {(auction as any).demolitionInfo?.floorCount || 1}층
                         </Text>
                       </VStack>
                     ) : (
                       <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
-                        {auctionDetail.weight} • {auctionDetail.purity}
+                        {auctionDetail.weight || "1건"} •{" "}
+                        {auctionDetail.purity || "99.5%"}
                       </Text>
                     )}
                   </VStack>
@@ -461,7 +471,7 @@ export const AuctionDetail = () => {
                               제품명
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auctionDetail.productName}
+                              {auctionDetail.productName || "정보 없음"}
                             </Text>
                           </VStack>
                         )}
@@ -472,7 +482,7 @@ export const AuctionDetail = () => {
                               제조사
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auctionDetail.manufacturer}
+                              {auctionDetail.manufacturer || "정보 없음"}
                             </Text>
                           </VStack>
                         )}
@@ -483,7 +493,7 @@ export const AuctionDetail = () => {
                               모델명
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auctionDetail.modelName}
+                              {auctionDetail.modelName || "정보 없음"}
                             </Text>
                           </VStack>
                         )}
@@ -586,8 +596,8 @@ export const AuctionDetail = () => {
                               자재 종류
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.productType.name} (
-                              {auction.productType.category})
+                              {auction.productType?.name || "정보 없음"} (
+                              {auction.productType?.category || "일반"})
                             </Text>
                           </VStack>
                         )}
@@ -598,7 +608,7 @@ export const AuctionDetail = () => {
                               자재 설명
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.productType.description}
+                              {auction.productType?.description || "설명 없음"}
                             </Text>
                           </VStack>
                         )}
@@ -692,8 +702,8 @@ export const AuctionDetail = () => {
                               제품 종류
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.productType.name} (
-                              {auction.productType.category})
+                              {auction.productType?.name || "정보 없음"} (
+                              {auction.productType?.category || "일반"})
                             </Text>
                           </VStack>
                         )}
@@ -733,7 +743,7 @@ export const AuctionDetail = () => {
                               품질 정보
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.productType.description}
+                              {auction.productType?.description || "설명 없음"}
                             </Text>
                           </VStack>
                         )}
@@ -803,18 +813,20 @@ export const AuctionDetail = () => {
 
                     {/* 철거 특화 정보 */}
                     {auctionDetail.auctionCategory === "demolition" &&
-                      auction?.demolitionInfo && (
+                      (auction as any)?.demolitionInfo &&
+                      Object.keys((auction as any).demolitionInfo).length >
+                        0 && (
                         <>
                           <VStack space="sm">
                             <Text className="text-white/60 text-xs uppercase tracking-[1px]">
                               건물 용도
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.demolitionInfo.buildingPurpose ===
-                              "residential"
+                              {(auction as any).demolitionInfo
+                                .buildingPurpose === "residential"
                                 ? "주거용"
-                                : auction.demolitionInfo.buildingPurpose ===
-                                  "commercial"
+                                : (auction as any).demolitionInfo
+                                    .buildingPurpose === "commercial"
                                 ? "산업/상업용"
                                 : "공공시설"}
                             </Text>
@@ -825,11 +837,11 @@ export const AuctionDetail = () => {
                               철거 방식
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.demolitionInfo.demolitionMethod ===
-                              "full"
+                              {(auction as any).demolitionInfo
+                                .demolitionMethod === "full"
                                 ? "전면 철거"
-                                : auction.demolitionInfo.demolitionMethod ===
-                                  "partial"
+                                : (auction as any).demolitionInfo
+                                    .demolitionMethod === "partial"
                                 ? "부분 철거"
                                 : "내부 철거"}
                             </Text>
@@ -840,11 +852,11 @@ export const AuctionDetail = () => {
                               구조 타입
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.demolitionInfo.structureType ===
-                              "masonry"
+                              {(auction as any).demolitionInfo
+                                ?.structureType === "masonry"
                                 ? "조적조"
-                                : auction.demolitionInfo.structureType ===
-                                  "reinforced-concrete"
+                                : (auction as any).demolitionInfo
+                                    ?.structureType === "reinforced-concrete"
                                 ? "철근콘크리트"
                                 : "철골조"}
                             </Text>
@@ -870,7 +882,8 @@ export const AuctionDetail = () => {
                               현장 층수
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.demolitionInfo.floorCount}층
+                              {(auction as any).demolitionInfo?.floorCount || 1}
+                              층
                             </Text>
                           </VStack>
 
@@ -879,7 +892,8 @@ export const AuctionDetail = () => {
                               폐기물 처리
                             </Text>
                             <Text className="text-white font-semibold text-base">
-                              {auction.demolitionInfo.wasteDisposal === "self"
+                              {(auction as any).demolitionInfo
+                                ?.wasteDisposal === "self"
                                 ? "제가 직접 처리할게요"
                                 : "업체가 처리해주세요"}
                             </Text>
