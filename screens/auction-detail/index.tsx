@@ -62,7 +62,8 @@ export const AuctionDetail = () => {
     error: error?.message,
     requestedId: id,
   });
-
+  console.log("🔍 경매 상세 화면 진입, ID:", id);
+  console.log("🔍 경매 상세 화면 진입, isLoading:", isLoading);
   if (isLoading) {
     return (
       <LinearGradient
@@ -83,7 +84,8 @@ export const AuctionDetail = () => {
       </LinearGradient>
     );
   }
-
+  console.log("🔍 경매 상세 화면 진입, error:", error);
+  console.log("🔍 경매 상세 화면 진입, auction:", auction);
   if (error || !auction) {
     console.error("❌ 경매 데이터 로딩 실패:", error);
     return (
@@ -176,7 +178,7 @@ export const AuctionDetail = () => {
     auctionCategory: (auction as any).auctionCategory || "scrap",
     metalType: auction.productType?.name || "고철",
     weight: (auction as any).quantity?.quantity
-      ? `${(auction as any).quantity.quantity}${
+      ? `${(auction as any).quantity?.quantity}${
           (auction as any).quantity?.unit || "kg"
         }`
       : "1건",
@@ -215,7 +217,7 @@ export const AuctionDetail = () => {
   // 이미지 슬라이드 렌더링 함수
   const renderImageItem = ({ item }: { item: any }) => {
     const isLoaded = loadedImages.has(item.id);
-
+    console.log("🔍 이미지 슬라이드 렌더링, item:", item);
     return (
       <Box style={{ width: screenWidth, height: 256 }}>
         <Image
@@ -241,7 +243,7 @@ export const AuctionDetail = () => {
   const renderImageIndicator = () => {
     const photos = auction?.photos || [];
     if (photos.length <= 1) return null;
-
+    console.log("🔍 이미지 인디케이터 렌더링, photos:", photos);
     return (
       <HStack
         className="absolute bottom-4 left-0 right-0 justify-center"
@@ -375,7 +377,9 @@ export const AuctionDetail = () => {
                         ? "Machinery"
                         : auctionDetail.auctionCategory === "demolition"
                         ? "Demolition"
-                        : auctionDetail.metalType}{" "}
+                        : auctionDetail.auctionCategory === "materials"
+                        ? "Materials"
+                        : auctionDetail.metalType || "Scrap"}{" "}
                       Auction
                     </Text>
                     <Text className="text-white text-2xl font-black tracking-wide">
@@ -620,26 +624,14 @@ export const AuctionDetail = () => {
                             </Text>
                             <Text className="text-cyan-400 font-bold text-lg">
                               {(
-                                (auction as any).quantity.quantity || 0
+                                (auction as any).quantity?.quantity || 0
                               ).toLocaleString()}
-                              {(auction as any).quantity.unit || "개"}
+                              {(auction as any).quantity?.unit || "개"}
                             </Text>
                           </VStack>
                         )}
 
-                        {(auction as any)?.desiredPrice && (
-                          <VStack space="sm">
-                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                              희망 가격
-                            </Text>
-                            <Text className="text-yellow-400 font-bold text-lg">
-                              ₩
-                              {(
-                                (auction as any).desiredPrice || 0
-                              ).toLocaleString()}
-                            </Text>
-                          </VStack>
-                        )}
+                        {/* 🎨 UX: 희망 가격 제거 - 경매에서는 시작가/현재가가 더 중요 */}
 
                         {/* 판매 조건 정보 */}
                         {(auction as any)?.salesEnvironment && (
@@ -708,20 +700,7 @@ export const AuctionDetail = () => {
                           </VStack>
                         )}
 
-                        {(auction as any)?.pricePerUnit && (
-                          <VStack space="sm">
-                            <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                              단위당 가격
-                            </Text>
-                            <Text className="text-yellow-400 font-bold text-lg">
-                              ₩
-                              {(
-                                (auction as any).pricePerUnit || 0
-                              ).toLocaleString()}
-                              /kg
-                            </Text>
-                          </VStack>
-                        )}
+                        {/* 🎨 UX: 단위당 가격 제거 - 고철 경매에서는 불필요 */}
 
                         {(auction as any)?.quantity && (
                           <VStack space="sm">
@@ -730,9 +709,9 @@ export const AuctionDetail = () => {
                             </Text>
                             <Text className="text-cyan-400 font-bold text-lg">
                               {(
-                                (auction as any).quantity.quantity || 0
+                                (auction as any).quantity?.quantity || 0
                               ).toLocaleString()}
-                              {(auction as any).quantity.unit || "kg"}
+                              {(auction as any).quantity?.unit || "kg"}
                             </Text>
                           </VStack>
                         )}
