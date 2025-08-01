@@ -977,6 +977,93 @@ export async function getBids(auctionId: string): Promise<BidInfo[]> {
   }
 }
 
+/**
+ * 사용자별 등록된 경매 목록 조회
+ */
+export async function getMyAuctions(userId: string): Promise<AuctionItem[]> {
+  try {
+    console.log("🔍 [Auction API] getMyAuctions 호출:", userId);
+
+    const { data: auctions, error } = await supabase
+      .from("auction_list_view")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      handleSupabaseError(error, "내 경매 목록 조회");
+    }
+
+    const transformedAuctions = (auctions || []).map(
+      transformViewRowToAuctionItem
+    );
+
+    console.log("✅ [Auction API] 내 경매 목록 조회 성공:", {
+      userId,
+      total: transformedAuctions.length,
+    });
+
+    return transformedAuctions;
+  } catch (error) {
+    console.error("내 경매 목록 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 사용자별 입찰한 경매 목록 조회
+ */
+export async function getMyBiddings(userId: string): Promise<AuctionItem[]> {
+  try {
+    console.log("🔍 [Auction API] getMyBiddings 호출:", userId);
+
+    // 사용자가 입찰한 경매들의 ID를 먼저 조회
+    const { data: bidAuctionIds, error: bidError } = await supabase
+      .from("auction_bids")
+      .select("auction_id")
+      .eq("user_id", userId);
+
+    if (bidError) {
+      handleSupabaseError(bidError, "내 입찰 목록 조회");
+    }
+
+    if (!bidAuctionIds || bidAuctionIds.length === 0) {
+      console.log("✅ [Auction API] 입찰한 경매가 없습니다.");
+      return [];
+    }
+
+    // 중복 제거
+    const uniqueAuctionIds = [
+      ...new Set(bidAuctionIds.map((bid) => bid.auction_id)),
+    ];
+
+    // 해당 경매들의 상세 정보 조회
+    const { data: auctions, error } = await supabase
+      .from("auction_list_view")
+      .select("*")
+      .in("id", uniqueAuctionIds)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      handleSupabaseError(error, "입찰한 경매 목록 조회");
+    }
+
+    const transformedAuctions = (auctions || []).map(
+      transformViewRowToAuctionItem
+    );
+
+    console.log("✅ [Auction API] 내 입찰 목록 조회 성공:", {
+      userId,
+      total: transformedAuctions.length,
+    });
+
+    return transformedAuctions;
+  } catch (error) {
+    console.error("내 입찰 목록 조회 실패:", error);
+    throw error;
+  }
+}
+
 // 기존 auctionAPI 인터페이스와 동일한 구조로 내보내기
 export const auctionAPI = {
   getAuctions,
@@ -986,4 +1073,6 @@ export const auctionAPI = {
   deleteAuction,
   createBid,
   getBids,
+  getMyAuctions,
+  getMyBiddings,
 } as const;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyServiceRequests } from "@/hooks/service-request/myRequests";
+import { useMyAuctions, useMyBiddings } from "@/hooks/auctions/useMyAuctions";
 import { SimpleRequestCard } from "@/components/service-request/SimpleRequestCard";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -41,6 +42,20 @@ const MainContent = () => {
   const { data: myRequests, isLoading: requestsLoading } =
     useMyServiceRequests();
 
+  // 내 경매 등록 목록 조회
+  const {
+    data: myAuctions,
+    isLoading: auctionsLoading,
+    error: auctionsError,
+  } = useMyAuctions();
+
+  // 내 입찰 목록 조회
+  const {
+    data: myBiddings,
+    isLoading: biddingsLoading,
+    error: biddingsError,
+  } = useMyBiddings();
+
   // 로그아웃 처리
   const handleLogout = () => {
     Alert.alert("로그아웃", "정말 로그아웃하시겠습니까?", [
@@ -59,44 +74,53 @@ const MainContent = () => {
     ]);
   };
 
-  // 간단한 샘플 데이터
-  const myAuctions = [
-    {
-      id: "1",
-      title: "고순도 구리 스크랩",
-      currentBid: "₩12,500,000",
-      status: "진행중",
-      endTime: "2일 남음",
-    },
-    {
-      id: "2",
-      title: "알루미늄 캔 스크랩",
-      currentBid: "₩3,600,000",
-      status: "종료",
-      endTime: "종료됨",
-    },
-    {
-      id: "3",
-      title: "스테인리스 스틸 파이프",
-      currentBid: "₩8,900,000",
-      status: "진행중",
-      endTime: "1일 14시간",
-    },
-    {
-      id: "4",
-      title: "황동 배관 자재",
-      currentBid: "₩5,200,000",
-      status: "진행중",
-      endTime: "3일 8시간",
-    },
-    {
-      id: "5",
-      title: "티타늄 합금 스크랩",
-      currentBid: "₩18,750,000",
-      status: "진행중",
-      endTime: "12시간 30분",
-    },
-  ];
+  // 경매 상태 텍스트 변환 헬퍼 함수
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "active":
+        return "진행중";
+      case "ending":
+        return "마감임박";
+      case "ended":
+        return "종료";
+      case "cancelled":
+        return "취소됨";
+      default:
+        return status;
+    }
+  };
+
+  // 가격 포맷 헬퍼 함수
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("ko-KR", {
+      style: "currency",
+      currency: "KRW",
+    }).format(price);
+  };
+
+  // 남은 시간 계산 헬퍼 함수
+  const getTimeRemaining = (endTime: Date) => {
+    const now = new Date();
+    const remaining = endTime.getTime() - now.getTime();
+
+    if (remaining <= 0) {
+      return "종료됨";
+    }
+
+    const days = Math.floor(remaining / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(
+      (remaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+
+    if (days > 0) {
+      return `${days}일 ${hours}시간`;
+    } else if (hours > 0) {
+      return `${hours}시간`;
+    } else {
+      const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      return `${minutes}분`;
+    }
+  };
 
   const renderTabContent = () => {
     if (activeTab === "premium") {
@@ -145,49 +169,197 @@ const MainContent = () => {
       );
     }
 
-    // 기존 탭들 (auction, bidding): 기존 코드 유지
-    return (
-      <VStack space="md">
-        {myAuctions.map((auction) => (
-          <Box
-            key={auction.id}
-            className="bg-white rounded-xl p-4 border border-gray-200"
-          >
-            <VStack space="sm">
-              <HStack className="justify-between items-start">
-                <VStack className="flex-1">
-                  <Text className="font-semibold text-lg">{auction.title}</Text>
-                  <Text className="text-sm text-gray-600">고철</Text>
-                </VStack>
-                <VStack className="items-end">
-                  <Text className="font-bold text-green-600">
-                    {auction.currentBid}
-                  </Text>
-                  <Text className="text-xs text-gray-500">
-                    {auction.endTime}
-                  </Text>
-                </VStack>
-              </HStack>
-              <Box
-                className={`px-2 py-1 rounded self-start ${
-                  auction.status === "진행중" ? "bg-green-100" : "bg-gray-100"
-                }`}
-              >
-                <Text
-                  className={`text-xs ${
-                    auction.status === "진행중"
-                      ? "text-green-700"
-                      : "text-gray-700"
-                  }`}
-                >
-                  {auction.status}
-                </Text>
-              </Box>
-            </VStack>
+    if (activeTab === "auction") {
+      // 내가 등록한 경매 목록
+      if (auctionsLoading) {
+        return (
+          <Box className="flex-1 items-center justify-center py-8">
+            <Text className="text-gray-500">로딩 중...</Text>
           </Box>
-        ))}
-      </VStack>
-    );
+        );
+      }
+
+      if (auctionsError) {
+        return (
+          <Box className="flex-1 items-center justify-center py-8">
+            <Text className="text-red-500">
+              경매 목록을 불러오는데 실패했습니다.
+            </Text>
+          </Box>
+        );
+      }
+
+      if (!myAuctions || myAuctions.length === 0) {
+        return (
+          <VStack space="md" className="items-center py-8">
+            <Text className="text-gray-500 text-center">
+              아직 등록한 경매가 없습니다
+            </Text>
+            <Button
+              variant="outline"
+              onPress={() => router.push("/auction-create")}
+              className="mt-4"
+            >
+              <ButtonText>경매 등록하기</ButtonText>
+            </Button>
+          </VStack>
+        );
+      }
+
+      return (
+        <VStack space="md">
+          <Text className="text-lg font-bold text-gray-900">
+            🏷️ 내가 등록한 경매 ({myAuctions.length}건)
+          </Text>
+          {myAuctions.map((auction) => (
+            <Pressable
+              key={auction.id}
+              onPress={() => router.push(`/auction-detail/${auction.id}`)}
+            >
+              <Box className="bg-white rounded-xl p-4 border border-gray-200">
+                <VStack space="sm">
+                  <HStack className="justify-between items-start">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-lg">
+                        {auction.title}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {auction.auctionCategory}
+                      </Text>
+                    </VStack>
+                    <VStack className="items-end">
+                      <Text className="font-bold text-green-600">
+                        {formatPrice(auction.currentBid || 0)}
+                      </Text>
+                      <Text className="text-xs text-gray-500">
+                        {getTimeRemaining(auction.endTime)}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <Box
+                    className={`px-2 py-1 rounded self-start ${
+                      auction.status === "active" || auction.status === "ending"
+                        ? "bg-green-100"
+                        : "bg-gray-100"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs ${
+                        auction.status === "active" ||
+                        auction.status === "ending"
+                          ? "text-green-700"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {getStatusText(auction.status)}
+                    </Text>
+                  </Box>
+                </VStack>
+              </Box>
+            </Pressable>
+          ))}
+        </VStack>
+      );
+    }
+
+    if (activeTab === "bidding") {
+      // 내가 입찰한 경매 목록
+      if (biddingsLoading) {
+        return (
+          <Box className="flex-1 items-center justify-center py-8">
+            <Text className="text-gray-500">로딩 중...</Text>
+          </Box>
+        );
+      }
+
+      if (biddingsError) {
+        return (
+          <Box className="flex-1 items-center justify-center py-8">
+            <Text className="text-red-500">
+              입찰 목록을 불러오는데 실패했습니다.
+            </Text>
+          </Box>
+        );
+      }
+
+      if (!myBiddings || myBiddings.length === 0) {
+        return (
+          <VStack space="md" className="items-center py-8">
+            <Text className="text-gray-500 text-center">
+              아직 입찰한 경매가 없습니다
+            </Text>
+            <Button
+              variant="outline"
+              onPress={() => router.push("/(tabs)/auction")}
+              className="mt-4"
+            >
+              <ButtonText>경매 둘러보기</ButtonText>
+            </Button>
+          </VStack>
+        );
+      }
+
+      return (
+        <VStack space="md">
+          <Text className="text-lg font-bold text-gray-900">
+            💰 내가 입찰한 경매 ({myBiddings.length}건)
+          </Text>
+          {myBiddings.map((auction) => (
+            <Pressable
+              key={auction.id}
+              onPress={() => router.push(`/auction-detail/${auction.id}`)}
+            >
+              <Box className="bg-white rounded-xl p-4 border border-gray-200">
+                <VStack space="sm">
+                  <HStack className="justify-between items-start">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-lg">
+                        {auction.title}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        {auction.auctionCategory}
+                      </Text>
+                    </VStack>
+                    <VStack className="items-end">
+                      <Text className="font-bold text-blue-600">
+                        {formatPrice(auction.currentBid || 0)}
+                      </Text>
+                      <Text className="text-xs text-gray-500">
+                        {getTimeRemaining(auction.endTime)}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <HStack className="justify-between items-center">
+                    <Box
+                      className={`px-2 py-1 rounded ${
+                        auction.status === "active" ||
+                        auction.status === "ending"
+                          ? "bg-green-100"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs ${
+                          auction.status === "active" ||
+                          auction.status === "ending"
+                            ? "text-green-700"
+                            : "text-gray-700"
+                        }`}
+                      >
+                        {getStatusText(auction.status)}
+                      </Text>
+                    </Box>
+                    <Text className="text-xs text-blue-600">입찰 참여중</Text>
+                  </HStack>
+                </VStack>
+              </Box>
+            </Pressable>
+          ))}
+        </VStack>
+      );
+    }
+
+    return null;
   };
 
   return (
