@@ -7,6 +7,7 @@
 import { supabase, auctionTables, auctionStorage } from "./supabaseClient";
 import { AuctionItem, AuctionCategory, BidInfo } from "@/data/types/auction";
 import * as FileSystem from "expo-file-system";
+import { getCurrentUser } from "@/hooks/auth/api";
 
 // ============================================
 // 이미지 업로드 유틸리티 함수
