@@ -176,6 +176,7 @@ const BatchTabContent = () => {
   const { data: executionLogs, isLoading: logsLoading } = useExecutionLogs(10);
   const { data: systemHealth, isLoading: healthLoading } = useSystemHealth();
 
+  console.log("executionLogs :", executionLogs);
   // 시간 포맷 헬퍼
   const formatLastRun = (lastRun?: string) => {
     if (!lastRun) return "실행 기록 없음";
@@ -258,19 +259,19 @@ const BatchTabContent = () => {
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">전체 Cron Jobs</Text>
               <Text className="text-blue-600 font-bold">
-                {systemHealth.cron_jobs.total}개
+                {`${systemHealth.cron_jobs.total}개`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">활성 Jobs</Text>
               <Text className="text-green-600 font-bold">
-                {systemHealth.cron_jobs.active}개
+                {`${systemHealth.cron_jobs.active}개`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">최근 1시간 실패</Text>
               <Text className="text-red-600 font-bold">
-                {systemHealth.recent_failures_1h}건
+                {`${systemHealth.recent_failures_1h}건`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2">
@@ -359,6 +360,11 @@ const BatchTabContent = () => {
                     <Text className="text-xs text-gray-600">
                       {formatLastRun(log.startedAt)}
                     </Text>
+                    {log.status === "failed" && log.errorMessage && (
+                      <Text className="text-xs text-red-600 mt-1">
+                        🚨 {log.errorMessage}
+                      </Text>
+                    )}
                   </VStack>
                   <Box
                     className={`px-2 py-1 rounded ${
@@ -386,9 +392,9 @@ const BatchTabContent = () => {
                     </Text>
                   </Box>
                 </HStack>
-                {log.durationMs && (
+                {log.durationMs !== null && log.durationMs !== undefined && (
                   <Text className="text-xs text-gray-500 mt-1">
-                    실행시간: {Math.round(log.durationMs / 1000)}초
+                    실행시간: {Math.round(Math.max(log.durationMs, 0) / 1000)}초
                   </Text>
                 )}
               </Box>
@@ -487,25 +493,25 @@ const PremiumTabContent = () => {
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">전체 요청</Text>
             <Text className="text-gray-800 font-bold">
-              {stats?.total || 0}건
+              {`${stats?.total || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">대기 중</Text>
             <Text className="text-orange-600 font-bold">
-              {stats?.pending || 0}건
+              {`${stats?.pending || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">진행 중</Text>
             <Text className="text-blue-600 font-bold">
-              {(stats?.assigned || 0) + (stats?.inProgress || 0)}건
+              {`${(stats?.assigned || 0) + (stats?.inProgress || 0)}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">완료</Text>
             <Text className="text-green-600 font-bold">
-              {stats?.completed || 0}건
+              {`${stats?.completed || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2">
@@ -584,7 +590,7 @@ const PremiumTabContent = () => {
 
             {requests.length > 10 && (
               <Text className="text-center text-gray-500 text-sm mt-4">
-                총 {requests.length}건 중 최근 10건 표시
+                {`총 ${requests.length}건 중 최근 10건 표시`}
               </Text>
             )}
           </VStack>
@@ -690,25 +696,25 @@ const AuctionTabContent = () => {
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">전체 경매</Text>
             <Text className="text-gray-800 font-bold">
-              {auctionStats?.total || 0}건
+              {`${auctionStats?.total || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">진행 중인 경매</Text>
             <Text className="text-blue-600 font-bold">
-              {auctionStats?.active || 0}건
+              {`${auctionStats?.active || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">마감 임박 (24시간 이내)</Text>
             <Text className="text-orange-600 font-bold">
-              {auctionStats?.ending || 0}건
+              {`${auctionStats?.ending || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2 border-b border-gray-100">
             <Text className="font-medium">오늘 신규 등록</Text>
             <Text className="text-green-600 font-bold">
-              {auctionStats?.todayNew || 0}건
+              {`${auctionStats?.todayNew || 0}건`}
             </Text>
           </HStack>
           <HStack className="justify-between items-center py-2">
@@ -731,25 +737,25 @@ const AuctionTabContent = () => {
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">🔩 고철</Text>
               <Text className="text-blue-600 font-bold">
-                {categoryStats?.scrap || 0}건
+                {`${categoryStats?.scrap || 0}건`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">⚙️ 중고기계</Text>
               <Text className="text-green-600 font-bold">
-                {categoryStats?.machinery || 0}건
+                {`${categoryStats?.machinery || 0}건`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2 border-b border-gray-100">
               <Text className="font-medium">🏗️ 중고자재</Text>
               <Text className="text-orange-600 font-bold">
-                {categoryStats?.materials || 0}건
+                {`${categoryStats?.materials || 0}건`}
               </Text>
             </HStack>
             <HStack className="justify-between items-center py-2">
               <Text className="font-medium">🏢 철거</Text>
               <Text className="text-red-600 font-bold">
-                {categoryStats?.demolition || 0}건
+                {`${categoryStats?.demolition || 0}건`}
               </Text>
             </HStack>
           </VStack>
@@ -803,7 +809,7 @@ const AuctionTabContent = () => {
 
             {recentAuctions.length >= 8 && (
               <Text className="text-center text-gray-500 text-sm mt-4">
-                최근 8건 표시 • 전체 {auctionStats?.total || 0}건
+                {`최근 8건 표시 • 전체 ${auctionStats?.total || 0}건`}
               </Text>
             )}
           </VStack>
