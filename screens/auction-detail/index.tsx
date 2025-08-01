@@ -49,21 +49,42 @@ export const AuctionDetail = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
+  // 이미지 스크롤 관련 useRef들을 최상단으로 이동
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentImageIndex(viewableItems[0].index || 0);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
+  // ID가 유효한지 확인
+  const auctionId = typeof id === "string" ? id : "";
+  const hasValidId = !!auctionId;
+
   // 현재 로그인된 사용자 정보
   const { user } = useAuth();
 
-  // TanStack Query로 경매 상세 데이터 조회
-  const { data: auction, isLoading, error } = useAuction(id as string);
+  // TanStack Query로 경매 상세 데이터 조회 - ID가 있을 때만 호출
+  const {
+    data: auction,
+    isLoading,
+    error,
+  } = useAuction(hasValidId ? auctionId : "");
 
-  // 입찰 기록 조회
-  const { data: bids = [], isLoading: bidsLoading } = useBids(id as string);
+  // 입찰 기록 조회 - ID가 있을 때만 호출
+  const { data: bids = [], isLoading: bidsLoading } = useBids(
+    hasValidId ? auctionId : ""
+  );
 
-  // 경매 결과 조회 (종료된 경매인 경우)
+  // 경매 결과 조회 (종료된 경매인 경우) - ID가 있을 때만 호출
   const {
     data: auctionResult,
     isLoading: resultLoading,
     error: resultError,
-  } = useAuctionResult(id as string);
+  } = useAuctionResult(hasValidId ? auctionId : "");
 
   console.log("📊 경매 데이터 조회 결과:", {
     auction: auction
@@ -79,7 +100,43 @@ export const AuctionDetail = () => {
     isLoading,
     error: error?.message,
     requestedId: id,
+    hasValidId,
   });
+
+  // ID가 없으면 에러 화면 표시
+  if (!hasValidId) {
+    return (
+      <LinearGradient
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
+        style={{ flex: 1 }}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <VStack
+            space="lg"
+            className="flex-1 items-center justify-center px-6"
+          >
+            <Ionicons
+              name="alert-circle-outline"
+              size={64}
+              color="rgba(239, 68, 68, 0.8)"
+            />
+            <Text className="text-red-300 text-xl font-bold text-center">
+              잘못된 경매 ID입니다
+            </Text>
+            <Text className="text-white/60 text-sm text-center">
+              유효하지 않은 경매 ID입니다.
+            </Text>
+            <Pressable
+              onPress={() => router.back()}
+              className="px-6 py-3 bg-blue-500/20 rounded-lg border border-blue-500/30"
+            >
+              <Text className="text-blue-300 font-semibold">뒤로 가기</Text>
+            </Pressable>
+          </VStack>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -310,17 +367,6 @@ export const AuctionDetail = () => {
       </TouchableOpacity>
     );
   };
-
-  // 이미지 스크롤 이벤트 핸들러
-  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setCurrentImageIndex(viewableItems[0].index || 0);
-    }
-  }).current;
-
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 50,
-  }).current;
 
   // 이미지 인디케이터 렌더링 함수
   const renderImageIndicator = () => {
@@ -1045,9 +1091,9 @@ export const AuctionDetail = () => {
               />
 
               {/* Bid Input - 진행 중인 경매만 */}
-              {auctionDetail.status !== "ended" && (
+              {auctionDetail.status !== "ended" && hasValidId && (
                 <BidInputSection
-                  auctionId={id as string}
+                  auctionId={auctionId}
                   currentTopBid={currentTopBid}
                   isActive={
                     auctionDetail.status === "active" ||
@@ -1068,7 +1114,7 @@ export const AuctionDetail = () => {
               )}
 
               {/* Bid History */}
-              <BidHistorySection auctionId={id as string} />
+              <BidHistorySection auctionId={hasValidId ? auctionId : ""} />
             </VStack>
           </ScrollView>
         )}
