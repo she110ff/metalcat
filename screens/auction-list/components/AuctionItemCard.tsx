@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { Clock, Users } from "lucide-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuctionResult } from "@/hooks/useAuctions";
-import { ResultBadge } from "@/components/auction/ui/ResultBadge";
+
 import { formatAuctionPrice } from "@/data";
 
 interface AuctionItemProps {
@@ -76,18 +76,6 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                 {item.metalType} • {item.weight}
               </Text>
             </View>
-
-            {/* 결과 배지 (종료된 경매만) */}
-            {item.status === "ended" && result && (
-              <View style={{ marginTop: 2 }}>
-                <ResultBadge
-                  result={result.result}
-                  winningAmount={result.winningAmount}
-                  isWinner={isWinner}
-                  size="sm"
-                />
-              </View>
-            )}
           </View>
 
           {/* 가격과 상태 정보 */}
@@ -127,34 +115,6 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                     : item.currentBid}
                 </Text>
               </View>
-
-              {/* 추가 결과 정보 (종료된 경매) */}
-              {item.status === "ended" && result && (
-                <View style={{ marginTop: 4 }}>
-                  {result.result === "successful" && (
-                    <Text
-                      style={{
-                        color: isWinner ? "#FCD34D" : "rgba(255,255,255,0.7)",
-                        fontSize: 12,
-                        fontWeight: "600",
-                      }}
-                    >
-                      {isWinner ? "축하합니다! 낙찰받으셨습니다" : `낙찰 완료`}
-                    </Text>
-                  )}
-                  {result.result === "failed" && (
-                    <Text
-                      style={{
-                        color: "rgba(239, 68, 68, 0.8)",
-                        fontSize: 12,
-                        fontWeight: "600",
-                      }}
-                    >
-                      유찰됨 - 입찰자 없음
-                    </Text>
-                  )}
-                </View>
-              )}
             </View>
 
             <View style={{ alignItems: "flex-end", gap: 8 }}>
@@ -169,6 +129,10 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                       ? "rgba(34, 197, 94, 0.2)"
                       : item.status === "ending"
                       ? "rgba(251, 191, 36, 0.2)"
+                      : result?.result === "successful"
+                      ? "rgba(34, 197, 94, 0.2)"
+                      : result?.result === "failed"
+                      ? "rgba(239, 68, 68, 0.2)"
                       : "rgba(107, 114, 128, 0.2)",
                 }}
               >
@@ -179,6 +143,10 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                         ? "#22C55E"
                         : item.status === "ending"
                         ? "#FBBF24"
+                        : result?.result === "successful"
+                        ? "#22C55E"
+                        : result?.result === "failed"
+                        ? "#EF4444"
                         : "#6B7280",
                     fontSize: 12,
                     fontWeight: "600",
@@ -188,7 +156,11 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                     ? "진행중"
                     : item.status === "ending"
                     ? "마감임박"
-                    : "종료됨"}
+                    : result?.result === "successful"
+                    ? "낙찰"
+                    : result?.result === "failed"
+                    ? "유찰"
+                    : "종료"}
                 </Text>
               </View>
 
