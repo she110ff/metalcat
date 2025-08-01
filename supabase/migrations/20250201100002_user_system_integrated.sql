@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS users (
   -- 유효성 검사
   CONSTRAINT users_phone_number_check CHECK (char_length(phone_number) >= 10),
   CONSTRAINT users_name_check CHECK (char_length(name) >= 2),
-  CONSTRAINT users_avatar_url_check CHECK (avatar_url IS NULL OR char_length(avatar_url) >= 10),
+  CONSTRAINT users_avatar_url_check CHECK (avatar_url IS NULL OR char_length(avatar_url) >= 50),
   CONSTRAINT users_company_name_check CHECK (is_business = false OR (is_business = true AND company_name IS NOT NULL AND char_length(company_name) >= 2)),
   CONSTRAINT users_business_number_check CHECK (is_business = false OR (is_business = true AND business_number IS NOT NULL AND char_length(business_number) >= 10)),
   CONSTRAINT users_business_type_check CHECK (is_business = false OR (is_business = true AND business_type IS NOT NULL AND char_length(business_type) >= 2))
@@ -134,47 +134,7 @@ CREATE POLICY "Anyone can delete avatars" ON storage.objects
 -- 7. 아바타 관련 유틸리티 함수
 -- ============================================
 
--- 아바타 파일명 생성 함수
-CREATE OR REPLACE FUNCTION generate_avatar_filename(user_id UUID)
-RETURNS TEXT
-LANGUAGE plpgsql
-AS $$
-BEGIN
-  RETURN user_id::text || '/' || extract(epoch from now())::bigint || '.jpg';
-END;
-$$;
-
--- 아바타 URL 생성 함수
-CREATE OR REPLACE FUNCTION get_avatar_public_url(file_path TEXT)
-RETURNS TEXT
-LANGUAGE plpgsql
-AS $$
-DECLARE
-  base_url TEXT;
-BEGIN
-  -- Supabase URL 가져오기 (환경변수 또는 설정에서)
-  base_url := current_setting('app.supabase_url', true);
-  IF base_url IS NULL THEN
-    base_url := 'http://127.0.0.1:54331'; -- 로컬 개발환경 기본값
-  END IF;
-  
-  RETURN base_url || '/storage/v1/object/public/avatars/' || file_path;
-END;
-$$;
-
--- 사용자 아바타 정리 함수 (이전 아바타 파일 삭제)
-CREATE OR REPLACE FUNCTION cleanup_old_avatars(user_id UUID)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  -- 해당 사용자의 이전 아바타 파일들을 storage에서 삭제
-  -- 실제 구현은 애플리케이션 레벨에서 처리하는 것을 권장
-  -- 이 함수는 향후 배치 작업용으로 사용 가능
-  NULL;
-END;
-$$;
+-- Avatar URL 관련 함수들은 제거됨 (전체 URL 직접 저장 방식으로 변경)
 
 -- ============================================
 -- 8. 사용자 관리 유틸리티 함수
@@ -386,8 +346,6 @@ GRANT EXECUTE ON FUNCTION get_user_profile_summary TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION get_user_statistics TO authenticated;
 GRANT EXECUTE ON FUNCTION set_verification_code TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION verify_phone_code TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION generate_avatar_filename TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION get_avatar_public_url TO authenticated, anon;
 
 -- service_role에 모든 권한 부여
 GRANT ALL ON users TO service_role;
