@@ -1,11 +1,17 @@
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useMyServiceRequests } from "@/hooks/service-request/myRequests";
 import { useMyAuctions, useMyBiddings } from "@/hooks/auctions/useMyAuctions";
 import { SimpleRequestCard } from "@/components/service-request/SimpleRequestCard";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
-import { ChevronLeftIcon, EditIcon, Icon } from "@/components/ui/icon";
+import {
+  ChevronLeftIcon,
+  EditIcon,
+  Icon,
+  SettingsIcon,
+} from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
@@ -29,9 +35,12 @@ const MainContent = () => {
 
   // 현재 사용자 정보 확인용
   const { user, isLoggedIn, logout, isLoggingOut } = useAuth();
+  const { isAdmin } = useAdminAuth();
+
   console.log("🔍 My 화면 - 로그인 상태:", isLoggedIn);
   console.log("🔍 My 화면 - 사용자 정보:", user);
   console.log("🔍 My 화면 - 사용자 ID:", user?.id);
+  console.log("🔐 My 화면 - 관리자 권한:", isAdmin);
 
   // 아바타 생성 테스트 (한 번만 실행)
   React.useEffect(() => {
@@ -386,9 +395,19 @@ const MainContent = () => {
             <AvatarBadge />
           </Avatar>
           <VStack space="md" className="flex-1">
-            <Text size="2xl" className="font-roboto text-dark">
-              {user?.name || "사용자"}
-            </Text>
+            <HStack space="sm" className="items-center">
+              <Text size="2xl" className="font-roboto text-dark">
+                {user?.name || "사용자"}
+              </Text>
+              {isAdmin && (
+                <Pressable
+                  onPress={() => router.push("/admin")}
+                  className="bg-orange-500 px-2 py-1 rounded-md"
+                >
+                  <Text className="text-white text-xs font-bold">관리자</Text>
+                </Pressable>
+              )}
+            </HStack>
             {user?.isBusiness && user?.companyName && (
               <Text size="sm" className="text-gray-600 font-medium">
                 🏢 {user.companyName}
