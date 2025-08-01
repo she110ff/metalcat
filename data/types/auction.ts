@@ -308,3 +308,98 @@ export type AuctionItem =
   | MachineryAuctionItem
   | MaterialAuctionItem
   | DemolitionAuctionItem;
+
+// ===== 낙찰/유찰 시스템 타입 =====
+
+// 경매 결과 타입
+export type AuctionResult =
+  | "successful" // 낙찰
+  | "failed" // 유찰
+  | "cancelled" // 취소
+  | null; // 미결정 (진행중)
+
+// 거래 상태 타입
+export type TransactionStatus =
+  | "pending" // 결제 대기
+  | "paid" // 결제 완료
+  | "delivered" // 배송 완료
+  | "completed" // 거래 완료
+  | "failed"; // 거래 실패
+
+// 경매 결과 정보
+export interface AuctionResultInfo {
+  id: string;
+  auctionId: string;
+  result: AuctionResult;
+
+  // 낙찰 정보 (successful인 경우)
+  winningBidId?: string;
+  winningUserId?: string;
+  winningAmount?: number;
+  winningUserName?: string;
+
+  // 처리 정보
+  processedAt: Date;
+  paymentDeadline?: Date;
+
+  // 메타데이터
+  metadata?: {
+    reason?: "no_bids" | "below_starting_price" | "unknown";
+    sellerId?: string;
+    processingTime?: Date;
+    [key: string]: any;
+  };
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 거래/결제 정보
+export interface TransactionInfo {
+  id: string;
+  auctionResultId: string;
+  transactionStatus: TransactionStatus;
+
+  // 결제 정보
+  paymentMethod?: string;
+  paymentConfirmedAt?: Date;
+  paymentAmount?: number;
+
+  // 배송/거래 정보
+  deliveryStatus: string;
+  deliveryScheduledAt?: Date;
+  deliveryCompletedAt?: Date;
+
+  // 연락처 정보
+  contactInfo?: {
+    phone?: string;
+    email?: string;
+    address?: AddressInfo;
+    [key: string]: any;
+  };
+
+  // 기타
+  notes?: string;
+  metadata?: Record<string, any>;
+
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 내 경매 결과 (마이페이지용)
+export interface MyAuctionResult {
+  auction: AuctionItem;
+  result: AuctionResultInfo;
+  transaction?: TransactionInfo;
+  isWinner: boolean;
+  isSeller: boolean;
+}
+
+// 경매 통계 타입
+export interface AuctionStats {
+  todayProcessed: number;
+  todaySuccessful: number;
+  todayFailed: number;
+  thisWeekProcessed: number;
+  successRate: number;
+}

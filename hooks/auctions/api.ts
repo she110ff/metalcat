@@ -1064,6 +1064,348 @@ export async function getMyBiddings(userId: string): Promise<AuctionItem[]> {
   }
 }
 
+// ========================================
+// 낙찰/유찰 시스템 API 함수들
+// ========================================
+
+import type {
+  AuctionResultInfo,
+  TransactionInfo,
+  AuctionStats,
+  MyAuctionResult,
+  AuctionResult,
+  TransactionStatus,
+} from "@/data/types/auction";
+
+/**
+ * 데이터베이스 결과를 AuctionResultInfo로 변환
+ */
+function transformAuctionResultRow(row: any): AuctionResultInfo {
+  return {
+    id: row.id,
+    auctionId: row.auction_id,
+    result: row.result_type as AuctionResult,
+    winningBidId: row.winning_bid_id,
+    winningUserId: row.winning_user_id,
+    winningAmount: row.winning_amount
+      ? parseFloat(row.winning_amount)
+      : undefined,
+    winningUserName: row.metadata?.winning_user_name,
+    processedAt: new Date(row.processed_at),
+    paymentDeadline: row.payment_deadline
+      ? new Date(row.payment_deadline)
+      : undefined,
+    metadata: row.metadata || {},
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+/**
+ * 데이터베이스 결과를 TransactionInfo로 변환
+ */
+function transformTransactionRow(row: any): TransactionInfo {
+  return {
+    id: row.id,
+    auctionResultId: row.auction_result_id,
+    transactionStatus: row.transaction_status as TransactionStatus,
+    paymentMethod: row.payment_method,
+    paymentConfirmedAt: row.payment_confirmed_at
+      ? new Date(row.payment_confirmed_at)
+      : undefined,
+    paymentAmount: row.payment_amount
+      ? parseFloat(row.payment_amount)
+      : undefined,
+    deliveryStatus: row.delivery_status || "pending",
+    deliveryScheduledAt: row.delivery_scheduled_at
+      ? new Date(row.delivery_scheduled_at)
+      : undefined,
+    deliveryCompletedAt: row.delivery_completed_at
+      ? new Date(row.delivery_completed_at)
+      : undefined,
+    contactInfo: row.contact_info || {},
+    notes: row.notes,
+    metadata: row.metadata || {},
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+/**
+ * 경매 결과 조회
+ */
+export async function getAuctionResult(
+  auctionId: string
+): Promise<AuctionResultInfo | null> {
+  try {
+    console.log("🔍 [Auction Result API] getAuctionResult 호출:", auctionId);
+
+    const { data: result, error } = await supabase
+      .from("auction_results")
+      .select("*")
+      .eq("auction_id", auctionId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        // 데이터가 없는 경우 (아직 경매가 끝나지 않았거나 결과 처리 중)
+        console.log("📋 경매 결과 없음:", auctionId);
+        return null;
+      }
+      handleSupabaseError(error, "경매 결과 조회");
+    }
+
+    if (!result) {
+      return null;
+    }
+
+    const transformedResult = transformAuctionResultRow(result);
+
+    console.log("✅ [Auction Result API] 경매 결과 조회 성공:", {
+      auctionId,
+      result: transformedResult.result,
+      winningAmount: transformedResult.winningAmount,
+    });
+
+    return transformedResult;
+  } catch (error) {
+    console.error("경매 결과 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 거래 정보 조회
+ */
+export async function getAuctionTransaction(
+  auctionResultId: string
+): Promise<TransactionInfo | null> {
+  try {
+    console.log(
+      "🔍 [Transaction API] getAuctionTransaction 호출:",
+      auctionResultId
+    );
+
+    const { data: transaction, error } = await supabase
+      .from("auction_transactions")
+      .select("*")
+      .eq("auction_result_id", auctionResultId)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        console.log("📋 거래 정보 없음:", auctionResultId);
+        return null;
+      }
+      handleSupabaseError(error, "거래 정보 조회");
+    }
+
+    if (!transaction) {
+      return null;
+    }
+
+    const transformedTransaction = transformTransactionRow(transaction);
+
+    console.log("✅ [Transaction API] 거래 정보 조회 성공:", {
+      auctionResultId,
+      status: transformedTransaction.transactionStatus,
+    });
+
+    return transformedTransaction;
+  } catch (error) {
+    console.error("거래 정보 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 내 경매 결과 목록 조회 (마이페이지용)
+ */
+export async function getMyAuctionResults(
+  type: "won" | "sold" | "bidding",
+  userId?: string
+): Promise<MyAuctionResult[]> {
+  try {
+    if (!userId) {
+      const currentUser = await getCurrentUser();
+      if (!currentUser) {
+        throw new Error("로그인이 필요합니다.");
+      }
+      userId = currentUser.id;
+    }
+
+    console.log("🔍 [My Auction Results API] 호출:", { type, userId });
+
+    let query;
+
+    if (type === "won") {
+      // 낙찰받은 경매들
+      query = supabase
+        .from("auction_results")
+        .select(
+          `
+          *,
+          auctions:auction_id (
+            *,
+            auction_photos (*)
+          ),
+          auction_transactions (*)
+        `
+        )
+        .eq("winning_user_id", userId)
+        .eq("result_type", "successful")
+        .order("processed_at", { ascending: false });
+    } else if (type === "sold") {
+      // 판매한 경매들 (결과가 있는 것만)
+      query = supabase
+        .from("auction_results")
+        .select(
+          `
+          *,
+          auctions:auction_id (
+            *,
+            auction_photos (*)
+          ),
+          auction_transactions (*)
+        `
+        )
+        .eq("auctions.user_id", userId)
+        .order("processed_at", { ascending: false });
+    } else {
+      // 참여중인 경매들 (아직 결과가 없는 것)
+      query = supabase
+        .from("auction_bids")
+        .select(
+          `
+          auction_id,
+          auctions:auction_id (
+            *,
+            auction_photos (*)
+          )
+        `
+        )
+        .eq("user_id", userId)
+        .eq("auctions.status", "active")
+        .order("bid_time", { ascending: false });
+    }
+
+    const { data: results, error } = await query;
+
+    if (error) {
+      handleSupabaseError(error, `내 경매 결과 조회 (${type})`);
+    }
+
+    if (!results || results.length === 0) {
+      return [];
+    }
+
+    // type === 'bidding'인 경우 다른 변환 로직
+    if (type === "bidding") {
+      const myAuctionResults: MyAuctionResult[] = results
+        .filter((item: any) => item.auctions) // auctions 데이터가 있는 것만
+        .map((item: any) => {
+          const auction = transformViewRowToAuctionItem({
+            ...item.auctions,
+            photos: item.auctions.auction_photos || [],
+          });
+
+          return {
+            auction,
+            result: {
+              id: "",
+              auctionId: auction.id,
+              result: null,
+              processedAt: new Date(),
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            } as AuctionResultInfo,
+            isWinner: false,
+            isSeller: false,
+          };
+        });
+
+      return myAuctionResults;
+    }
+
+    // won, sold인 경우
+    const myAuctionResults: MyAuctionResult[] = results
+      .filter((item: any) => item.auctions) // auctions 데이터가 있는 것만
+      .map((item: any) => {
+        const result = transformAuctionResultRow(item);
+        const auction = transformViewRowToAuctionItem({
+          ...item.auctions,
+          photos: item.auctions.auction_photos || [],
+        });
+
+        const transaction = item.auction_transactions?.[0]
+          ? transformTransactionRow(item.auction_transactions[0])
+          : undefined;
+
+        return {
+          auction,
+          result,
+          transaction,
+          isWinner: type === "won",
+          isSeller: type === "sold",
+        };
+      });
+
+    console.log("✅ [My Auction Results API] 조회 성공:", {
+      type,
+      userId,
+      count: myAuctionResults.length,
+    });
+
+    return myAuctionResults;
+  } catch (error) {
+    console.error(`내 경매 결과 조회 실패 (${type}):`, error);
+    throw error;
+  }
+}
+
+/**
+ * 경매 통계 조회
+ */
+export async function getAuctionStats(): Promise<AuctionStats> {
+  try {
+    console.log("🔍 [Auction Stats API] 통계 조회 호출");
+
+    const { data: stats, error } = await (supabase as any).rpc(
+      "get_auction_processing_stats"
+    );
+
+    if (error) {
+      handleSupabaseError(error, "경매 통계 조회");
+    }
+
+    if (!stats || stats.length === 0) {
+      return {
+        todayProcessed: 0,
+        todaySuccessful: 0,
+        todayFailed: 0,
+        thisWeekProcessed: 0,
+        successRate: 0,
+      };
+    }
+
+    const stat = stats[0];
+    const transformedStats: AuctionStats = {
+      todayProcessed: stat.today_processed || 0,
+      todaySuccessful: stat.today_successful || 0,
+      todayFailed: stat.today_failed || 0,
+      thisWeekProcessed: stat.this_week_processed || 0,
+      successRate: parseFloat(stat.success_rate) || 0,
+    };
+
+    console.log("✅ [Auction Stats API] 통계 조회 성공:", transformedStats);
+
+    return transformedStats;
+  } catch (error) {
+    console.error("경매 통계 조회 실패:", error);
+    throw error;
+  }
+}
+
 // 기존 auctionAPI 인터페이스와 동일한 구조로 내보내기
 export const auctionAPI = {
   getAuctions,
@@ -1075,4 +1417,9 @@ export const auctionAPI = {
   getBids,
   getMyAuctions,
   getMyBiddings,
+  // 새로운 낙찰/유찰 관련 함수들
+  getAuctionResult,
+  getAuctionTransaction,
+  getMyAuctionResults,
+  getAuctionStats,
 } as const;

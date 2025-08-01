@@ -4,6 +4,10 @@ import {
   type AuctionCategory,
   type ScrapAuctionFormData,
   type BidInfo,
+  type AuctionResultInfo,
+  type TransactionInfo,
+  type MyAuctionResult,
+  type AuctionStats,
 } from "@/data/types/auction";
 import { auctionAPI } from "./auctions/api";
 
@@ -21,6 +25,15 @@ export const auctionKeys = {
   myAuctions: (userId: string) => [...auctionKeys.all, "my", userId] as const,
   bids: (auctionId: string) =>
     [...auctionKeys.detail(auctionId), "bids"] as const,
+  // 낙찰/유찰 시스템 관련 키
+  results: () => [...auctionKeys.all, "results"] as const,
+  result: (auctionId: string) => [...auctionKeys.results(), auctionId] as const,
+  transactions: () => [...auctionKeys.all, "transactions"] as const,
+  transaction: (resultId: string) =>
+    [...auctionKeys.transactions(), resultId] as const,
+  myResults: (userId: string, type: "won" | "sold" | "bidding") =>
+    [...auctionKeys.all, "my-results", userId, type] as const,
+  stats: () => [...auctionKeys.all, "stats"] as const,
 };
 
 // Supabase 기반 API 사용 (기존 인터페이스 완전 호환)
@@ -231,4 +244,118 @@ export const useBids = (auctionId: string) => {
     enabled: !!auctionId,
     staleTime: 30 * 1000, // 30초
   });
+};
+
+// ========================================
+// 낙찰/유찰 시스템 훅들
+// ========================================
+
+/**
+ * 경매 결과 조회 훅
+ */
+export const useAuctionResult = (auctionId: string) => {
+  return useQuery({
+    queryKey: auctionKeys.result(auctionId),
+    queryFn: () => auctionAPI.getAuctionResult(auctionId),
+    enabled: !!auctionId,
+    staleTime: 1 * 60 * 1000, // 1분 (결과는 변경되지 않으므로 길게 설정)
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * 거래 정보 조회 훅
+ */
+export const useAuctionTransaction = (auctionResultId: string) => {
+  return useQuery({
+    queryKey: auctionKeys.transaction(auctionResultId),
+    queryFn: () => auctionAPI.getAuctionTransaction(auctionResultId),
+    enabled: !!auctionResultId,
+    staleTime: 30 * 1000, // 30초 (거래 상태는 자주 변경될 수 있음)
+  });
+};
+
+/**
+ * 내 경매 결과 목록 조회 훅
+ */
+export const useMyAuctionResults = (
+  type: "won" | "sold" | "bidding",
+  userId?: string
+) => {
+  return useQuery({
+    queryKey: auctionKeys.myResults(userId || "unknown", type),
+    queryFn: () => auctionAPI.getMyAuctionResults(type, userId),
+    enabled: !!userId || type === "bidding", // bidding의 경우 내부에서 현재 사용자 조회
+    staleTime: 2 * 60 * 1000, // 2분
+  });
+};
+
+/**
+ * 경매 통계 조회 훅
+ */
+export const useAuctionStats = () => {
+  return useQuery({
+    queryKey: auctionKeys.stats(),
+    queryFn: () => auctionAPI.getAuctionStats(),
+    staleTime: 5 * 60 * 1000, // 5분 (통계는 자주 변경되지 않음)
+    refetchInterval: 5 * 60 * 1000, // 5분마다 자동 갱신
+  });
+};
+
+/**
+ * 경매 결과와 거래 정보를 함께 조회하는 조합 훅
+ */
+export const useAuctionResultWithTransaction = (auctionId: string) => {
+  const resultQuery = useAuctionResult(auctionId);
+  const transactionQuery = useAuctionTransaction(resultQuery.data?.id || "");
+
+  return {
+    result: resultQuery.data,
+    transaction: transactionQuery.data,
+    isLoading: resultQuery.isLoading || transactionQuery.isLoading,
+    error: resultQuery.error || transactionQuery.error,
+    isSuccess: resultQuery.isSuccess && transactionQuery.isSuccess,
+  };
+};
+
+/**
+ * 경매 결과 캐시 무효화 유틸리티
+ */
+export const useInvalidateAuctionResult = () => {
+  const queryClient = useQueryClient();
+
+  return {
+    invalidateResult: (auctionId: string) => {
+      queryClient.invalidateQueries({
+        queryKey: auctionKeys.result(auctionId),
+      });
+    },
+    invalidateTransaction: (resultId: string) => {
+      queryClient.invalidateQueries({
+        queryKey: auctionKeys.transaction(resultId),
+      });
+    },
+    invalidateMyResults: (
+      userId: string,
+      type?: "won" | "sold" | "bidding"
+    ) => {
+      if (type) {
+        queryClient.invalidateQueries({
+          queryKey: auctionKeys.myResults(userId, type),
+        });
+      } else {
+        // 모든 타입 무효화
+        ["won", "sold", "bidding"].forEach((t) => {
+          queryClient.invalidateQueries({
+            queryKey: auctionKeys.myResults(userId, t as any),
+          });
+        });
+      }
+    },
+    invalidateStats: () => {
+      queryClient.invalidateQueries({
+        queryKey: auctionKeys.stats(),
+      });
+    },
+  };
 };
