@@ -1,0 +1,1159 @@
+-- ============================================
+-- 경매 시스템 통합 마이그레이션
+-- 생성일: 2025-02-01
+-- 목적: 카테고리별 경매, 입찰, 결과 처리, 자동화 전체 시스템
+-- ============================================
+
+-- ============================================
+-- 1. 열거형 타입 정의
+-- ============================================
+CREATE TYPE auction_category_enum AS ENUM ('scrap', 'machinery', 'materials', 'demolition');
+CREATE TYPE auction_status_enum AS ENUM ('active', 'ending', 'ended', 'cancelled');
+CREATE TYPE transaction_type_enum AS ENUM ('normal', 'urgent');
+CREATE TYPE auction_result_enum AS ENUM ('successful', 'failed', 'cancelled');
+CREATE TYPE transaction_status_enum AS ENUM ('pending', 'paid', 'delivered', 'completed', 'failed');
+
+-- ============================================
+-- 2. 기존 테이블 정리 (필요시)
+-- ============================================
+DROP TABLE IF EXISTS auction_bids CASCADE;
+DROP TABLE IF EXISTS auction_photos CASCADE; 
+DROP TABLE IF EXISTS auctions CASCADE;
+DROP TABLE IF EXISTS auction_results CASCADE;
+DROP TABLE IF EXISTS auction_transactions CASCADE;
+
+-- ============================================
+-- 3. 공통 경매 테이블 (핵심 정보)
+-- ============================================
+CREATE TABLE auctions (
+  id TEXT PRIMARY KEY DEFAULT 'auction_' || floor(extract(epoch from now()) * 1000) || '_' || substr(gen_random_uuid()::text, 1, 8),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  
+  -- 기본 정보
+  title VARCHAR(200) NOT NULL,
+  description TEXT NOT NULL,
+  auction_category auction_category_enum NOT NULL,
+  transaction_type transaction_type_enum NOT NULL DEFAULT 'normal',
+  
+  -- 공통 가격 정보
+  current_bid DECIMAL(15,2) DEFAULT 0,
+  starting_price DECIMAL(15,2) DEFAULT 0,
+  total_bid_amount DECIMAL(15,2) DEFAULT 0,
+  
+  -- 공통 상태
+  status auction_status_enum DEFAULT 'active',
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  
+  -- 공통 통계
+  bidder_count INTEGER DEFAULT 0,
+  view_count INTEGER DEFAULT 0,
+  
+  -- 공통 주소 (모든 카테고리 공통)
+  address_info JSONB NOT NULL,
+  
+  -- 공통 시간
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 4. 카테고리별 전용 테이블들
+-- ============================================
+
+-- 고철 전용 테이블 
+CREATE TABLE scrap_auctions (
+  auction_id TEXT PRIMARY KEY REFERENCES auctions(id) ON DELETE CASCADE,
+  
+  -- 고철 특화 정보
+  product_type JSONB NOT NULL, -- ScrapProductType
+  weight_kg DECIMAL(10,2) NOT NULL,
+  weight_unit VARCHAR(10) DEFAULT 'kg',
+  price_per_unit DECIMAL(10,2), -- 원/kg
+  
+  -- 판매 환경 (고철 특화)
+  sales_environment JSONB NOT NULL, -- SalesEnvironment
+  special_notes TEXT,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 중고기계 전용 테이블  
+CREATE TABLE machinery_auctions (
+  auction_id TEXT PRIMARY KEY REFERENCES auctions(id) ON DELETE CASCADE,
+  
+  -- 기계 특화 정보
+  product_type JSONB NOT NULL, -- MachineryProductType
+  product_name VARCHAR(200) NOT NULL,
+  manufacturer VARCHAR(100),
+  model_name VARCHAR(100),
+  manufacturing_date DATE,
+  
+  -- 수량 정보
+  quantity INTEGER NOT NULL,
+  quantity_unit VARCHAR(10) DEFAULT '대',
+  
+  -- 가격 정보
+  desired_price DECIMAL(15,2) NOT NULL,
+  
+  -- 판매 환경 (기계 특화)
+  sales_environment JSONB NOT NULL,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 중고자재 전용 테이블
+CREATE TABLE materials_auctions (
+  auction_id TEXT PRIMARY KEY REFERENCES auctions(id) ON DELETE CASCADE,
+  
+  -- 자재 특화 정보
+  product_type JSONB NOT NULL, -- MaterialProductType
+  quantity INTEGER NOT NULL,
+  quantity_unit VARCHAR(20) NOT NULL,
+  
+  -- 가격 정보
+  desired_price DECIMAL(15,2) NOT NULL,
+  
+  -- 판매 환경 (자재 특화)
+  sales_environment JSONB NOT NULL,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 철거 전용 테이블
+CREATE TABLE demolition_auctions (
+  auction_id TEXT PRIMARY KEY REFERENCES auctions(id) ON DELETE CASCADE,
+  
+  -- 철거 특화 정보
+  product_type JSONB NOT NULL, -- DemolitionProductType
+  demolition_area DECIMAL(10,2) NOT NULL,
+  area_unit VARCHAR(10) NOT NULL, -- 'sqm' or 'pyeong'
+  price_per_unit DECIMAL(10,2), -- 원/평
+  
+  -- 철거 세부 정보 (DemolitionInfo)
+  building_purpose VARCHAR(20) NOT NULL, -- 'residential', 'commercial', 'public'
+  demolition_method VARCHAR(20) NOT NULL, -- 'full', 'partial', 'interior'  
+  structure_type VARCHAR(30) NOT NULL, -- 'masonry', 'reinforced-concrete', 'steel-frame'
+  waste_disposal VARCHAR(20) NOT NULL, -- 'self', 'company'
+  floor_count INTEGER NOT NULL,
+  
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 5. 공통 테이블들 (입찰, 사진)
+-- ============================================
+
+-- 경매 사진 테이블
+CREATE TABLE auction_photos (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_id TEXT NOT NULL REFERENCES auctions(id) ON DELETE CASCADE,
+  photo_url TEXT NOT NULL,
+  photo_type VARCHAR(20) DEFAULT 'full', -- 'full', 'closeup', 'detail'
+  photo_order INTEGER DEFAULT 0,
+  is_representative BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 입찰 테이블
+CREATE TABLE auction_bids (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_id TEXT NOT NULL REFERENCES auctions(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_name VARCHAR(100) NOT NULL,
+  amount DECIMAL(15,2) NOT NULL,
+  price_per_unit DECIMAL(10,2),
+  location VARCHAR(200) NOT NULL,
+  bid_time TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  is_top_bid BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 6. 경매 결과 시스템
+-- ============================================
+
+-- 경매 결과 테이블
+CREATE TABLE auction_results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_id TEXT NOT NULL REFERENCES auctions(id) ON DELETE CASCADE,
+  result_type auction_result_enum NOT NULL,
+  
+  -- 낙찰 정보 (successful인 경우)
+  winning_bid_id UUID REFERENCES auction_bids(id),
+  winning_user_id UUID REFERENCES users(id),
+  winning_amount DECIMAL(15,2),
+  
+  -- 처리 정보
+  processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  payment_deadline TIMESTAMP WITH TIME ZONE,
+  
+  -- 메타데이터
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  
+  -- 제약 조건
+  CONSTRAINT valid_successful_result CHECK (
+    (result_type = 'successful' AND winning_bid_id IS NOT NULL AND winning_user_id IS NOT NULL AND winning_amount IS NOT NULL)
+    OR result_type != 'successful'
+  )
+);
+
+-- 거래/결제 추적 테이블
+CREATE TABLE auction_transactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  auction_result_id UUID NOT NULL REFERENCES auction_results(id) ON DELETE CASCADE,
+  transaction_status transaction_status_enum DEFAULT 'pending',
+  
+  -- 결제 정보
+  payment_method VARCHAR(50),
+  payment_confirmed_at TIMESTAMP WITH TIME ZONE,
+  payment_amount DECIMAL(15,2),
+  
+  -- 배송/거래 정보
+  delivery_status VARCHAR(50) DEFAULT 'pending',
+  delivery_scheduled_at TIMESTAMP WITH TIME ZONE,
+  delivery_completed_at TIMESTAMP WITH TIME ZONE,
+  
+  -- 연락처 정보
+  contact_info JSONB DEFAULT '{}',
+  
+  -- 메타데이터
+  notes TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================
+-- 7. 인덱스 최적화
+-- ============================================
+
+-- 공통 인덱스
+CREATE INDEX idx_auctions_category ON auctions(auction_category);
+CREATE INDEX idx_auctions_status ON auctions(status);
+CREATE INDEX idx_auctions_user_id ON auctions(user_id);
+CREATE INDEX idx_auctions_end_time ON auctions(end_time);
+CREATE INDEX idx_auctions_created_at ON auctions(created_at);
+
+-- 카테고리별 인덱스
+CREATE INDEX idx_scrap_auctions_weight ON scrap_auctions(weight_kg);
+CREATE INDEX idx_machinery_auctions_product_name ON machinery_auctions(product_name);
+CREATE INDEX idx_materials_auctions_quantity ON materials_auctions(quantity);
+CREATE INDEX idx_demolition_auctions_area ON demolition_auctions(demolition_area);
+
+-- 사진 및 입찰 인덱스
+CREATE INDEX idx_auction_photos_auction_id ON auction_photos(auction_id);
+CREATE INDEX idx_auction_photos_order ON auction_photos(auction_id, photo_order);
+CREATE INDEX idx_auction_photos_representative ON auction_photos(auction_id, is_representative);
+CREATE INDEX idx_auction_bids_auction_id ON auction_bids(auction_id);
+CREATE INDEX idx_auction_bids_amount ON auction_bids(auction_id, amount DESC);
+CREATE INDEX idx_auction_bids_user_id ON auction_bids(user_id);
+
+-- 결과 시스템 인덱스
+CREATE INDEX idx_auction_results_auction_id ON auction_results(auction_id);
+CREATE INDEX idx_auction_results_type ON auction_results(result_type);
+CREATE INDEX idx_auction_results_processed_at ON auction_results(processed_at);
+CREATE INDEX idx_auction_results_winning_user ON auction_results(winning_user_id);
+
+CREATE INDEX idx_auction_transactions_result_id ON auction_transactions(auction_result_id);
+CREATE INDEX idx_auction_transactions_status ON auction_transactions(transaction_status);
+CREATE INDEX idx_auction_transactions_payment_deadline ON auction_transactions(auction_result_id) 
+  WHERE transaction_status = 'pending';
+
+-- ============================================
+-- 8. Storage 버킷 설정 (auction-photos)
+-- ============================================
+
+-- auction-photos 버킷 생성
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'auction-photos',
+  'auction-photos',
+  true,
+  10485760, -- 10MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
+)
+ON CONFLICT (id) 
+DO UPDATE SET
+  public = true,
+  file_size_limit = 10485760,
+  allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[];
+
+-- ============================================
+-- 9. RLS 정책 설정
+-- ============================================
+
+-- 공통 경매 정책
+ALTER TABLE auctions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view auctions" ON auctions
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can create their own auctions" ON auctions
+    FOR INSERT WITH CHECK (user_id IN (SELECT id FROM users));
+
+CREATE POLICY "Users can update their own auctions" ON auctions
+    FOR UPDATE USING (user_id IN (SELECT id FROM users));
+
+CREATE POLICY "Users can delete their own auctions" ON auctions
+    FOR DELETE USING (user_id IN (SELECT id FROM users));
+
+-- 카테고리별 정책들
+ALTER TABLE scrap_auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE machinery_auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE materials_auctions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE demolition_auctions ENABLE ROW LEVEL SECURITY;
+
+-- 카테고리별 테이블들은 부모 경매의 소유권을 따름
+CREATE POLICY "Scrap auctions follow parent auction policy" ON scrap_auctions
+    FOR ALL USING (
+        auction_id IN (
+            SELECT id FROM auctions WHERE user_id IN (SELECT id FROM users)
+        )
+    );
+
+CREATE POLICY "Machinery auctions follow parent auction policy" ON machinery_auctions
+    FOR ALL USING (
+        auction_id IN (
+            SELECT id FROM auctions WHERE user_id IN (SELECT id FROM users)
+        )
+    );
+
+CREATE POLICY "Materials auctions follow parent auction policy" ON materials_auctions
+    FOR ALL USING (
+        auction_id IN (
+            SELECT id FROM auctions WHERE user_id IN (SELECT id FROM users)
+        )
+    );
+
+CREATE POLICY "Demolition auctions follow parent auction policy" ON demolition_auctions
+    FOR ALL USING (
+        auction_id IN (
+            SELECT id FROM auctions WHERE user_id IN (SELECT id FROM users)
+        )
+    );
+
+-- 사진 및 입찰 정책
+ALTER TABLE auction_photos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auction_bids ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view auction photos" ON auction_photos
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can manage photos of their auctions" ON auction_photos
+    FOR ALL USING (
+        auction_id IN (
+            SELECT id FROM auctions WHERE user_id IN (SELECT id FROM users)
+        )
+    );
+
+CREATE POLICY "Anyone can view auction bids" ON auction_bids
+    FOR SELECT USING (true);
+
+-- 입찰 정책 (자기 입찰 방지는 애플리케이션 레벨에서 처리)
+CREATE POLICY "basic_bid_policy" ON auction_bids
+  FOR INSERT
+  WITH CHECK (
+    user_id IS NOT NULL 
+    AND auction_id IS NOT NULL
+    AND amount > 0
+  );
+
+-- 경매 결과 및 거래 정책
+ALTER TABLE auction_results ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auction_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view auction results" ON auction_results
+    FOR SELECT USING (true);
+
+CREATE POLICY "Users can view their transactions" ON auction_transactions
+    FOR SELECT USING (
+      auction_result_id IN (
+        SELECT ar.id FROM auction_results ar
+        JOIN auctions a ON ar.auction_id = a.id
+        WHERE a.user_id IN (SELECT id FROM users)
+        OR ar.winning_user_id IN (SELECT id FROM users)
+      )
+    );
+
+-- Storage 정책
+CREATE POLICY "Anyone can view auction photos" ON storage.objects
+  FOR SELECT USING (bucket_id = 'auction-photos');
+
+CREATE POLICY "Anyone can upload auction photos" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'auction-photos');
+
+CREATE POLICY "Anyone can update auction photos" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'auction-photos');
+
+CREATE POLICY "Anyone can delete auction photos" ON storage.objects
+  FOR DELETE USING (bucket_id = 'auction-photos');
+
+-- ============================================
+-- 10. 자기 입찰 방지 시스템
+-- ============================================
+
+-- 테이블 소유자도 RLS를 따르도록 강제 설정
+ALTER TABLE auction_bids FORCE ROW LEVEL SECURITY;
+
+-- 커스텀 인증용 현재 사용자 ID 설정 함수
+CREATE OR REPLACE FUNCTION set_current_user_id(user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  PERFORM set_config('app.current_user_id', user_id::text, true);
+END;
+$$;
+
+-- 현재 사용자 ID 조회 함수 (디버깅용)
+CREATE OR REPLACE FUNCTION get_current_user_id()
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN current_setting('app.current_user_id', true)::uuid;
+EXCEPTION
+  WHEN OTHERS THEN
+    RETURN NULL;
+END;
+$$;
+
+-- 자신의 경매에 대한 입찰 위반 사례 확인 함수
+CREATE OR REPLACE FUNCTION check_self_bidding_violations()
+RETURNS TABLE (
+  auction_id text,
+  auction_title varchar(200),
+  bidder_id text,
+  bidder_name varchar(100),
+  amount numeric(15,2),
+  bid_time timestamptz
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    a.id::text,
+    a.title,
+    ab.user_id::text,
+    ab.user_name,
+    ab.amount,
+    ab.bid_time
+  FROM auction_bids ab
+  INNER JOIN auctions a ON ab.auction_id = a.id
+  WHERE a.user_id = ab.user_id -- 경매 소유자와 입찰자가 같은 경우
+  ORDER BY ab.bid_time DESC;
+END;
+$$;
+
+-- ============================================
+-- 11. 트리거 함수들
+-- ============================================
+
+-- 경매 업데이트 시간 자동 갱신
+CREATE OR REPLACE FUNCTION update_auction_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 입찰시 경매 정보 자동 업데이트
+CREATE OR REPLACE FUNCTION update_auction_on_bid()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- 경매의 현재 입찰가와 입찰자 수 업데이트
+  UPDATE auctions 
+  SET 
+    current_bid = NEW.amount,
+    total_bid_amount = NEW.amount,
+    bidder_count = (
+      SELECT COUNT(DISTINCT user_id) 
+      FROM auction_bids 
+      WHERE auction_id = NEW.auction_id
+    ),
+    updated_at = NOW()
+  WHERE id = NEW.auction_id;
+  
+  -- 이전 최고 입찰을 false로 변경
+  UPDATE auction_bids 
+  SET is_top_bid = false 
+  WHERE auction_id = NEW.auction_id AND id != NEW.id;
+  
+  -- 새 입찰을 최고 입찰로 설정
+  NEW.is_top_bid = true;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 자동 업데이트 트리거들
+CREATE OR REPLACE FUNCTION update_auction_result_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_auction_transaction_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 결제 기한 자동 설정 트리거
+CREATE OR REPLACE FUNCTION set_payment_deadline()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- 낙찰된 경우 3일 후로 결제 기한 설정
+  IF NEW.result_type = 'successful' THEN
+    NEW.payment_deadline = NEW.processed_at + INTERVAL '3 days';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 거래 레코드 자동 생성 트리거
+CREATE OR REPLACE FUNCTION create_transaction_record()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- 낙찰된 경우 거래 레코드 자동 생성
+  IF NEW.result_type = 'successful' THEN
+    INSERT INTO auction_transactions (
+      auction_result_id,
+      transaction_status,
+      payment_amount
+    ) VALUES (
+      NEW.id,
+      'pending',
+      NEW.winning_amount
+    );
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- 12. 트리거 생성
+-- ============================================
+
+CREATE TRIGGER trigger_update_auction_updated_at
+  BEFORE UPDATE ON auctions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_auction_updated_at();
+
+CREATE TRIGGER trigger_update_auction_on_bid
+  BEFORE INSERT ON auction_bids
+  FOR EACH ROW
+  EXECUTE FUNCTION update_auction_on_bid();
+
+CREATE TRIGGER trigger_update_auction_result_updated_at
+  BEFORE UPDATE ON auction_results
+  FOR EACH ROW
+  EXECUTE FUNCTION update_auction_result_updated_at();
+
+CREATE TRIGGER trigger_update_auction_transaction_updated_at
+  BEFORE UPDATE ON auction_transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_auction_transaction_updated_at();
+
+CREATE TRIGGER trigger_set_payment_deadline
+  BEFORE INSERT ON auction_results
+  FOR EACH ROW
+  EXECUTE FUNCTION set_payment_deadline();
+
+CREATE TRIGGER trigger_create_transaction_record
+  AFTER INSERT ON auction_results
+  FOR EACH ROW
+  EXECUTE FUNCTION create_transaction_record();
+
+-- ============================================
+-- 13. 통합 뷰 (기존 API 호환성)
+-- ============================================
+CREATE VIEW auction_list_view AS
+SELECT 
+  -- 공통 정보
+  a.id,
+  a.user_id,
+  a.title,
+  a.description,
+  a.auction_category,
+  a.transaction_type,
+  a.current_bid,
+  a.starting_price,
+  a.total_bid_amount,
+  a.status,
+  a.end_time,
+  a.bidder_count,
+  a.view_count,
+  a.address_info,
+  a.created_at,
+  a.updated_at,
+  
+  -- 카테고리별 특화 정보 통합
+  CASE 
+    WHEN a.auction_category = 'scrap' THEN 
+      json_build_object(
+        'productType', s.product_type,
+        'weightKg', s.weight_kg,
+        'weightUnit', s.weight_unit,
+        'pricePerUnit', s.price_per_unit,
+        'salesEnvironment', s.sales_environment,
+        'specialNotes', s.special_notes,
+        'quantity', json_build_object('quantity', s.weight_kg, 'unit', s.weight_unit)
+      )
+    WHEN a.auction_category = 'machinery' THEN
+      json_build_object(
+        'productType', m.product_type,
+        'productName', m.product_name,
+        'manufacturer', m.manufacturer,
+        'modelName', m.model_name,
+        'manufacturingDate', m.manufacturing_date,
+        'quantity', json_build_object('quantity', m.quantity, 'unit', m.quantity_unit),
+        'desiredPrice', m.desired_price,
+        'salesEnvironment', m.sales_environment
+      )
+    WHEN a.auction_category = 'materials' THEN
+      json_build_object(
+        'productType', mt.product_type,
+        'quantity', json_build_object('quantity', mt.quantity, 'unit', mt.quantity_unit),
+        'desiredPrice', mt.desired_price,
+        'salesEnvironment', mt.sales_environment
+      )
+    WHEN a.auction_category = 'demolition' THEN
+      json_build_object(
+        'productType', d.product_type,
+        'demolitionArea', d.demolition_area,
+        'areaUnit', d.area_unit,
+        'pricePerUnit', d.price_per_unit,
+        'quantity', json_build_object('quantity', d.demolition_area, 'unit', d.area_unit),
+        'demolitionInfo', json_build_object(
+          'buildingPurpose', d.building_purpose,
+          'demolitionMethod', d.demolition_method,
+          'structureType', d.structure_type,
+          'wasteDisposal', d.waste_disposal,
+          'floorCount', d.floor_count
+        )
+      )
+  END as category_details,
+  
+  -- 서브쿼리로 사진과 입찰 정보 포함
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', ap.id,
+        'photo_url', ap.photo_url,
+        'photo_type', ap.photo_type,
+        'photo_order', ap.photo_order,
+        'is_representative', ap.is_representative
+      ) ORDER BY ap.photo_order
+    )
+    FROM auction_photos ap 
+    WHERE ap.auction_id = a.id
+  ) as auction_photos,
+  
+  (
+    SELECT json_agg(
+      json_build_object(
+        'id', ab.id,
+        'user_id', ab.user_id,
+        'user_name', ab.user_name,
+        'amount', ab.amount,
+        'price_per_unit', ab.price_per_unit,
+        'location', ab.location,
+        'bid_time', ab.bid_time,
+        'is_top_bid', ab.is_top_bid,
+        'created_at', ab.created_at
+      ) ORDER BY ab.amount DESC
+    )
+    FROM auction_bids ab 
+    WHERE ab.auction_id = a.id
+  ) as auction_bids
+  
+FROM auctions a
+LEFT JOIN scrap_auctions s ON a.id = s.auction_id AND a.auction_category = 'scrap'
+LEFT JOIN machinery_auctions m ON a.id = m.auction_id AND a.auction_category = 'machinery'
+LEFT JOIN materials_auctions mt ON a.id = mt.auction_id AND a.auction_category = 'materials'
+LEFT JOIN demolition_auctions d ON a.id = d.auction_id AND a.auction_category = 'demolition';
+
+-- ============================================
+-- 14. 경매 처리 자동화 시스템
+-- ============================================
+
+-- 경매 종료 처리 메인 함수
+CREATE OR REPLACE FUNCTION process_ended_auctions()
+RETURNS TABLE(
+  processed_count INTEGER,
+  successful_count INTEGER,
+  failed_count INTEGER,
+  error_count INTEGER
+) AS $$
+DECLARE
+  ended_auction RECORD;
+  total_processed INTEGER := 0;
+  total_successful INTEGER := 0;
+  total_failed INTEGER := 0;
+  total_errors INTEGER := 0;
+  auction_error TEXT;
+BEGIN
+  -- 로그 시작
+  INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
+  VALUES ('auction', 'auction-end-processor', 'running', 
+          jsonb_build_object('started_at', NOW()));
+
+  -- 종료된 경매들 처리 (락 적용)
+  FOR ended_auction IN 
+    SELECT 
+      a.id,
+      a.title,
+      a.starting_price,
+      a.user_id as seller_id,
+      a.end_time,
+      a.status,
+      ab.id as winning_bid_id,
+      ab.user_id as winning_user_id,
+      ab.amount as winning_amount,
+      ab.user_name as winning_user_name
+    FROM auctions a
+    LEFT JOIN auction_bids ab ON a.id = ab.auction_id AND ab.is_top_bid = true
+    WHERE a.end_time <= NOW() 
+      AND a.status IN ('active', 'ending')
+    ORDER BY a.end_time ASC
+    FOR UPDATE OF a -- 동시성 제어를 위한 락
+  LOOP
+    BEGIN
+      total_processed := total_processed + 1;
+      
+      -- 낙찰/유찰 결정
+      IF ended_auction.winning_amount IS NOT NULL 
+         AND ended_auction.winning_amount >= ended_auction.starting_price THEN
+        
+        -- 낙찰 처리
+        INSERT INTO auction_results (
+          auction_id, 
+          result_type, 
+          winning_bid_id, 
+          winning_user_id, 
+          winning_amount,
+          metadata
+        ) VALUES (
+          ended_auction.id, 
+          'successful', 
+          ended_auction.winning_bid_id, 
+          ended_auction.winning_user_id, 
+          ended_auction.winning_amount,
+          jsonb_build_object(
+            'winning_user_name', ended_auction.winning_user_name,
+            'processing_time', NOW(),
+            'seller_id', ended_auction.seller_id
+          )
+        );
+        
+        total_successful := total_successful + 1;
+        
+        RAISE NOTICE '✅ 낙찰 처리: % (₩%)', ended_auction.title, ended_auction.winning_amount;
+        
+      ELSE
+        -- 유찰 처리
+        INSERT INTO auction_results (
+          auction_id, 
+          result_type,
+          metadata
+        ) VALUES (
+          ended_auction.id, 
+          'failed',
+          jsonb_build_object(
+            'reason', CASE 
+              WHEN ended_auction.winning_amount IS NULL THEN 'no_bids'
+              WHEN ended_auction.winning_amount < ended_auction.starting_price THEN 'below_starting_price'
+              ELSE 'unknown'
+            END,
+            'highest_bid', ended_auction.winning_amount,
+            'starting_price', ended_auction.starting_price,
+            'processing_time', NOW(),
+            'seller_id', ended_auction.seller_id
+          )
+        );
+        
+        total_failed := total_failed + 1;
+        
+        RAISE NOTICE '❌ 유찰 처리: % (최고가: ₩%, 시작가: ₩%)', 
+          ended_auction.title, 
+          COALESCE(ended_auction.winning_amount, 0), 
+          ended_auction.starting_price;
+      END IF;
+      
+      -- 경매 상태 업데이트
+      UPDATE auctions 
+      SET 
+        status = 'ended',
+        updated_at = NOW()
+      WHERE id = ended_auction.id;
+      
+    EXCEPTION
+      WHEN OTHERS THEN
+        -- 개별 경매 처리 오류 로깅
+        total_errors := total_errors + 1;
+        auction_error := SQLERRM;
+        
+        RAISE WARNING '⚠️ 경매 처리 오류 [%]: %', ended_auction.id, auction_error;
+        
+        -- 오류 로그 저장
+        INSERT INTO cron_execution_logs (job_type, job_name, status, error_message, metadata)
+        VALUES ('auction', 'auction-end-processor-error', 'failed', auction_error,
+                jsonb_build_object(
+                  'auction_id', ended_auction.id,
+                  'auction_title', ended_auction.title,
+                  'error_time', NOW()
+                ));
+    END;
+  END LOOP;
+
+  -- 성공 로그 기록
+  UPDATE cron_execution_logs 
+  SET 
+    status = 'success',
+    completed_at = NOW(),
+    duration_ms = EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000,
+    success_count = total_processed,
+    metadata = metadata || jsonb_build_object(
+      'processed_count', total_processed,
+      'successful_count', total_successful,
+      'failed_count', total_failed,
+      'error_count', total_errors,
+      'completed_at', NOW()
+    )
+  WHERE job_type = 'auction' 
+    AND job_name = 'auction-end-processor' 
+    AND status = 'running'
+    AND started_at = (
+      SELECT MAX(started_at) 
+      FROM cron_execution_logs 
+      WHERE job_type = 'auction' AND job_name = 'auction-end-processor'
+    );
+
+  -- 결과 반환
+  RETURN QUERY SELECT total_processed, total_successful, total_failed, total_errors;
+  
+  RAISE NOTICE '🏁 경매 종료 처리 완료: 처리(%)/낙찰(%)/유찰(%)/오류(%)', 
+    total_processed, total_successful, total_failed, total_errors;
+
+EXCEPTION
+  WHEN OTHERS THEN
+    -- 전체 함수 실행 오류
+    INSERT INTO cron_execution_logs (job_type, job_name, status, error_message, metadata)
+    VALUES ('auction', 'auction-end-processor', 'failed', SQLERRM,
+            jsonb_build_object(
+              'total_processed', total_processed,
+              'error_time', NOW(),
+              'function_error', true
+            ));
+    
+    RAISE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 경매 상태 실시간 업데이트 함수 (ending 상태 관리)
+CREATE OR REPLACE FUNCTION update_auction_status_realtime()
+RETURNS INTEGER AS $$
+DECLARE
+  updated_count INTEGER := 0;
+BEGIN
+  -- ending 상태로 변경 (종료 1시간 전)
+  UPDATE auctions 
+  SET 
+    status = 'ending',
+    updated_at = NOW()
+  WHERE 
+    end_time <= NOW() + INTERVAL '1 hour' 
+    AND end_time > NOW()
+    AND status = 'active';
+    
+  GET DIAGNOSTICS updated_count = ROW_COUNT;
+  
+  IF updated_count > 0 THEN
+    RAISE NOTICE '⏰ % 개 경매가 ending 상태로 변경됨', updated_count;
+  END IF;
+  
+  RETURN updated_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 결제 기한 관리 함수
+CREATE OR REPLACE FUNCTION process_payment_deadlines()
+RETURNS TABLE(
+  overdue_count INTEGER,
+  warning_count INTEGER
+) AS $$
+DECLARE
+  total_overdue INTEGER := 0;
+  total_warnings INTEGER := 0;
+BEGIN
+  -- 결제 기한 초과된 거래 처리
+  UPDATE auction_transactions 
+  SET 
+    transaction_status = 'failed',
+    updated_at = NOW(),
+    notes = COALESCE(notes, '') || '[' || NOW() || '] 결제 기한 초과로 자동 취소됨. '
+  FROM auction_results ar
+  WHERE 
+    auction_transactions.auction_result_id = ar.id
+    AND auction_transactions.transaction_status = 'pending'
+    AND ar.payment_deadline < NOW();
+    
+  GET DIAGNOSTICS total_overdue = ROW_COUNT;
+  
+  -- 결제 기한 24시간 전 경고 대상 카운트
+  SELECT COUNT(*) INTO total_warnings
+  FROM auction_transactions at
+  JOIN auction_results ar ON at.auction_result_id = ar.id
+  WHERE 
+    at.transaction_status = 'pending'
+    AND ar.payment_deadline BETWEEN NOW() AND NOW() + INTERVAL '24 hours';
+  
+  -- 로그 기록
+  INSERT INTO cron_execution_logs (job_type, job_name, status, success_count, metadata)
+  VALUES ('auction', 'payment-deadline-checker', 'success', total_overdue,
+          jsonb_build_object(
+            'overdue_processed', total_overdue,
+            'warnings_pending', total_warnings,
+            'processed_at', NOW()
+          ));
+  
+  RETURN QUERY SELECT total_overdue, total_warnings;
+  
+  IF total_overdue > 0 THEN
+    RAISE NOTICE '💳 결제 기한 초과 처리: % 건', total_overdue;
+  END IF;
+  
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ============================================
+-- 15. 통계 및 유틸리티 함수
+-- ============================================
+
+-- 경매 사진 개수 확인 함수
+CREATE OR REPLACE FUNCTION get_auction_photo_count(auction_id TEXT)
+RETURNS INTEGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT COUNT(*)
+    FROM auction_photos 
+    WHERE auction_photos.auction_id = get_auction_photo_count.auction_id
+  );
+END;
+$$;
+
+-- 경매 대표 사진 URL 가져오기 함수
+CREATE OR REPLACE FUNCTION get_auction_representative_photo(auction_id TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN (
+    SELECT photo_url
+    FROM auction_photos 
+    WHERE auction_photos.auction_id = get_auction_representative_photo.auction_id 
+    AND is_representative = true
+    ORDER BY photo_order
+    LIMIT 1
+  );
+END;
+$$;
+
+-- 경매 처리 통계 함수
+CREATE OR REPLACE FUNCTION get_auction_processing_stats()
+RETURNS TABLE(
+  today_processed INTEGER,
+  today_successful INTEGER,
+  today_failed INTEGER,
+  this_week_processed INTEGER,
+  success_rate DECIMAL
+)
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH today_stats AS (
+    SELECT 
+      COUNT(*) as processed,
+      COUNT(*) FILTER (WHERE result_type = 'successful') as successful,
+      COUNT(*) FILTER (WHERE result_type = 'failed') as failed
+    FROM auction_results
+    WHERE DATE(processed_at) = CURRENT_DATE
+  ),
+  week_stats AS (
+    SELECT COUNT(*) as processed
+    FROM auction_results
+    WHERE processed_at >= DATE_TRUNC('week', NOW())
+  ),
+  overall_stats AS (
+    SELECT 
+      CASE 
+        WHEN COUNT(*) > 0 THEN 
+          ROUND(COUNT(*) FILTER (WHERE result_type = 'successful') * 100.0 / COUNT(*), 2)
+        ELSE 0
+      END as rate
+    FROM auction_results
+    WHERE processed_at >= NOW() - INTERVAL '30 days'
+  )
+  SELECT 
+    ts.processed::INTEGER,
+    ts.successful::INTEGER, 
+    ts.failed::INTEGER,
+    ws.processed::INTEGER,
+    os.rate
+  FROM today_stats ts, week_stats ws, overall_stats os;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================
+-- 16. 크론 작업 스케줄링
+-- ============================================
+DO $$
+BEGIN
+  -- 기존 경매 관련 크론 작업 제거 (존재하는 경우에만)
+  BEGIN
+    PERFORM cron.unschedule('auction-end-processor');
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('auction-status-updater');
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('payment-deadline-checker');
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  
+  -- 새로운 크론 작업 등록
+  
+  -- 매분마다 경매 종료 처리
+  PERFORM cron.schedule(
+    'auction-end-processor',
+    '* * * * *',
+    'SELECT process_ended_auctions();'
+  );
+  
+  -- 매 5분마다 경매 상태 업데이트 (ending 상태 전환)
+  PERFORM cron.schedule(
+    'auction-status-updater', 
+    '*/5 * * * *',
+    'SELECT update_auction_status_realtime();'
+  );
+  
+  -- 매시간마다 결제 기한 체크
+  PERFORM cron.schedule(
+    'payment-deadline-checker',
+    '0 * * * *', 
+    'SELECT process_payment_deadlines();'
+  );
+  
+  RAISE NOTICE '⏰ 경매 시스템 크론 작업 스케줄 설정 완료';
+  RAISE NOTICE '   • auction-end-processor: 매분 실행';
+  RAISE NOTICE '   • auction-status-updater: 5분마다 실행';
+  RAISE NOTICE '   • payment-deadline-checker: 매시간 실행';
+END
+$$;
+
+-- ============================================
+-- 17. 권한 설정
+-- ============================================
+
+-- 테이블 접근 권한
+GRANT SELECT, INSERT, UPDATE, DELETE ON auctions TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON scrap_auctions TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON machinery_auctions TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON materials_auctions TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON demolition_auctions TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON auction_photos TO authenticated, anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON auction_bids TO authenticated, anon;
+GRANT SELECT ON auction_results TO authenticated, anon;
+GRANT SELECT ON auction_transactions TO authenticated, anon;
+
+-- 뷰 접근 권한
+GRANT SELECT ON auction_list_view TO authenticated, anon;
+
+-- 함수 실행 권한
+GRANT EXECUTE ON FUNCTION process_ended_auctions() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION update_auction_status_realtime() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_auction_processing_stats() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_auction_photo_count TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_auction_representative_photo TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION check_self_bidding_violations TO authenticated;
+GRANT EXECUTE ON FUNCTION set_current_user_id TO authenticated;
+GRANT EXECUTE ON FUNCTION get_current_user_id TO authenticated;
+
+-- storage 버킷 사용 권한 부여
+GRANT ALL ON storage.objects TO anon;
+GRANT ALL ON storage.objects TO authenticated;
+GRANT ALL ON storage.buckets TO anon;
+GRANT ALL ON storage.buckets TO authenticated;
+
+-- service_role에 모든 권한 부여
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role;
+
+-- ============================================
+-- 18. 코멘트 및 문서화
+-- ============================================
+
+COMMENT ON TABLE auctions IS '공통 경매 테이블 - 모든 카테고리의 기본 정보';
+COMMENT ON TABLE scrap_auctions IS '고철 경매 특화 정보';
+COMMENT ON TABLE machinery_auctions IS '중고기계 경매 특화 정보'; 
+COMMENT ON TABLE materials_auctions IS '중고자재 경매 특화 정보';
+COMMENT ON TABLE demolition_auctions IS '철거 경매 특화 정보';
+COMMENT ON TABLE auction_photos IS '경매 사진 정보';
+COMMENT ON TABLE auction_bids IS '경매 입찰 정보';
+COMMENT ON TABLE auction_results IS '경매 결과 정보 - 낙찰/유찰/취소 결과 저장';
+COMMENT ON TABLE auction_transactions IS '거래 추적 정보 - 결제 및 배송 상태 관리';
+COMMENT ON VIEW auction_list_view IS '통합 뷰 - 기존 API 완전 호환성 보장';
+
+COMMENT ON COLUMN auction_results.result_type IS '결과 타입: successful(낙찰), failed(유찰), cancelled(취소)';
+COMMENT ON COLUMN auction_results.payment_deadline IS '결제 기한 (낙찰시 자동 설정: 처리일 + 3일)';
+COMMENT ON COLUMN auction_transactions.transaction_status IS '거래 상태: pending → paid → delivered → completed';
+
+COMMENT ON FUNCTION process_ended_auctions IS '종료된 경매들의 낙찰/유찰 처리 - 매분 실행';
+COMMENT ON FUNCTION update_auction_status_realtime IS '경매 상태 실시간 업데이트 (ending 전환) - 5분마다 실행';
+COMMENT ON FUNCTION process_payment_deadlines IS '결제 기한 관리 및 초과 처리 - 매시간 실행';
+COMMENT ON FUNCTION get_auction_processing_stats IS '경매 처리 통계 조회 함수';
+COMMENT ON FUNCTION check_self_bidding_violations IS '기존 데이터에서 자신의 경매에 입찰한 위반 사례를 확인하는 함수';
+
+COMMENT ON POLICY "basic_bid_policy" ON auction_bids IS 
+'기본 입찰 정책: 데이터 무결성 체크. 자신의 경매 입찰 방지는 애플리케이션 레벨에서 처리';
+
+-- ============================================
+-- 완료 메시지
+-- ============================================
+DO $$
+BEGIN
+  RAISE NOTICE '🎉 경매 시스템 통합 완료!';
+  RAISE NOTICE '🏷️ 카테고리: scrap, machinery, materials, demolition';
+  RAISE NOTICE '📊 테이블: auctions + 카테고리별 테이블 + 입찰/사진/결과';
+  RAISE NOTICE '🔒 RLS 정책: 사용자별 접근 제어 + 자기 입찰 방지';
+  RAISE NOTICE '📁 Storage: auction-photos 버킷 설정';
+  RAISE NOTICE '🤖 자동화: 경매 종료, 상태 업데이트, 결제 기한 관리';
+  RAISE NOTICE '📈 통계: 처리 현황, 성공률, 위반 사례 확인';
+  RAISE NOTICE '🔗 호환성: auction_list_view 통합 뷰로 기존 API 지원';
+  RAISE NOTICE '⏰ 크론: 매분/5분/매시간 자동 실행';
+  RAISE NOTICE '🚀 완전한 경매 시스템 준비 완료!';
+END $$;
