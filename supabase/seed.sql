@@ -907,6 +907,47 @@ INSERT INTO auctions (
   '{"postalCode": "06349", "addressType": "road", "address": "서울특별시 강남구 신사동 가로수길 456", "detailAddress": "신사동 상가건물"}',
   NOW() - INTERVAL '2 days',
   NOW() - INTERVAL '5 hours'
+),
+
+-- 🎯 정개발 경매 2개 추가
+-- 고철 경매: 구리 스크랩
+(
+  'scrap_jungdev_1',
+  '4ede4267-2d7c-4f83-8d9b-cb73eb96698e',
+  '구리 전선 스크랩 1.8톤',
+  '전기공사 현장에서 발생한 고순도 구리 전선 스크랩입니다. 피복이 제거된 상태로 순도가 높아 품질이 우수합니다.',
+  'scrap',
+  'normal',
+  7200000, -- current_bid
+  6500000, -- starting_price 
+  7200000, -- total_bid_amount
+  'active',
+  NOW() + INTERVAL '6 days',
+  4, -- bidder_count
+  92, -- view_count
+  '{"postalCode": "06292", "addressType": "road", "address": "서울특별시 강남구 테헤란로 123", "detailAddress": "정개발 창고"}',
+  NOW() - INTERVAL '1 day',
+  NOW() - INTERVAL '30 minutes'
+),
+
+-- 중고자재 경매: 철근
+(
+  'materials_jungdev_1',
+  '4ede4267-2d7c-4f83-8d9b-cb73eb96698e',
+  'D19 철근 50개 (미사용)',
+  '건축 현장에서 남은 D19 철근입니다. 완전 미사용 상태로 녹이 전혀 없어 신품과 동일합니다.',
+  'materials',
+  'urgent',
+  3200000, -- current_bid
+  2800000, -- starting_price
+  3200000, -- total_bid_amount
+  'ending',
+  NOW() + INTERVAL '1 day 3 hours',
+  5, -- bidder_count
+  158, -- view_count
+  '{"postalCode": "06292", "addressType": "road", "address": "서울특별시 강남구 테헤란로 456", "detailAddress": "정개발 자재창고"}',
+  NOW() - INTERVAL '4 days',
+  NOW() - INTERVAL '1 hour'
 );
 
 -- 2. 카테고리별 특화 정보 삽입
@@ -944,6 +985,18 @@ INSERT INTO scrap_auctions (
   '{"delivery": "seller", "shippingCost": "seller", "accessibility": "difficult", "loading": "buyer", "sacksNeeded": true}',
   '경매 종료됨 - 낙찰 완료',
   NOW() - INTERVAL '10 days'
+),
+
+-- 🎯 정개발의 고철 특화 정보
+(
+  'scrap_jungdev_1',
+  '{"id": "copper_wire", "name": "구리 전선", "category": "비철금속", "description": "고순도 구리 전선 스크랩", "auctionCategory": "scrap"}',
+  1800, -- 1.8톤
+  'kg',
+  4000, -- 원/kg (구리 시세 반영)
+  '{"delivery": "buyer", "shippingCost": "negotiable", "accessibility": "easy", "loading": "seller", "sacksNeeded": false}',
+  '피복 제거 완료, 고순도 구리',
+  NOW() - INTERVAL '1 day'
 );
 
 -- 중고기계 특화 정보
@@ -978,6 +1031,17 @@ INSERT INTO materials_auctions (
   15000000, -- 희망가 1500만원
   '{"delivery": "buyer", "shippingCost": "buyer", "accessibility": "easy", "loading": "both", "sacksNeeded": false}',
   NOW() - INTERVAL '1 day'
+),
+
+-- 🎯 정개발의 중고자재 특화 정보
+(
+  'materials_jungdev_1',
+  '{"id": "rebar_d19", "name": "D19 철근", "category": "철근", "description": "건축용 이형철근 D19", "auctionCategory": "materials"}',
+  50, -- 50개
+  '개',
+  3500000, -- 희망가 350만원
+  '{"delivery": "buyer", "shippingCost": "buyer", "accessibility": "normal", "loading": "seller", "sacksNeeded": false}',
+  NOW() - INTERVAL '4 days'
 );
 
 -- 철거 특화 정보
@@ -1026,7 +1090,17 @@ INSERT INTO auction_photos (
 
 -- 철거 사진들
 ('demolition1', 'https://dummyimage.com/800x600/DC2626/FFFFFF&text=건물+외관', 'full', 0, true, NOW()),
-('demolition1', 'https://dummyimage.com/800x600/DC2626/FFFFFF&text=건물+내부', 'closeup', 1, false, NOW());
+('demolition1', 'https://dummyimage.com/800x600/DC2626/FFFFFF&text=건물+내부', 'closeup', 1, false, NOW()),
+
+-- 🎯 정개발 경매 사진들
+-- 구리 스크랩 사진들
+('scrap_jungdev_1', 'https://dummyimage.com/800x600/F97316/FFFFFF&text=구리+전선+전체', 'full', 0, true, NOW()),
+('scrap_jungdev_1', 'https://dummyimage.com/800x600/F97316/FFFFFF&text=구리+전선+근접', 'closeup', 1, false, NOW()),
+('scrap_jungdev_1', 'https://dummyimage.com/800x600/F97316/FFFFFF&text=구리+순도+확인', 'detail', 2, false, NOW()),
+
+-- 철근 자재 사진들  
+('materials_jungdev_1', 'https://dummyimage.com/800x600/059669/FFFFFF&text=D19+철근+전체', 'full', 0, true, NOW()),
+('materials_jungdev_1', 'https://dummyimage.com/800x600/059669/FFFFFF&text=D19+철근+규격', 'detail', 1, false, NOW());
 
 -- 4. 입찰 정보 삽입
 INSERT INTO auction_bids (
@@ -1060,12 +1134,27 @@ INSERT INTO auction_bids (
 
 -- 철거 demolition1 입찰들
 ('demolition1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 25500000, 63750, '울산 남구', NOW() - INTERVAL '1 day', false, NOW() - INTERVAL '1 day'),
-('demolition1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 27000000, 67500, '부산 해운대구', NOW() - INTERVAL '5 hours', true, NOW() - INTERVAL '5 hours');
+('demolition1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 27000000, 67500, '부산 해운대구', NOW() - INTERVAL '5 hours', true, NOW() - INTERVAL '5 hours'),
+
+-- 🎯 정개발 경매 입찰들
+-- 구리 스크랩 scrap_jungdev_1 입찰들
+('scrap_jungdev_1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 6800000, 3778, '서울 강남구', NOW() - INTERVAL '20 hours', false, NOW() - INTERVAL '20 hours'),
+('scrap_jungdev_1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 7000000, 3889, '부산 해운대구', NOW() - INTERVAL '15 hours', false, NOW() - INTERVAL '15 hours'),
+('scrap_jungdev_1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 7200000, 4000, '울산 남구', NOW() - INTERVAL '8 hours', true, NOW() - INTERVAL '8 hours'),
+('scrap_jungdev_1', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 6900000, 3833, '광주 서구', NOW() - INTERVAL '12 hours', false, NOW() - INTERVAL '12 hours'),
+
+-- 철근 자재 materials_jungdev_1 입찰들
+('materials_jungdev_1', '550e8400-e29b-41d4-a716-446655440001', '서울철강', 2900000, 58000, '서울 강남구', NOW() - INTERVAL '3 days', false, NOW() - INTERVAL '3 days'),
+('materials_jungdev_1', '550e8400-e29b-41d4-a716-446655440002', '부산철강', 3050000, 61000, '부산 해운대구', NOW() - INTERVAL '2 days', false, NOW() - INTERVAL '2 days'),
+('materials_jungdev_1', '550e8400-e29b-41d4-a716-446655440003', '울산메탈', 3150000, 63000, '울산 남구', NOW() - INTERVAL '1 day', false, NOW() - INTERVAL '1 day'),
+('materials_jungdev_1', '550e8400-e29b-41d4-a716-446655440004', '창원스크랩', 3200000, 64000, '경남 창원시', NOW() - INTERVAL '8 hours', true, NOW() - INTERVAL '8 hours'),
+('materials_jungdev_1', '550e8400-e29b-41d4-a716-446655440005', '광주철강', 3100000, 62000, '광주 서구', NOW() - INTERVAL '18 hours', false, NOW() - INTERVAL '18 hours');
 
 -- 📊 개선된 구조 경매 시드 데이터 통계
--- 총 경매: 6개 (고철 3개, 기계 1개, 자재 1개, 철거 1개)  
--- 총 입찰: 17개
--- 총 사진: 12개
+-- 총 경매: 8개 (고철 4개, 기계 1개, 자재 2개, 철거 1개)  
+-- 총 입찰: 26개 (정개발 경매 입찰 9개 포함)
+-- 총 사진: 17개 (정개발 경매 사진 5개 포함)
+-- 🎯 정개발 판매 경매: 2개 (구리 스크랩, D19 철근)
 -- 테스트 사용자: 5명
 -- 카테고리별 테이블: 각각 분리 저장으로 성능 최적화
 
