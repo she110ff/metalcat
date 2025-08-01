@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { useBatchStatus, useExecutionLogs } from "@/hooks/admin/useBatchStatus";
+import {
+  useBatchStatus,
+  useExecutionLogs,
+  useSystemHealth,
+} from "@/hooks/admin/useBatchStatus";
 import {
   useAdminServiceRequests,
   usePremiumStats,
@@ -170,6 +174,7 @@ const BatchTabContent = () => {
     error: jobsError,
   } = useBatchStatus();
   const { data: executionLogs, isLoading: logsLoading } = useExecutionLogs(10);
+  const { data: systemHealth, isLoading: healthLoading } = useSystemHealth();
 
   // 시간 포맷 헬퍼
   const formatLastRun = (lastRun?: string) => {
@@ -237,6 +242,69 @@ const BatchTabContent = () => {
 
   return (
     <VStack space="lg">
+      {/* 시스템 상태 정보 */}
+      {systemHealth && (
+        <Box className="bg-white rounded-xl p-4 border border-gray-200">
+          <Heading size="md" className="mb-3">
+            🏥 시스템 상태
+          </Heading>
+          <VStack space="md">
+            <HStack className="justify-between items-center py-2 border-b border-gray-100">
+              <Text className="font-medium">환경</Text>
+              <Text className="text-gray-800 font-bold">
+                {systemHealth.environment}
+              </Text>
+            </HStack>
+            <HStack className="justify-between items-center py-2 border-b border-gray-100">
+              <Text className="font-medium">전체 Cron Jobs</Text>
+              <Text className="text-blue-600 font-bold">
+                {systemHealth.cron_jobs.total}개
+              </Text>
+            </HStack>
+            <HStack className="justify-between items-center py-2 border-b border-gray-100">
+              <Text className="font-medium">활성 Jobs</Text>
+              <Text className="text-green-600 font-bold">
+                {systemHealth.cron_jobs.active}개
+              </Text>
+            </HStack>
+            <HStack className="justify-between items-center py-2 border-b border-gray-100">
+              <Text className="font-medium">최근 1시간 실패</Text>
+              <Text className="text-red-600 font-bold">
+                {systemHealth.recent_failures_1h}건
+              </Text>
+            </HStack>
+            <HStack className="justify-between items-center py-2">
+              <Text className="font-medium">상태</Text>
+              <Box
+                className={`px-2 py-1 rounded ${
+                  systemHealth.health_status === "healthy"
+                    ? "bg-green-100"
+                    : systemHealth.health_status === "warning"
+                    ? "bg-yellow-100"
+                    : "bg-red-100"
+                }`}
+              >
+                <Text
+                  className={`text-xs font-medium ${
+                    systemHealth.health_status === "healthy"
+                      ? "text-green-700"
+                      : systemHealth.health_status === "warning"
+                      ? "text-yellow-700"
+                      : "text-red-700"
+                  }`}
+                >
+                  {systemHealth.health_status === "healthy"
+                    ? "정상"
+                    : systemHealth.health_status === "warning"
+                    ? "주의"
+                    : "위험"}
+                </Text>
+              </Box>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
+
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <Heading size="md" className="mb-3">
           ⚙️ 배치 시스템 상태

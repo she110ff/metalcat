@@ -54,8 +54,8 @@ function getFallbackBatchJobs(): BatchJob[] {
  */
 export async function getBatchStatus(): Promise<BatchJob[]> {
   try {
-    // pg_cron에서 크론 작업 목록 조회
-    const { data: cronJobs, error: cronError } = await supabase.rpc(
+    // pg_cron에서 크론 작업 목록 조회 (SECURITY DEFINER 적용됨)
+    const { data: cronJobs, error: cronError } = await (supabase as any).rpc(
       "get_cron_jobs_status"
     );
 
@@ -70,34 +70,29 @@ export async function getBatchStatus(): Promise<BatchJob[]> {
       return [];
     }
 
-    // 실행 로그에서 통계 정보 조회
-    const { data: logs, error: logError } = await supabase
-      .from("cron_execution_logs")
-      .select("*")
-      .order("started_at", { ascending: false })
-      .limit(100);
+    // 새로운 get_crawler_stats 함수 사용 (SECURITY DEFINER 적용됨)
+    const { data: crawlerStats, error: statsError } = await (
+      supabase as any
+    ).rpc("get_crawler_stats");
 
-    if (logError) {
-      console.error("실행 로그 조회 실패:", logError);
+    if (statsError) {
+      console.error("크롤러 통계 조회 실패:", statsError);
     }
 
-    // 크론 작업과 로그 데이터를 조합하여 배치 상태 생성
+    // 크론 작업과 통계 데이터를 조합하여 배치 상태 생성
     const batchJobs: BatchJob[] = (cronJobs || []).map((job: any) => {
-      const jobLogs = (logs || []).filter(
-        (log) => log.job_name === job.jobname
+      // 해당 job의 통계 정보 찾기
+      const jobStats = (crawlerStats || []).find(
+        (stat: any) => stat.job_type === job.jobname
       );
-      const successLogs = jobLogs.filter((log) => log.status === "success");
-      const successRate =
-        jobLogs.length > 0 ? (successLogs.length / jobLogs.length) * 100 : 0;
-      const lastLog = jobLogs[0]; // 가장 최근 로그
 
       return {
         jobName: job.jobname || "",
         schedule: job.schedule || "",
-        lastRun: lastLog?.started_at,
+        lastRun: job.last_run_time,
         status: job.active ? "active" : "paused",
-        runCount: jobLogs.length,
-        successRate: Math.round(successRate),
+        runCount: jobStats?.total_executions || 0,
+        successRate: jobStats?.success_rate || 0,
       };
     });
 
@@ -140,11 +135,11 @@ export async function getRecentExecutionLogs(
   limit = 20
 ): Promise<BatchExecutionLog[]> {
   try {
-    const { data, error } = await supabase
-      .from("cron_execution_logs")
-      .select("*")
-      .order("started_at", { ascending: false })
-      .limit(limit);
+    // 새로운 get_recent_executions 함수 사용 (SECURITY DEFINER 적용됨)
+    const { data, error } = await (supabase as any).rpc(
+      "get_recent_executions",
+      { limit_count: limit }
+    );
 
     if (error) {
       console.error("실행 로그 조회 실패:", error);
@@ -157,10 +152,43 @@ export async function getRecentExecutionLogs(
       return [];
     }
 
-    return data || [];
+    // 데이터 형식 변환
+    const logs: BatchExecutionLog[] = (data || []).map((log: any) => ({
+      id: log.id,
+      jobType: log.job_type,
+      jobName: log.job_name,
+      status: log.status,
+      startedAt: log.started_at,
+      completedAt: log.completed_at,
+      durationMs: log.duration_ms,
+      errorMessage: log.error_message,
+    }));
+
+    return logs;
   } catch (error) {
     console.error("실행 로그 조회 중 오류:", error);
     return getFallbackExecutionLogs(limit);
+  }
+}
+
+/**
+ * 시스템 상태 조회
+ */
+export async function getSystemHealth(): Promise<any> {
+  try {
+    const { data, error } = await (supabase as any).rpc(
+      "get_cron_system_health"
+    );
+
+    if (error) {
+      console.error("시스템 상태 조회 실패:", error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error("시스템 상태 조회 중 오류:", error);
+    return null;
   }
 }
 
@@ -185,5 +213,17 @@ export const useExecutionLogs = (limit = 20) => {
     queryFn: () => getRecentExecutionLogs(limit),
     refetchInterval: 30 * 1000, // 30초마다 갱신
     staleTime: 15 * 1000, // 15초
+  });
+};
+
+/**
+ * 시스템 상태 훅
+ */
+export const useSystemHealth = () => {
+  return useQuery({
+    queryKey: ["admin", "system-health"],
+    queryFn: getSystemHealth,
+    refetchInterval: 60 * 1000, // 1분마다 갱신
+    staleTime: 30 * 1000, // 30초
   });
 };
