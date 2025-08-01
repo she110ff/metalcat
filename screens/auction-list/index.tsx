@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,7 +9,8 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native";
@@ -73,6 +74,7 @@ export const AuctionList = () => {
   console.log("🏛️ AuctionList 렌더링 - 순수 React Native 스타일 버전");
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { isLoggedIn, isLoading: authLoading } = useAuth();
   console.log("📱 Router 객체:", router);
   console.log("📱 Router canGoBack:", router.canGoBack());
@@ -119,6 +121,22 @@ export const AuctionList = () => {
     }),
   };
   const { data: queryAuctions = [], isLoading, error } = useAuctions(filters);
+
+  // 탭 포커스 시 경매 데이터 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔄 [AuctionList] 탭 포커스 - 경매 데이터 새로고침");
+      // 경매 관련 모든 쿼리 무효화하여 새로 가져오기
+      queryClient.invalidateQueries({
+        queryKey: ["auctions"],
+      });
+
+      // 경매 결과도 함께 갱신 (크론 테스트에서 중요)
+      queryClient.invalidateQueries({
+        queryKey: ["auction-results"],
+      });
+    }, [queryClient])
+  );
 
   // TanStack Query 데이터를 사용하되, 로딩 중이거나 에러가 있으면 기본 데이터 사용
   const auctionItems =

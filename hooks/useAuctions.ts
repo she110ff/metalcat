@@ -47,7 +47,9 @@ export const useAuctions = (filters?: {
   return useQuery({
     queryKey: auctionKeys.list(filters),
     queryFn: () => auctionAPI.getAuctions(filters),
-    staleTime: 2 * 60 * 1000, // 2분
+    staleTime: 30 * 1000, // 30초 (크론 테스트를 위해 더 빠른 갱신)
+    refetchOnWindowFocus: true, // 앱 포커스 시 자동 새로고침
+    refetchOnReconnect: true, // 네트워크 재연결 시 자동 새로고침
   });
 };
 
@@ -258,8 +260,10 @@ export const useAuctionResult = (auctionId: string) => {
     queryKey: auctionKeys.result(auctionId),
     queryFn: () => auctionAPI.getAuctionResult(auctionId),
     enabled: !!auctionId,
-    staleTime: 1 * 60 * 1000, // 1분 (결과는 변경되지 않으므로 길게 설정)
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000, // 30초 (크론 처리 결과를 빠르게 반영)
+    refetchOnWindowFocus: true, // 앱 포커스 시 자동 새로고침 (크론 테스트에 중요)
+    refetchOnReconnect: true, // 네트워크 재연결 시 자동 새로고침
+    retry: 2, // 경매 결과가 아직 처리되지 않을 수 있으므로 재시도
   });
 };
 

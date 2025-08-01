@@ -300,10 +300,25 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 5. 크론 작업 스케줄 설정
 DO $$
 BEGIN
-  -- 기존 경매 관련 크론 작업 제거
-  PERFORM cron.unschedule('auction-end-processor');
-  PERFORM cron.unschedule('auction-status-updater');
-  PERFORM cron.unschedule('payment-deadline-checker');
+  -- 기존 경매 관련 크론 작업 제거 (존재하는 경우에만)
+  BEGIN
+    PERFORM cron.unschedule('auction-end-processor');
+  EXCEPTION WHEN OTHERS THEN
+    -- 작업이 없으면 무시
+    NULL;
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('auction-status-updater');
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('payment-deadline-checker');
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
   
   -- 새로운 크론 작업 등록
   
