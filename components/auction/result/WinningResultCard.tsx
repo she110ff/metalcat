@@ -8,6 +8,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatAuctionPrice } from "@/data";
+import { useAuth } from "@/hooks/useAuth";
 import type { AuctionItem, AuctionResultInfo } from "@/data/types/auction";
 
 interface WinningResultCardProps {
@@ -19,6 +20,44 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
   auction,
   result,
 }) => {
+  // 🔒 추가 안전 검증: 이 컴포넌트는 오직 낙찰받은 사용자에게만 보여져야 함
+  const { user } = useAuth();
+  const currentUserId = user?.id;
+
+  // 🚨 안전장치: 혹시라도 잘못 호출된 경우 에러 표시
+  if (
+    result.result !== "successful" ||
+    result.winningUserId !== currentUserId
+  ) {
+    console.error(
+      "🚨 [WinningResultCard] 잘못된 호출! 낙찰받지 않은 사용자에게 축하 카드 표시 시도:",
+      {
+        auctionId: auction.id,
+        resultType: result.result,
+        currentUserId,
+        winningUserId: result.winningUserId,
+      }
+    );
+
+    return (
+      <VStack space="md" className="px-6">
+        <Box className="rounded-2xl p-6 bg-red-500/5 border border-red-500/20">
+          <Text className="text-red-300 text-center">
+            ⚠️ 표시 오류: 낙찰받지 않은 사용자입니다
+          </Text>
+        </Box>
+      </VStack>
+    );
+  }
+
+  // 🐛 디버깅 로그
+  console.log("🏆 [WinningResultCard] 정상 렌더링됨:", {
+    auctionId: auction.id,
+    auctionTitle: auction.title,
+    winningAmount: result.winningAmount,
+    winningUserId: result.winningUserId,
+    currentUserId,
+  });
   const handleContactSeller = () => {
     // 판매자에게 연락하기 (향후 구현)
     console.log("판매자에게 연락하기:", auction.userId);

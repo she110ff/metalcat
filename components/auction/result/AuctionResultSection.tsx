@@ -64,21 +64,47 @@ export const AuctionResultSection: React.FC<AuctionResultSectionProps> = ({
   const isParticipant =
     auction.bids?.some((bid) => bid.userId === currentUserId) || false;
 
+  // 🐛 디버깅 로그 추가
+  console.log("🔍 [AuctionResultSection] 디버깅 정보:", {
+    auctionId: auction.id,
+    resultType: result.result,
+    currentUserId,
+    winningUserId: result.winningUserId,
+    isWinner,
+    isParticipant,
+    isSeller,
+    auctionBidsCount: auction.bids?.length || 0,
+    myBids: auction.bids?.filter((bid) => bid.userId === currentUserId) || [],
+  });
+
   // 내가 입찰한 최고가 계산 (향후 구현 시 사용)
   const myHighestBid =
     auction.bids
       ?.filter((bid) => bid.userId === currentUserId)
       ?.reduce((max, bid) => Math.max(max, bid.amount), 0) || 0;
 
+  // 🔒 엄격한 낙찰자 검증
+  const isConfirmedWinner =
+    result.result === "successful" &&
+    result.winningUserId === currentUserId &&
+    currentUserId !== null &&
+    currentUserId !== undefined;
+
   // 결과 타입에 따른 컴포넌트 렌더링
   switch (result.result) {
     case "successful":
       // 낙찰된 경우
-      if (isWinner) {
-        // 내가 낙찰받은 경우
+      if (isConfirmedWinner) {
+        // ✅ 확실히 내가 낙찰받은 경우만 축하 카드 표시
+        console.log(
+          "🎉 [AuctionResultSection] 정개발 낙찰 확인! 축하 카드 표시"
+        );
         return <WinningResultCard auction={auction} result={result} />;
       } else if (isParticipant) {
-        // 내가 참여했지만 낙찰받지 못한 경우
+        // 💔 내가 참여했지만 낙찰받지 못한 경우
+        console.log(
+          "💔 [AuctionResultSection] 정개발 낙찰 실패, 아쉬워요 카드 표시"
+        );
         return (
           <LosingResultCard
             auction={auction}
@@ -87,7 +113,10 @@ export const AuctionResultSection: React.FC<AuctionResultSectionProps> = ({
           />
         );
       } else {
-        // 참여하지 않았던 경우 - 간단한 낙찰 정보만 표시
+        // 👀 참여하지 않았던 경우 - 간단한 낙찰 정보만 표시 (축하 메시지 없음)
+        console.log(
+          "👀 [AuctionResultSection] 정개발 미참여, 일반 낙찰 정보만 표시"
+        );
         return (
           <VStack space="md" className="px-6">
             <Box className="rounded-2xl p-6 bg-green-500/5 border border-green-500/20">
