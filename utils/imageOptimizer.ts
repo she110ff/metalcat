@@ -1,250 +1,193 @@
 /**
  * 이미지 최적화 유틸리티
- * expo-image-manipulator를 사용하여 이미지 크기 조정, 압축, 포맷 변환
+ * Supabase Storage 서버 사이드 변환 전용
  */
+import {
+  transformStorageImageUrl,
+  getAvatarImageUrl,
+  getServicePhotoUrl,
+  getAuctionPhotoUrl,
+  isSupabaseStorageUrl,
+  type ImageTransformOptions,
+} from "./supabaseImageTransform";
 
-import * as ImageManipulator from "expo-image-manipulator";
-import * as FileSystem from "expo-file-system";
+// re-export for convenience
+export { isSupabaseStorageUrl };
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-export interface ImageOptimizeOptions {
-  maxWidth: number;
-  maxHeight: number;
-  quality: number; // 0.0 ~ 1.0
-  format: "jpeg" | "png" | "webp";
-}
-
-export interface OptimizedImageResult {
-  uri: string;
-  width: number;
-  height: number;
-  fileSize: number; // bytes
-}
+// *** 클라이언트 사이드 이미지 압축 기능 제거됨 ***
+// Supabase Storage 서버 사이드 변환만 사용합니다.
 
 /**
- * 이미지 최적화 (크기 조정, 압축, 포맷 변환)
- * @param imageUri - 원본 이미지 URI
- * @param options - 최적화 옵션
- * @returns 최적화된 이미지 정보
+ * 🔥 새로운 통합 이미지 최적화 함수들 (Supabase Storage 변환 우선)
  */
-export async function optimizeImage(
-  imageUri: string,
-  options: ImageOptimizeOptions
-): Promise<OptimizedImageResult> {
-  try {
-    console.log("🖼️ 이미지 최적화 시작:", { imageUri, options });
 
-    // 1. 원본 이미지 정보 가져오기
-    const imageInfo = await ImageManipulator.manipulateAsync(imageUri, [], {
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
+/**
+ * 통합 이미지 URL 생성 (Supabase Storage 변환 우선 사용)
+ * @param supabaseClient - Supabase 클라이언트 인스턴스
+ * @param imageUrl - 이미지 URL (Storage URL 또는 일반 URL)
+ * @param options - 변환 옵션
+ * @returns 최적화된 이미지 URL
+ */
+export function getOptimizedImageUrl(
+  supabaseClient: SupabaseClient,
+  imageUrl: string,
+  options: {
+    width?: number;
+    height?: number;
+    quality?: number; // 1-100 (Supabase 기준)
+    resize?: "cover" | "contain" | "fill";
+  } = {}
+): string {
+  if (!imageUrl) return "";
 
-    console.log("🖼️ 원본 이미지 정보:", {
-      width: imageInfo.width,
-      height: imageInfo.height,
-      uri: imageInfo.uri,
-    });
-
-    // 2. 리사이즈 비율 계산
-    const { maxWidth, maxHeight } = options;
-    let { width, height } = imageInfo;
-
-    // 최대 크기를 초과하는 경우 비율에 맞게 리사이즈
-    if (width > maxWidth || height > maxHeight) {
-      const widthRatio = maxWidth / width;
-      const heightRatio = maxHeight / height;
-      const ratio = Math.min(widthRatio, heightRatio);
-
-      width = Math.round(width * ratio);
-      height = Math.round(height * ratio);
-    }
-
-    // 3. 포맷 변환 매핑
-    const formatMap = {
-      jpeg: ImageManipulator.SaveFormat.JPEG,
-      png: ImageManipulator.SaveFormat.PNG,
-      webp: ImageManipulator.SaveFormat.WEBP,
+  // Supabase Storage URL인 경우 서버 사이드 변환 사용 (권장)
+  if (isSupabaseStorageUrl(imageUrl)) {
+    const transformOptions: ImageTransformOptions = {
+      width: options.width,
+      height: options.height,
+      quality: options.quality || 80,
+      resize: options.resize || "cover",
     };
 
-    // 4. 이미지 최적화 실행
-    const actions: ImageManipulator.Action[] = [];
-
-    // 크기 조정이 필요한 경우
-    if (width !== imageInfo.width || height !== imageInfo.height) {
-      actions.push({
-        resize: { width, height },
-      });
-    }
-
-    const optimizedImage = await ImageManipulator.manipulateAsync(
-      imageUri,
-      actions,
-      {
-        compress: options.quality,
-        format: formatMap[options.format],
-        base64: false,
-      }
-    );
-
-    // 5. 파일 크기 정보 가져오기
-    const fileInfo = await FileSystem.getInfoAsync(optimizedImage.uri);
-    const fileSize = fileInfo.exists ? fileInfo.size || 0 : 0;
-
-    const result: OptimizedImageResult = {
-      uri: optimizedImage.uri,
-      width: optimizedImage.width || width,
-      height: optimizedImage.height || height,
-      fileSize,
-    };
-
-    console.log("🖼️ 이미지 최적화 완료:", {
-      originalSize: `${imageInfo.width}x${imageInfo.height}`,
-      optimizedSize: `${result.width}x${result.height}`,
-      fileSize: `${Math.round(fileSize / 1024)}KB`,
-      compression: options.quality,
-    });
-
-    return result;
-  } catch (error) {
-    console.error("🖼️ 이미지 최적화 실패:", error);
-    throw new Error(
-      `이미지 최적화 실패: ${
-        error instanceof Error ? error.message : "알 수 없는 오류"
-      }`
-    );
+    return transformStorageImageUrl(supabaseClient, imageUrl, transformOptions);
   }
+
+  // 일반 URL인 경우 원본 반환
+  console.log("⚠️ Supabase Storage가 아닌 URL입니다. 원본 반환:", imageUrl);
+  return imageUrl;
 }
 
 /**
- * 아바타용 이미지 최적화 (정사각형, JPEG, 고품질)
- * @param imageUri - 원본 이미지 URI
- * @param size - 출력 크기 (기본: 400px)
- * @returns 최적화된 아바타 이미지
+ * 아바타 이미지 최적화 (통합)
+ * @param supabaseClient - Supabase 클라이언트 인스턴스
+ * @param avatarUrl - 아바타 URL
+ * @param size - 크기 ('thumbnail' | 'small' | 'medium' | 'large')
+ * @returns 최적화된 아바타 URL
  */
-export async function optimizeAvatarImage(
-  imageUri: string,
-  size: number = 400
-): Promise<OptimizedImageResult> {
-  return optimizeImage(imageUri, {
-    maxWidth: size,
-    maxHeight: size,
-    quality: 0.85, // 고품질 유지
-    format: "jpeg",
-  });
+export function getOptimizedAvatarUrl(
+  supabaseClient: SupabaseClient,
+  avatarUrl: string,
+  size: "thumbnail" | "small" | "medium" | "large" = "medium"
+): string {
+  if (!avatarUrl) return "";
+
+  if (isSupabaseStorageUrl(avatarUrl)) {
+    return getAvatarImageUrl(supabaseClient, avatarUrl, size);
+  }
+
+  // 일반 URL (UI Avatars 등)은 원본 반환
+  return avatarUrl;
 }
 
 /**
- * 썸네일용 이미지 최적화 (작은 크기, 높은 압축)
- * @param imageUri - 원본 이미지 URI
- * @param size - 출력 크기 (기본: 150px)
- * @returns 최적화된 썸네일 이미지
+ * 서비스 요청 사진 최적화 (통합)
+ * @param supabaseClient - Supabase 클라이언트 인스턴스
+ * @param photoUrl - 사진 URL
+ * @param size - 크기 ('thumbnail' | 'medium' | 'large' | 'original')
+ * @returns 최적화된 사진 URL
  */
-export async function optimizeThumbnailImage(
-  imageUri: string,
-  size: number = 150
-): Promise<OptimizedImageResult> {
-  return optimizeImage(imageUri, {
-    maxWidth: size,
-    maxHeight: size,
-    quality: 0.7, // 압축률 높임
-    format: "jpeg",
-  });
+export function getOptimizedServicePhotoUrl(
+  supabaseClient: SupabaseClient,
+  photoUrl: string,
+  size: "thumbnail" | "medium" | "large" | "original" = "medium"
+): string {
+  if (!photoUrl) return "";
+
+  if (isSupabaseStorageUrl(photoUrl)) {
+    return getServicePhotoUrl(supabaseClient, photoUrl, size);
+  }
+
+  console.log("⚠️ Supabase Storage가 아닌 URL입니다. 원본 반환:", photoUrl);
+  return photoUrl;
 }
 
 /**
- * 파일 크기를 사람이 읽기 쉬운 형태로 변환
- * @param bytes - 바이트 크기
- * @returns 포맷된 크기 문자열
+ * 경매 사진 최적화 (통합)
+ * @param supabaseClient - Supabase 클라이언트 인스턴스
+ * @param photoUrl - 사진 URL
+ * @param size - 크기 ('thumbnail' | 'card' | 'detail' | 'fullsize')
+ * @returns 최적화된 사진 URL
  */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
+export function getOptimizedAuctionPhotoUrl(
+  supabaseClient: SupabaseClient,
+  photoUrl: string,
+  size: "thumbnail" | "card" | "detail" | "fullsize" = "detail"
+): string {
+  if (!photoUrl) return "";
 
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  if (isSupabaseStorageUrl(photoUrl)) {
+    return getAuctionPhotoUrl(supabaseClient, photoUrl, size);
+  }
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  console.log("⚠️ Supabase Storage가 아닌 URL입니다. 원본 반환:", photoUrl);
+  return photoUrl;
 }
 
 /**
- * 이미지 파일인지 확인
- * @param uri - 파일 URI
- * @returns 이미지 파일 여부
+ * ⚠️ 업로드 전 전처리 기능 제거됨
+ * ExpoImageManipulator 의존성 제거로 인해 클라이언트 사이드 압축 비활성화
+ * 대신 Supabase Storage 서버 사이드 변환을 사용하세요.
  */
-export function isImageFile(uri: string): boolean {
-  const imageExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"];
-  const lowerUri = uri.toLowerCase();
-
-  return imageExtensions.some((ext) => lowerUri.includes(ext));
-}
 
 /**
- * 이미지 크기가 제한을 초과하는지 확인
- * @param fileSize - 파일 크기 (bytes)
- * @param maxSizeMB - 최대 크기 (MB)
- * @returns 크기 초과 여부
+ * 개발용: Supabase Storage 이미지 변환 테스트
+ * @param supabaseClient - Supabase 클라이언트 인스턴스
+ * @param testStorageUrls - 테스트할 Supabase Storage URL 배열
  */
-export function isFileSizeExceeded(
-  fileSize: number,
-  maxSizeMB: number = 5
-): boolean {
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-  return fileSize > maxSizeBytes;
-}
-
-/**
- * 이미지 MIME 타입 감지
- * @param uri - 이미지 URI
- * @returns MIME 타입
- */
-export function detectImageMimeType(uri: string): string {
-  const lowerUri = uri.toLowerCase();
-
-  if (lowerUri.includes(".png")) return "image/png";
-  if (lowerUri.includes(".gif")) return "image/gif";
-  if (lowerUri.includes(".webp")) return "image/webp";
-  if (lowerUri.includes(".bmp")) return "image/bmp";
-
-  // 기본값: JPEG
-  return "image/jpeg";
-}
-
-/**
- * 개발용: 이미지 최적화 테스트
- * @param testImageUri - 테스트할 이미지 URI
- */
-export async function testImageOptimization(
-  testImageUri: string
-): Promise<void> {
+export function testSupabaseImageOptimization(
+  supabaseClient: SupabaseClient,
+  testStorageUrls: string[] = []
+): void {
   if (__DEV__) {
-    try {
-      console.log("🧪 === 이미지 최적화 테스트 시작 ===");
+    console.log("🧪 === Supabase Storage 이미지 변환 테스트 시작 ===");
 
-      // 1. 원본 파일 정보
-      const originalInfo = await FileSystem.getInfoAsync(testImageUri);
-      console.log("📸 원본:", {
-        uri: testImageUri,
-        size: originalInfo.exists
-          ? formatFileSize(originalInfo.size || 0)
-          : "정보 없음",
-      });
-
-      // 2. 아바타 최적화 테스트
-      const avatarResult = await optimizeAvatarImage(testImageUri, 400);
-      console.log("👤 아바타 최적화:", {
-        size: `${avatarResult.width}x${avatarResult.height}`,
-        fileSize: formatFileSize(avatarResult.fileSize),
-      });
-
-      // 3. 썸네일 최적화 테스트
-      const thumbnailResult = await optimizeThumbnailImage(testImageUri, 150);
-      console.log("🖼️ 썸네일 최적화:", {
-        size: `${thumbnailResult.width}x${thumbnailResult.height}`,
-        fileSize: formatFileSize(thumbnailResult.fileSize),
-      });
-
-      console.log("🧪 === 테스트 완료 ===");
-    } catch (error) {
-      console.error("🧪 테스트 실패:", error);
+    if (testStorageUrls.length === 0) {
+      console.log("⚠️ 테스트할 URL이 제공되지 않았습니다.");
+      return;
     }
+
+    testStorageUrls.forEach((url, index) => {
+      console.log(`\n📸 테스트 URL ${index + 1}: ${url}`);
+
+      if (!isSupabaseStorageUrl(url)) {
+        console.log("❌ Supabase Storage URL이 아닙니다.");
+        return;
+      }
+
+      // 아바타 변환 테스트
+      console.log("👤 아바타 변환:");
+      console.log(
+        `  - 썸네일: ${getOptimizedAvatarUrl(supabaseClient, url, "thumbnail")}`
+      );
+      console.log(
+        `  - 미디엄: ${getOptimizedAvatarUrl(supabaseClient, url, "medium")}`
+      );
+
+      // 경매 사진 변환 테스트
+      console.log("🏷️ 경매 사진 변환:");
+      console.log(
+        `  - 카드: ${getOptimizedAuctionPhotoUrl(supabaseClient, url, "card")}`
+      );
+      console.log(
+        `  - 상세: ${getOptimizedAuctionPhotoUrl(
+          supabaseClient,
+          url,
+          "detail"
+        )}`
+      );
+
+      // 일반 변환 테스트
+      console.log("🖼️ 일반 변환:");
+      console.log(
+        `  - 400x300: ${getOptimizedImageUrl(supabaseClient, url, {
+          width: 400,
+          height: 300,
+          quality: 75,
+        })}`
+      );
+    });
+
+    console.log("\n🧪 === 테스트 완료 ===");
   }
 }

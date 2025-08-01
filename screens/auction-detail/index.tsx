@@ -32,6 +32,8 @@ import {
   BidHistorySection,
 } from "@/components/auction/bid";
 import { AuctionResultSection } from "@/components/auction/result";
+import { getOptimizedAuctionPhotoUrl } from "@/utils/imageOptimizer";
+import { supabase } from "@/hooks/auctions/supabaseClient";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -227,10 +229,18 @@ export const AuctionDetail = () => {
   // 이미지 슬라이드 렌더링 함수
   const renderImageItem = ({ item }: { item: any }) => {
     const isLoaded = loadedImages.has(item.id);
+
+    // Supabase Storage 이미지 최적화 적용
+    const optimizedImageUrl = getOptimizedAuctionPhotoUrl(
+      supabase,
+      item.uri,
+      "detail" // 상세 화면에서는 detail 크기 사용 (800x600, 85% 품질)
+    );
+
     return (
       <Box style={{ width: screenWidth, height: 256 }}>
         <Image
-          source={{ uri: item.uri }}
+          source={{ uri: optimizedImageUrl }}
           style={{
             width: screenWidth,
             height: 256,

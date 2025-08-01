@@ -26,6 +26,61 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { cn } from "@gluestack-ui/nativewind-utils/cn";
 import { Platform } from "react-native";
 import { getAvatarUrl, testAvatarGeneration } from "@/utils/avatar";
+import {
+  getOptimizedAvatarUrl,
+  getOptimizedServicePhotoUrl,
+  testSupabaseImageOptimization,
+} from "@/utils/imageOptimizer";
+import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
+import { supabase } from "@/hooks/auth/api";
+
+// 🧪 개발용: 이미지 최적화 테스트 함수
+const testImageOptimization = () => {
+  if (__DEV__) {
+    const testUrls = [
+      // 아바타 이미지
+      "http://127.0.0.1:54331/storage/v1/object/public/avatars/test-user/test-avatar.png",
+      // 서비스 요청 이미지
+      "http://127.0.0.1:54331/storage/v1/object/public/service-request-photos/test-request/test-service-photo.png",
+      // 경매 이미지 (샘플)
+      "http://127.0.0.1:54331/storage/v1/object/public/auction-photos/auction_123/photo_0.jpg",
+      // UI Avatars (외부)
+      "https://ui-avatars.com/api/?name=테스트&size=150&background=3B82F6&color=ffffff",
+    ];
+
+    console.log("🧪 === 전체 이미지 최적화 테스트 시작 ===");
+    testSupabaseImageOptimization(supabase, testUrls);
+
+    // 개별 최적화 함수 테스트
+    console.log("\n🎯 === 개별 최적화 함수 테스트 ===");
+
+    // 1. 아바타 최적화
+    const avatarUrl = testUrls[0];
+    console.log("📸 아바타 이미지 최적화:");
+    console.log("  원본:", avatarUrl);
+    console.log(
+      "  small:",
+      getOptimizedAvatarUrl(supabase, avatarUrl, "small")
+    );
+    console.log(
+      "  medium:",
+      getOptimizedAvatarUrl(supabase, avatarUrl, "medium")
+    );
+
+    // 2. 서비스 사진 최적화
+    const serviceUrl = testUrls[1];
+    console.log("\n📸 서비스 사진 최적화:");
+    console.log("  원본:", serviceUrl);
+    console.log(
+      "  thumbnail:",
+      getOptimizedServicePhotoUrl(supabase, serviceUrl, "thumbnail")
+    );
+    console.log(
+      "  medium:",
+      getOptimizedServicePhotoUrl(supabase, serviceUrl, "medium")
+    );
+  }
+};
 
 const MainContent = () => {
   const router = useRouter();
@@ -385,11 +440,38 @@ const MainContent = () => {
             <AvatarImage
               alt="Profile Image"
               source={{
-                uri: getAvatarUrl(
-                  user?.avatarUrl,
-                  user?.name || user?.phoneNumber,
-                  150
-                ),
+                uri: (() => {
+                  // 🔍 디버깅: 아바타 URL 최적화 확인
+                  const originalUrl = user?.avatarUrl;
+                  const isSupabaseUrl =
+                    originalUrl && isSupabaseStorageUrl(originalUrl);
+
+                  let finalUrl: string;
+
+                  if (isSupabaseUrl) {
+                    finalUrl = getOptimizedAvatarUrl(
+                      supabase,
+                      originalUrl,
+                      "small"
+                    );
+                    console.log(
+                      "🎯 [Profile Avatar] Supabase Storage 최적화 사용:"
+                    );
+                    console.log("  원본 URL:", originalUrl);
+                    console.log("  최적화 URL:", finalUrl);
+                    console.log("  크기:", "small (150x150, 80% 품질)");
+                  } else {
+                    finalUrl = getAvatarUrl(
+                      originalUrl,
+                      user?.name || user?.phoneNumber,
+                      150
+                    );
+                    console.log("🎨 [Profile Avatar] UI Avatars 사용:");
+                    console.log("  최종 URL:", finalUrl);
+                  }
+
+                  return finalUrl;
+                })(),
               }}
             />
             <AvatarBadge />
@@ -424,6 +506,17 @@ const MainContent = () => {
                 <ButtonText className="text-dark">프로필 수정</ButtonText>
                 <ButtonIcon as={EditIcon} />
               </Button>
+              {/* 🧪 개발 모드에서만 테스트 버튼 표시 */}
+              {__DEV__ && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPress={testImageOptimization}
+                  className="mr-2"
+                >
+                  <ButtonText className="text-xs">🧪 이미지</ButtonText>
+                </Button>
+              )}
               <Button
                 variant="outline"
                 action="negative"

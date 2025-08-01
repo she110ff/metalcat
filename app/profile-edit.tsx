@@ -32,6 +32,9 @@ import {
 } from "@/components/DaumAddressSearch";
 import { Check } from "lucide-react-native";
 import { getAvatarUrl } from "@/utils/avatar";
+import { getOptimizedAvatarUrl } from "@/utils/imageOptimizer";
+import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
+import { supabase } from "@/hooks/auth/api"; // 사용자 관련 supabase 클라이언트
 import {
   uploadUserAvatar,
   AvatarUploadError,
@@ -87,6 +90,58 @@ const formatBusinessNumber = (value: string): string => {
       5
     )}`;
   }
+};
+
+// 최적화된 아바타 URL 생성 헬퍼 함수
+const getOptimizedAvatarURL = (
+  uploadedAvatarUrl: string | null,
+  avatarImage: string | null,
+  userAvatarUrl: string | null | undefined,
+  fallbackSeed: string | undefined
+) => {
+  // 🔍 디버깅: 프로필 편집 아바타 URL 최적화 확인
+  console.log("🔧 [Profile Edit Avatar] URL 최적화 체크:");
+  console.log("  업로드된 아바타:", uploadedAvatarUrl);
+  console.log("  선택된 이미지:", avatarImage);
+  console.log("  사용자 아바타:", userAvatarUrl);
+  console.log("  fallback 시드:", fallbackSeed);
+
+  // 1. 업로드된 아바타가 있으면 우선 사용
+  if (uploadedAvatarUrl) {
+    if (isSupabaseStorageUrl(uploadedAvatarUrl)) {
+      const optimizedUrl = getOptimizedAvatarUrl(
+        supabase,
+        uploadedAvatarUrl,
+        "medium"
+      );
+      console.log("  ✅ 업로드된 아바타 최적화:", optimizedUrl);
+      return optimizedUrl;
+    }
+    console.log("  ✅ 업로드된 아바타 원본 사용:", uploadedAvatarUrl);
+    return uploadedAvatarUrl;
+  }
+
+  // 2. 선택된 로컬 이미지가 있으면 사용
+  if (avatarImage) {
+    console.log("  ✅ 로컬 이미지 사용:", avatarImage);
+    return avatarImage;
+  }
+
+  // 3. 사용자 기존 아바타가 Supabase Storage인 경우 최적화
+  if (userAvatarUrl && isSupabaseStorageUrl(userAvatarUrl)) {
+    const optimizedUrl = getOptimizedAvatarUrl(
+      supabase,
+      userAvatarUrl,
+      "medium"
+    );
+    console.log("  ✅ 기존 아바타 최적화:", optimizedUrl);
+    return optimizedUrl;
+  }
+
+  // 4. 기본 아바타 (UI Avatars) 사용
+  const fallbackUrl = getAvatarUrl(userAvatarUrl, fallbackSeed, 200);
+  console.log("  ✅ UI Avatars 사용:", fallbackUrl);
+  return fallbackUrl;
 };
 
 export default function ProfileEditScreen() {
@@ -425,14 +480,12 @@ export default function ProfileEditScreen() {
                 <AvatarImage
                   alt="Profile Image"
                   source={{
-                    uri:
-                      uploadedAvatarUrl ||
-                      avatarImage ||
-                      getAvatarUrl(
-                        user?.avatarUrl,
-                        user?.name || user?.phoneNumber,
-                        200
-                      ),
+                    uri: getOptimizedAvatarURL(
+                      uploadedAvatarUrl,
+                      avatarImage,
+                      user?.avatarUrl,
+                      user?.name || user?.phoneNumber
+                    ),
                   }}
                 />
                 <AvatarBadge className="justify-center items-center bg-background-500">

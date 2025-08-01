@@ -8,6 +8,9 @@ import { Pressable } from "@/components/ui/pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { Plus } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import { getOptimizedServicePhotoUrl } from "@/utils/imageOptimizer";
+import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
+import { supabase } from "@/hooks/service-request/supabaseClient";
 
 // 사진 정보 타입들
 export interface PhotoInfo {
@@ -227,49 +230,83 @@ export const PhotoPicker = <T extends Photo>({
       {/* 사진 리스트 */}
       <VStack space="md">
         <HStack space="md" className="flex-wrap">
-          {photos.map((photo, index) => (
-            <Box key={photo.id} className="relative">
-              <Image
-                source={{ uri: photo.uri }}
-                className={`${sizeClasses[size]} rounded-lg`}
-                style={{ resizeMode: "cover" }}
-                onError={(error) => {
-                  console.warn("이미지 로딩 실패:", photo.uri, error);
-                }}
-                defaultSource={{
-                  uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
-                }}
-              />
-              {/* 삭제 버튼 */}
-              <Pressable
-                onPress={() => handleRemovePhoto(photo.id)}
-                style={{
-                  position: "absolute",
-                  top: -8,
-                  right: -8,
-                  width: 26,
-                  height: 26,
-                  borderRadius: 13,
-                  backgroundColor: "#000000",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 2,
-                  borderColor: "#FFFFFF",
-                }}
-              >
-                <Text
+          {photos.map((photo, index) => {
+            // 🎯 서비스 요청 이미지 최적화 적용
+            const optimizedImageUrl = (() => {
+              const originalUrl = photo.uri;
+
+              if (isSupabaseStorageUrl(originalUrl)) {
+                // Supabase Storage 이미지는 최적화 적용
+                const optimizedUrl = getOptimizedServicePhotoUrl(
+                  supabase,
+                  originalUrl,
+                  "thumbnail" // PhotoPicker에서는 thumbnail 크기 사용 (200x150, 70% 품질)
+                );
+
+                if (__DEV__) {
+                  console.log("🎯 [PhotoPicker] 서비스 이미지 최적화:");
+                  console.log("  원본 URL:", originalUrl);
+                  console.log("  최적화 URL:", optimizedUrl);
+                  console.log("  크기:", "thumbnail (200x150, 70% 품질)");
+                }
+
+                return optimizedUrl;
+              } else {
+                // 로컬 이미지나 다른 URL은 원본 사용
+                if (__DEV__) {
+                  console.log(
+                    "🎨 [PhotoPicker] 로컬 이미지 사용:",
+                    originalUrl
+                  );
+                }
+                return originalUrl;
+              }
+            })();
+
+            return (
+              <Box key={photo.id} className="relative">
+                <Image
+                  source={{ uri: optimizedImageUrl }}
+                  className={`${sizeClasses[size]} rounded-lg`}
+                  style={{ resizeMode: "cover" }}
+                  onError={(error) => {
+                    console.warn("이미지 로딩 실패:", photo.uri, error);
+                  }}
+                  defaultSource={{
+                    uri: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                  }}
+                />
+                {/* 삭제 버튼 */}
+                <Pressable
+                  onPress={() => handleRemovePhoto(photo.id)}
                   style={{
-                    color: "#FFFFFF",
-                    fontSize: 16,
-                    fontWeight: "bold",
-                    lineHeight: 18,
+                    position: "absolute",
+                    top: -8,
+                    right: -8,
+                    width: 26,
+                    height: 26,
+                    borderRadius: 13,
+                    backgroundColor: "#000000",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderWidth: 2,
+                    borderColor: "#FFFFFF",
                   }}
                 >
-                  ×
-                </Text>
-              </Pressable>
-            </Box>
-          ))}
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 16,
+                      fontWeight: "bold",
+                      lineHeight: 18,
+                    }}
+                  >
+                    ×
+                  </Text>
+                </Pressable>
+              </Box>
+            );
+          })}
 
           {/* 사진 추가 버튼 */}
           {photos.length < maxPhotos && (
