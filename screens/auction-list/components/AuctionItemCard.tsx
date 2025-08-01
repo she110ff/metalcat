@@ -46,8 +46,8 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
           padding: 16,
         }}
       >
-        <View style={{ gap: 12 }}>
-          {/* 헤더 (제목과 결과 배지) */}
+        <View style={{ gap: 8 }}>
+          {/* 헤더 (제목과 상태) */}
           <View
             style={{
               flexDirection: "row",
@@ -62,7 +62,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                   color: "white",
                   fontWeight: "600",
                   fontSize: 16,
-                  marginBottom: 4,
+                  marginBottom: 2,
                 }}
               >
                 {item.title}
@@ -70,15 +70,61 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               <Text
                 style={{
                   color: "rgba(255,255,255,0.6)",
-                  fontSize: 14,
+                  fontSize: 13,
                 }}
               >
                 {item.metalType} • {item.weight}
               </Text>
             </View>
+
+            {/* 상태 표시 */}
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 4,
+                borderRadius: 12,
+                backgroundColor:
+                  item.status === "active"
+                    ? "rgba(34, 197, 94, 0.2)"
+                    : item.status === "ending"
+                    ? "rgba(251, 191, 36, 0.2)"
+                    : result?.result === "successful"
+                    ? "rgba(34, 197, 94, 0.2)"
+                    : result?.result === "failed"
+                    ? "rgba(239, 68, 68, 0.2)"
+                    : "rgba(107, 114, 128, 0.2)",
+              }}
+            >
+              <Text
+                style={{
+                  color:
+                    item.status === "active"
+                      ? "#22C55E"
+                      : item.status === "ending"
+                      ? "#FBBF24"
+                      : result?.result === "successful"
+                      ? "#22C55E"
+                      : result?.result === "failed"
+                      ? "#EF4444"
+                      : "#6B7280",
+                  fontSize: 12,
+                  fontWeight: "600",
+                }}
+              >
+                {item.status === "active"
+                  ? "진행중"
+                  : item.status === "ending"
+                  ? "마감임박"
+                  : result?.result === "successful"
+                  ? "낙찰"
+                  : result?.result === "failed"
+                  ? "유찰"
+                  : "종료"}
+              </Text>
+            </View>
           </View>
 
-          {/* 가격과 상태 정보 */}
+          {/* 가격과 메타 정보 */}
           <View
             style={{
               flexDirection: "row",
@@ -86,84 +132,39 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               justifyContent: "space-between",
             }}
           >
-            <View style={{ flex: 1 }}>
-              <View
+            {/* 현재가 */}
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Text
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginBottom: 8,
+                  color: "rgba(255,255,255,0.6)",
+                  fontSize: 13,
                 }}
               >
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: 14,
-                  }}
-                >
-                  현재가:
-                </Text>
-                <Text
-                  style={{
-                    color: "#00E5B8",
-                    fontWeight: "700",
-                    fontSize: 16,
-                    marginLeft: 8,
-                  }}
-                >
-                  {item.status === "ended" && result?.result === "successful"
-                    ? formatAuctionPrice(result.winningAmount || 0)
-                    : item.currentBid}
-                </Text>
-              </View>
+                현재가:
+              </Text>
+              <Text
+                style={{
+                  color: "#00E5B8",
+                  fontWeight: "700",
+                  fontSize: 16,
+                  marginLeft: 6,
+                }}
+              >
+                {item.status === "ended" && result?.result === "successful"
+                  ? formatAuctionPrice(result.winningAmount || 0)
+                  : item.currentBid}
+              </Text>
             </View>
 
-            <View style={{ alignItems: "flex-end", gap: 8 }}>
-              {/* 상태 표시 */}
-              <View
-                style={{
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  backgroundColor:
-                    item.status === "active"
-                      ? "rgba(34, 197, 94, 0.2)"
-                      : item.status === "ending"
-                      ? "rgba(251, 191, 36, 0.2)"
-                      : result?.result === "successful"
-                      ? "rgba(34, 197, 94, 0.2)"
-                      : result?.result === "failed"
-                      ? "rgba(239, 68, 68, 0.2)"
-                      : "rgba(107, 114, 128, 0.2)",
-                }}
-              >
-                <Text
-                  style={{
-                    color:
-                      item.status === "active"
-                        ? "#22C55E"
-                        : item.status === "ending"
-                        ? "#FBBF24"
-                        : result?.result === "successful"
-                        ? "#22C55E"
-                        : result?.result === "failed"
-                        ? "#EF4444"
-                        : "#6B7280",
-                    fontSize: 12,
-                    fontWeight: "600",
-                  }}
-                >
-                  {item.status === "active"
-                    ? "진행중"
-                    : item.status === "ending"
-                    ? "마감임박"
-                    : result?.result === "successful"
-                    ? "낙찰"
-                    : result?.result === "failed"
-                    ? "유찰"
-                    : "종료"}
-                </Text>
-              </View>
-
+            {/* 메타 정보들 (입찰자수, 시간) */}
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
+            >
               {/* 입찰자 수 */}
               <View
                 style={{
@@ -172,15 +173,15 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                 }}
               >
                 <Users
-                  size={14}
-                  color="rgba(255,255,255,0.6)"
+                  size={13}
+                  color="rgba(255,255,255,0.5)"
                   strokeWidth={2}
                 />
                 <Text
                   style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: 14,
-                    marginLeft: 4,
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: 13,
+                    marginLeft: 3,
                   }}
                 >
                   {item.bidders}
@@ -195,15 +196,15 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                 }}
               >
                 <Clock
-                  size={14}
-                  color="rgba(255,255,255,0.6)"
+                  size={13}
+                  color="rgba(255,255,255,0.5)"
                   strokeWidth={2}
                 />
                 <Text
                   style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: 14,
-                    marginLeft: 4,
+                    color: "rgba(255,255,255,0.5)",
+                    fontSize: 13,
+                    marginLeft: 3,
                   }}
                 >
                   {item.status === "ended" ? "종료됨" : item.endTime}

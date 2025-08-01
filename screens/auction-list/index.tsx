@@ -35,6 +35,7 @@ import { useAuctions, useAuctionResult } from "@/hooks/useAuctions";
 import {
   formatAuctionPrice,
   getRemainingTime,
+  getCompactRemainingTime,
   getAuctionStatusColor,
 } from "@/data";
 import { AuctionCategory } from "@/data/types/auction";
@@ -223,7 +224,7 @@ export const AuctionList = () => {
                 }`
               : "1건",
           currentBid: formatAuctionPrice(auction.currentBid || 0),
-          endTime: getRemainingTime(auction.endTime),
+          endTime: getCompactRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",
           bidders: auction.bidders || 0,
         }));

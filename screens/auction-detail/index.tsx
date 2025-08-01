@@ -963,7 +963,10 @@ export const AuctionDetail = () => {
                 <BidInputSection
                   auctionId={id as string}
                   currentTopBid={currentTopBid}
-                  isActive={auctionDetail.status === "active"}
+                  isActive={
+                    auctionDetail.status === "active" ||
+                    auctionDetail.status === "ending"
+                  }
                 />
               )}
 

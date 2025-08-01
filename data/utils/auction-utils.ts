@@ -452,6 +452,37 @@ export const getTimeUntilAuctionEnd = (endTime: Date): string => {
   }
 };
 
+// 목록용 간결한 남은 시간 표시 (일/시간/분 단위로 단순하게)
+export const getCompactRemainingTime = (endTime: Date | undefined): string => {
+  if (!endTime) {
+    return "종료됨";
+  }
+
+  const now = new Date();
+  const diff = endTime.getTime() - now.getTime();
+
+  if (diff <= 0) {
+    return "종료됨";
+  }
+
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+  // 24시간 이상일 때: "X일"
+  if (days > 0) {
+    return `${days}일`;
+  }
+  // 60분 이상일 때: "X시간"
+  else if (hours > 0) {
+    return `${hours}시간`;
+  }
+  // 그 이하: "X분"
+  else {
+    return `${minutes}분`;
+  }
+};
+
 // 경매 상태에 따른 마감 정보 텍스트
 export const getAuctionDeadlineText = (
   transactionType: "normal" | "urgent",
