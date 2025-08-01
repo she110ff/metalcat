@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS app_config (
 -- 환경별 설정 초기 데이터
 INSERT INTO app_config (key, value, environment, description) VALUES 
 ('lme_crawler_url', 'http://host.docker.internal:54331/functions/v1/lme-crawler', 'local', 'LME 크롤러 로컬 환경 URL'),
-('lme_crawler_url', 'https://your-project.supabase.co/functions/v1/lme-crawler', 'production', 'LME 크롤러 프로덕션 환경 URL')
+('lme_crawler_url', 'https://your-project.supabase.co/functions/v1/lme-crawler', 'production', 'LME 크롤러 프로덕션 환경 URL'),
+('current_environment', 'local', 'system', '현재 실행 환경 (local/development/staging/production)')
 ON CONFLICT (key) DO NOTHING;
 
 -- 2. 통합 Cron 실행 로그 테이블
@@ -39,6 +40,8 @@ CREATE INDEX IF NOT EXISTS idx_cron_logs_job_type_status ON cron_execution_logs(
 CREATE INDEX IF NOT EXISTS idx_cron_logs_started_at ON cron_execution_logs(started_at DESC);
 
 -- 3. 환경 감지 및 설정 조회 함수
+
+-- 기존 환경 감지 (호환성 유지)
 CREATE OR REPLACE FUNCTION get_current_environment()
 RETURNS text AS $$
 BEGIN
@@ -51,14 +54,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 개선된 환경 감지 (설정 테이블 기반)
+CREATE OR REPLACE FUNCTION get_current_environment_simple()
+RETURNS text AS $$
+DECLARE
+    env_value text;
+BEGIN
+    -- app_config에서 환경 정보 조회
+    SELECT value INTO env_value 
+    FROM app_config 
+    WHERE key = 'current_environment' AND environment = 'system';
+    
+    -- 기본값: local
+    RETURN COALESCE(env_value, 'local');
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION get_app_config(config_key text)
 RETURNS text AS $$
 DECLARE
     current_env text;
     config_value text;
 BEGIN
-    -- 현재 환경 감지
-    SELECT get_current_environment() INTO current_env;
+    -- 개선된 환경 감지 사용
+    SELECT get_current_environment_simple() INTO current_env;
     
     -- 환경별 설정값 조회
     SELECT value INTO config_value 
@@ -88,7 +107,7 @@ DECLARE
     request_id bigint;
     response_record record;
     start_time timestamptz;
-    duration_ms integer;
+    exec_duration_ms integer;
 BEGIN
     start_time := NOW();
     
@@ -111,7 +130,7 @@ BEGIN
         job_name,
         'running',
         start_time,
-        jsonb_build_object('url', crawler_url, 'environment', get_current_environment())
+        jsonb_build_object('url', crawler_url, 'environment', get_current_environment_simple())
     ) RETURNING id INTO log_id;
     
     RAISE NOTICE '% 크롤러 시작: % (로그 ID: %, URL: %)', upper(crawler_type), start_time, log_id, crawler_url;
@@ -134,7 +153,7 @@ BEGIN
     LIMIT 1;
     
     -- 실행 시간 계산
-    duration_ms := EXTRACT(EPOCH FROM (NOW() - start_time)) * 1000;
+    exec_duration_ms := EXTRACT(EPOCH FROM (NOW() - start_time)) * 1000;
     
     -- 응답 처리
     IF response_record.status_code = 200 THEN
@@ -143,7 +162,7 @@ BEGIN
         SET 
             status = 'success',
             completed_at = NOW(),
-            duration_ms = duration_ms,
+            duration_ms = exec_duration_ms,
             success_count = 6, -- LME는 6개 금속
             metadata = metadata || jsonb_build_object(
                 'http_status', response_record.status_code,
@@ -151,14 +170,14 @@ BEGIN
             )
         WHERE id = log_id;
         
-        RAISE NOTICE '% 크롤러 성공: % (로그 ID: %, 소요시간: %ms)', upper(crawler_type), NOW(), log_id, duration_ms;
+        RAISE NOTICE '% 크롤러 성공: % (로그 ID: %, 소요시간: %ms)', upper(crawler_type), NOW(), log_id, exec_duration_ms;
     ELSE
         -- 실패
         UPDATE cron_execution_logs 
         SET 
             status = 'failed',
             completed_at = NOW(),
-            duration_ms = duration_ms,
+            duration_ms = exec_duration_ms,
             error_message = COALESCE(response_record.error_msg, 'HTTP ' || COALESCE(response_record.status_code::text, 'Unknown')),
             metadata = metadata || jsonb_build_object(
                 'http_status', COALESCE(response_record.status_code, 0),
@@ -173,13 +192,13 @@ BEGIN
     
 EXCEPTION WHEN OTHERS THEN
     -- 예외 발생시 로그 업데이트
-    duration_ms := EXTRACT(EPOCH FROM (NOW() - start_time)) * 1000;
+    exec_duration_ms := EXTRACT(EPOCH FROM (NOW() - start_time)) * 1000;
     
     UPDATE cron_execution_logs 
     SET 
         status = 'failed',
         completed_at = NOW(),
-        duration_ms = duration_ms,
+        duration_ms = exec_duration_ms,
         error_message = SQLERRM,
         metadata = metadata || jsonb_build_object(
             'error_type', 'exception',
@@ -202,10 +221,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 6. LME 크롤러 cron job 생성 (1분마다 실행)
+-- 6. LME 크롤러 cron job 생성 (15분마다 실행 - 권장)
 SELECT cron.schedule(
     'lme-crawler-minutely',
-    '* * * * *',
+    '*/15 * * * *',
     'SELECT run_lme_crawler();'
 );
 
@@ -363,7 +382,7 @@ RETURNS TABLE (
 DECLARE
     current_env text;
 BEGIN
-    SELECT get_current_environment() INTO current_env;
+    SELECT get_current_environment_simple() INTO current_env;
     
     RETURN QUERY
     SELECT 
@@ -388,7 +407,7 @@ DECLARE
     active_jobs integer;
     recent_failures integer;
 BEGIN
-    SELECT get_current_environment() INTO current_env;
+    SELECT get_current_environment_simple() INTO current_env;
     
     -- cron job 통계
     SELECT COUNT(*), COUNT(*) FILTER (WHERE active = true)
@@ -420,5 +439,55 @@ BEGIN
     );
     
     RETURN result;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 9. 크론 스케줄 관리 함수
+CREATE OR REPLACE FUNCTION update_cron_schedule(
+    job_name_param text,
+    new_schedule text,
+    description_text text DEFAULT NULL
+)
+RETURNS boolean AS $$
+DECLARE
+    job_exists boolean;
+    old_schedule text;
+    job_command text;
+BEGIN
+    -- 기존 job 정보 확인
+    SELECT 
+        (COUNT(*) > 0),
+        MAX(j.schedule),
+        MAX(j.command)
+    INTO job_exists, old_schedule, job_command
+    FROM cron.job j 
+    WHERE j.jobname = job_name_param;
+    
+    IF NOT job_exists THEN
+        RAISE NOTICE 'Job not found: %', job_name_param;
+        RETURN false;
+    END IF;
+    
+    -- 기존 job 제거
+    PERFORM cron.unschedule(job_name_param);
+    
+    -- 새로운 스케줄로 재생성
+    PERFORM cron.schedule(job_name_param, new_schedule, job_command);
+    
+    -- 설정 테이블에 기록
+    INSERT INTO app_config (key, value, environment, description) 
+    VALUES (
+        job_name_param || '_schedule', 
+        new_schedule, 
+        'system', 
+        COALESCE(description_text, '크론 스케줄: ' || old_schedule || ' → ' || new_schedule)
+    )
+    ON CONFLICT (key) DO UPDATE SET 
+        value = EXCLUDED.value,
+        description = EXCLUDED.description,
+        updated_at = NOW();
+    
+    RAISE NOTICE '크론 스케줄 변경 완료: % (% → %)', job_name_param, old_schedule, new_schedule;
+    RETURN true;
 END;
 $$ LANGUAGE plpgsql;
