@@ -8,7 +8,10 @@ import {
   Platform,
   View,
   TouchableOpacity,
+  Modal,
+  StatusBar,
 } from "react-native";
+import ImageViewer from "react-native-image-zoom-viewer";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -42,6 +45,8 @@ export const AuctionDetail = () => {
   const { id } = useLocalSearchParams();
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
   // 현재 로그인된 사용자 정보
@@ -228,8 +233,37 @@ export const AuctionDetail = () => {
     setLoadedImages((prev) => new Set([...prev, imageId]));
   };
 
+  // 이미지 클릭 핸들러
+  const handleImagePress = (index: number) => {
+    setSelectedImageIndex(index);
+    setIsImageViewerVisible(true);
+  };
+
+  // 이미지 뷰어 닫기
+  const closeImageViewer = () => {
+    setIsImageViewerVisible(false);
+  };
+
+  // 이미지 뷰어용 이미지 데이터 준비
+  const getImageViewerData = () => {
+    if (!auction?.photos) return [];
+
+    return auction.photos.map((photo: any) => ({
+      url: getOptimizedAuctionPhotoUrl(
+        supabase,
+        photo.uri,
+        "fullsize" // 전체 화면에서는 풀사이즈 사용
+      ),
+      props: {
+        source: {
+          uri: getOptimizedAuctionPhotoUrl(supabase, photo.uri, "fullsize"),
+        },
+      },
+    }));
+  };
+
   // 이미지 슬라이드 렌더링 함수
-  const renderImageItem = ({ item }: { item: any }) => {
+  const renderImageItem = ({ item, index }: { item: any; index: number }) => {
     const isLoaded = loadedImages.has(item.id);
 
     // Supabase Storage 이미지 최적화 적용
@@ -240,7 +274,11 @@ export const AuctionDetail = () => {
     );
 
     return (
-      <Box style={{ width: screenWidth, height: 256 }}>
+      <TouchableOpacity
+        style={{ width: screenWidth, height: 256 }}
+        onPress={() => handleImagePress(index)}
+        activeOpacity={0.9}
+      >
         <Image
           source={{ uri: optimizedImageUrl }}
           style={{
@@ -256,7 +294,20 @@ export const AuctionDetail = () => {
             <ActivityIndicator size="large" color="#FFFFFF" />
           </Box>
         )}
-      </Box>
+        {/* 확대 아이콘 힌트 */}
+        <Box className="absolute top-4 right-4">
+          <Ionicons
+            name="expand-outline"
+            size={24}
+            color="rgba(255, 255, 255, 0.8)"
+            style={{
+              textShadowColor: "rgba(0, 0, 0, 0.5)",
+              textShadowOffset: { width: 1, height: 1 },
+              textShadowRadius: 2,
+            }}
+          />
+        </Box>
+      </TouchableOpacity>
     );
   };
 
@@ -376,7 +427,9 @@ export const AuctionDetail = () => {
                     <FlatList
                       ref={flatListRef}
                       data={auction.photos}
-                      renderItem={renderImageItem}
+                      renderItem={({ item, index }) =>
+                        renderImageItem({ item, index })
+                      }
                       keyExtractor={(item) => item.id}
                       horizontal
                       pagingEnabled
@@ -1020,6 +1073,70 @@ export const AuctionDetail = () => {
           </ScrollView>
         )}
       </SafeAreaView>
+
+      {/* 이미지 뷰어 모달 */}
+      <Modal
+        visible={isImageViewerVisible}
+        transparent={true}
+        onRequestClose={closeImageViewer}
+        animationType="fade"
+      >
+        <StatusBar hidden />
+        <ImageViewer
+          imageUrls={getImageViewerData()}
+          index={selectedImageIndex}
+          onCancel={closeImageViewer}
+          enableSwipeDown={true}
+          swipeDownThreshold={50}
+          saveToLocalByLongPress={false}
+          menuContext={{
+            saveToLocal: "이미지 저장",
+            cancel: "취소",
+          }}
+          renderHeader={() => (
+            <TouchableOpacity
+              style={{
+                position: "absolute",
+                top: Platform.OS === "ios" ? 50 : 30,
+                right: 20,
+                zIndex: 999,
+                width: 44,
+                height: 44,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                borderRadius: 22,
+              }}
+              onPress={closeImageViewer}
+            >
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+          renderIndicator={(currentIndex, allSize) => (
+            <Text
+              style={{
+                position: "absolute",
+                top: Platform.OS === "ios" ? 60 : 40,
+                left: 20,
+                color: "white",
+                fontSize: 16,
+                fontWeight: "bold",
+                backgroundColor: "rgba(0, 0, 0, 0.5)",
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 12,
+              }}
+            >
+              {currentIndex! + 1} / {allSize}
+            </Text>
+          )}
+          backgroundColor="rgba(0, 0, 0, 0.9)"
+          enablePreload={true}
+          loadingRender={() => (
+            <ActivityIndicator size="large" color="#FFFFFF" />
+          )}
+        />
+      </Modal>
     </LinearGradient>
   );
 };
