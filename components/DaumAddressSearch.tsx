@@ -29,6 +29,7 @@ interface DaumAddressSearchProps {
   visible: boolean;
   onComplete: (address: DaumAddressResult) => void;
   onClose: () => void;
+  currentAddress?: DaumAddressResult | null; // 현재 주소 표시용
 }
 
 // @actbase/react-daum-postcode 기반 완벽한 React Native 주소 검색 컴포넌트
@@ -36,8 +37,11 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
   visible,
   onComplete,
   onClose,
+  currentAddress,
 }) => {
-  const [searchMode, setSearchMode] = useState<"api" | "manual">("api");
+  const [searchMode, setSearchMode] = useState<"current" | "api" | "manual">(
+    currentAddress ? "current" : "api"
+  );
   const [manualAddress, setManualAddress] = useState("");
 
   // @actbase/react-daum-postcode 주소 선택 완료 핸들러
@@ -99,9 +103,46 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
     onClose();
   };
 
-  // 모드 전환
+  // 현재 주소 사용
+  const handleUseCurrentAddress = () => {
+    if (currentAddress) {
+      onComplete(currentAddress);
+      onClose();
+    }
+  };
+
+  // 현재 주소 삭제
+  const handleClearCurrentAddress = () => {
+    const emptyAddress: DaumAddressResult = {
+      address: "",
+      roadAddress: "",
+      jibunAddress: "",
+      zonecode: "",
+      buildingName: "",
+      apartment: "",
+      bname: "",
+      sido: "",
+      sigungu: "",
+      userSelectedType: "R",
+    };
+    onComplete(emptyAddress);
+    onClose();
+  };
+
+  // 모드 전환 (순환: current → api → manual → current)
   const toggleMode = () => {
-    setSearchMode(searchMode === "api" ? "manual" : "api");
+    if (currentAddress) {
+      const modes: Array<"current" | "api" | "manual"> = [
+        "current",
+        "api",
+        "manual",
+      ];
+      const currentIndex = modes.indexOf(searchMode);
+      const nextIndex = (currentIndex + 1) % modes.length;
+      setSearchMode(modes[nextIndex]);
+    } else {
+      setSearchMode(searchMode === "api" ? "manual" : "api");
+    }
     setManualAddress("");
   };
 
@@ -109,7 +150,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="fullScreen"
+      presentationStyle={Platform.OS !== "web" ? "pageSheet" : "fullScreen"}
       onRequestClose={onClose}
     >
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -117,6 +158,19 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
         <VStack className="flex-1">
           {/* 헤더 */}
           <HStack className="items-center justify-between p-4 bg-white border-b border-gray-200">
+            {/* 왼쪽 여백 */}
+            <Box style={{ width: 44 }} />
+
+            <VStack className="items-center">
+              <Text className="text-gray-800 text-lg font-bold">주소 입력</Text>
+              <Text className="text-gray-500 text-xs">
+                {searchMode === "current" && "현재 주소"}
+                {searchMode === "api" && "주소 검색"}
+                {searchMode === "manual" && "직접 입력"}
+              </Text>
+            </VStack>
+
+            {/* 닫기 버튼 */}
             <Pressable
               onPress={onClose}
               className="p-2 active:opacity-60"
@@ -127,47 +181,158 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                 justifyContent: "center",
               }}
             >
-              <Ionicons
-                name={Platform.OS === "ios" ? "chevron-back" : "arrow-back"}
-                size={Platform.OS === "ios" ? 28 : 24}
-                color="#212529"
-              />
-            </Pressable>
-            <Text className="text-gray-800 text-lg font-bold">주소 검색</Text>
-            <Pressable
-              onPress={toggleMode}
-              className="p-2 active:opacity-60"
-              style={{
-                minWidth: 44,
-                minHeight: 44,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons
-                name={searchMode === "api" ? "create" : "search"}
-                size={24}
-                color="#007BFF"
-              />
+              <Text className="text-blue-600 font-medium text-base">닫기</Text>
             </Pressable>
           </HStack>
 
-          {/* 모드 표시 */}
-          <Box className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-            <HStack className="items-center justify-center">
-              <Ionicons
-                name={searchMode === "api" ? "search" : "create"}
-                size={16}
-                color="#007BFF"
-              />
-              <Text className="text-blue-700 text-sm font-medium ml-2">
-                {searchMode === "api" ? "다음 주소 검색" : "수동 입력"}
-              </Text>
-            </HStack>
-          </Box>
+          {/* 모드 표시 - 터치하여 모드 전환 */}
+          <Pressable onPress={toggleMode}>
+            <Box
+              className={`px-4 py-2 border-b ${
+                searchMode === "current"
+                  ? "bg-green-50 border-green-200"
+                  : searchMode === "api"
+                  ? "bg-blue-50 border-blue-200"
+                  : "bg-yellow-50 border-yellow-200"
+              }`}
+            >
+              <HStack className="items-center justify-center">
+                <Ionicons
+                  name={
+                    searchMode === "current"
+                      ? "location"
+                      : searchMode === "api"
+                      ? "search"
+                      : "create"
+                  }
+                  size={16}
+                  color={
+                    searchMode === "current"
+                      ? "#059669"
+                      : searchMode === "api"
+                      ? "#007BFF"
+                      : "#D97706"
+                  }
+                />
+                <Text
+                  className={`text-sm font-medium ml-2 ${
+                    searchMode === "current"
+                      ? "text-green-700"
+                      : searchMode === "api"
+                      ? "text-blue-700"
+                      : "text-yellow-700"
+                  }`}
+                >
+                  {searchMode === "current" && "현재 저장된 주소"}
+                  {searchMode === "api" &&
+                    "다음 주소 검색 - 정확하고 빠른 검색"}
+                  {searchMode === "manual" && "주소 직접 입력"}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={
+                    searchMode === "current"
+                      ? "#059669"
+                      : searchMode === "api"
+                      ? "#007BFF"
+                      : "#D97706"
+                  }
+                  style={{ marginLeft: 8 }}
+                />
+              </HStack>
+            </Box>
+          </Pressable>
 
           {/* 콘텐츠 */}
-          {searchMode === "api" ? (
+          {searchMode === "current" ? (
+            /* 현재 주소 표시 및 관리 */
+            <VStack className="flex-1 p-4 space-y-4">
+              {currentAddress ? (
+                <>
+                  {/* 현재 주소 표시 */}
+                  <Box className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <VStack className="space-y-3">
+                      <HStack className="items-center">
+                        <Ionicons name="location" size={20} color="#059669" />
+                        <Text className="text-green-700 font-medium ml-2">
+                          현재 선택된 주소
+                        </Text>
+                      </HStack>
+
+                      <VStack className="space-y-2">
+                        <Text className="text-gray-800 font-medium">
+                          {currentAddress.roadAddress || currentAddress.address}
+                        </Text>
+                        {currentAddress.zonecode && (
+                          <Text className="text-gray-600 text-sm">
+                            우편번호: {currentAddress.zonecode}
+                          </Text>
+                        )}
+                        {currentAddress.buildingName && (
+                          <Text className="text-gray-600 text-sm">
+                            건물명: {currentAddress.buildingName}
+                          </Text>
+                        )}
+                      </VStack>
+                    </VStack>
+                  </Box>
+
+                  {/* 액션 버튼들 */}
+                  <VStack className="space-y-3">
+                    <Button
+                      onPress={handleUseCurrentAddress}
+                      className="bg-green-600 active:bg-green-700 rounded-lg py-3"
+                    >
+                      <HStack className="items-center justify-center">
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={20}
+                          color="white"
+                        />
+                        <Text className="text-white font-medium ml-2">
+                          이 주소 사용하기
+                        </Text>
+                      </HStack>
+                    </Button>
+
+                    <Button
+                      onPress={handleClearCurrentAddress}
+                      className="bg-red-500 active:bg-red-600 rounded-lg py-3"
+                    >
+                      <HStack className="items-center justify-center">
+                        <Ionicons name="trash" size={20} color="white" />
+                        <Text className="text-white font-medium ml-2">
+                          주소 삭제
+                        </Text>
+                      </HStack>
+                    </Button>
+                  </VStack>
+
+                  {/* 다른 방법 안내 */}
+                  <Box className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <Text className="text-blue-700 text-sm text-center">
+                      새로운 주소를 검색하려면 우상단 버튼을 눌러 주소검색 또는
+                      직접입력으로 전환하세요
+                    </Text>
+                  </Box>
+                </>
+              ) : (
+                /* 주소가 없는 경우 */
+                <VStack className="items-center space-y-4 py-8">
+                  <Ionicons name="location-outline" size={48} color="#9CA3AF" />
+                  <VStack className="items-center space-y-2">
+                    <Text className="text-gray-600 font-medium">
+                      선택된 주소가 없습니다
+                    </Text>
+                    <Text className="text-gray-500 text-sm text-center">
+                      주소 검색 또는 직접 입력으로 주소를 추가해보세요
+                    </Text>
+                  </VStack>
+                </VStack>
+              )}
+            </VStack>
+          ) : searchMode === "api" ? (
             <Box className="flex-1">
               {/* @actbase/react-daum-postcode 컴포넌트 */}
               <Postcode

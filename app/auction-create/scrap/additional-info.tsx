@@ -140,11 +140,6 @@ export default function AdditionalInfoScreen() {
     setShippingCost("seller");
   };
 
-  // 주소 검색 상태 디버깅
-  useEffect(() => {
-    console.log("🎯 주소 검색 상태 변경됨:", showAddressSearch);
-  }, [showAddressSearch]);
-
   const handleBack = () => {
     router.back();
   };
@@ -940,6 +935,7 @@ export default function AdditionalInfoScreen() {
           visible={showAddressSearch}
           onComplete={handleAddressComplete}
           onClose={handleAddressClose}
+          currentAddress={selectedAddress}
         />
       </SafeAreaView>
     </LinearGradient>
