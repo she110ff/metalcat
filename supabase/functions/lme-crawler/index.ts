@@ -136,6 +136,8 @@ async function crawlLmeData(exchangeRate?: number): Promise<LmeData[]> {
 
     // 7개씩 그룹화 (날짜 + 6개 금속) - 실제 거래 날짜 사용
     let processedRows = 0;
+    const maxDays = parseInt(Deno.env.get("LME_MAX_DAYS") || "5"); // 환경변수로 설정 가능, 기본값 5일
+    let processedDays = 0;
 
     for (let i = 0; i < tdContents.length - 6; i += 7) {
       const dateStr = tdContents[i];
@@ -146,7 +148,11 @@ async function crawlLmeData(exchangeRate?: number): Promise<LmeData[]> {
         continue;
       }
 
-      console.log(`📅 ${dateStr} (거래일: ${tradeDate}) 데이터 처리 중...`);
+      console.log(
+        `📅 ${dateStr} (거래일: ${tradeDate}) 데이터 처리 중... (${
+          processedDays + 1
+        }/${maxDays}일)`
+      );
 
       // 6개 금속 가격 데이터 순서: Cu, Al, Zn, Pb, Ni, Sn
       const metalMapping = ["CU", "AL", "ZN", "PB", "NI", "SN"];
@@ -204,15 +210,26 @@ async function crawlLmeData(exchangeRate?: number): Promise<LmeData[]> {
       }
 
       processedRows++;
-      // 최신 데이터만 사용 (첫 번째 날짜 그룹)
-      if (lmeData.length >= 6) break;
+      processedDays++;
+
+      // 설정된 일수만큼 데이터 수집 완료 시 종료
+      if (processedDays >= maxDays) {
+        console.log(`🎯 최근 ${maxDays}일 데이터 수집 완료`);
+        break;
+      }
     }
 
     console.log(
-      `🎯 ${processedRows}개 행에서 총 ${lmeData.length}개 가격 데이터 추출`
+      `🎯 ${processedDays}일 ${processedRows}개 행에서 총 ${lmeData.length}개 가격 데이터 추출`
     );
 
-    console.log("✅ 크롤링 완료:", lmeData.length, "개 데이터 추출");
+    console.log(
+      "✅ 크롤링 완료:",
+      lmeData.length,
+      "개 데이터 추출 (최근",
+      processedDays,
+      "일)"
+    );
     return lmeData;
   } catch (error) {
     console.error("❌ 크롤링 실패:", error);
