@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   ScrollView,
   ActivityIndicator,
@@ -41,6 +41,8 @@ export const AuctionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const flatListRef = useRef<FlatList>(null);
 
   // 현재 로그인된 사용자 정보
   const { user } = useAuth();
@@ -258,6 +260,17 @@ export const AuctionDetail = () => {
     );
   };
 
+  // 이미지 스크롤 이벤트 핸들러
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems.length > 0) {
+      setCurrentImageIndex(viewableItems[0].index || 0);
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
   // 이미지 인디케이터 렌더링 함수
   const renderImageIndicator = () => {
     const photos = auction?.photos || [];
@@ -272,7 +285,7 @@ export const AuctionDetail = () => {
           <Box
             key={index}
             className={`w-2 h-2 rounded-full ${
-              index === 0 ? "bg-white/90" : "bg-white/30"
+              index === currentImageIndex ? "bg-white/90" : "bg-white/30"
             }`}
           />
         ))}
@@ -361,6 +374,7 @@ export const AuctionDetail = () => {
                 {auction?.photos && auction.photos.length > 0 ? (
                   <Box style={{ width: screenWidth, height: 256 }}>
                     <FlatList
+                      ref={flatListRef}
                       data={auction.photos}
                       renderItem={renderImageItem}
                       keyExtractor={(item) => item.id}
@@ -369,6 +383,8 @@ export const AuctionDetail = () => {
                       showsHorizontalScrollIndicator={false}
                       style={{ flex: 1 }}
                       nestedScrollEnabled={true}
+                      onViewableItemsChanged={onViewableItemsChanged}
+                      viewabilityConfig={viewabilityConfig}
                     />
                     {renderImageIndicator()}
                   </Box>
