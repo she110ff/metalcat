@@ -31,17 +31,27 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
   const isWinner =
     result?.result === "successful" && result?.winningUserId === user?.id;
 
+  // 경매가 종료되었는지 확인
+  const isEnded = item.status === "ended";
+
   return (
     <TouchableOpacity
       key={item.id}
       onPress={() => onPress(item.id)}
-      activeOpacity={0.7}
+      activeOpacity={isEnded ? 0.5 : 0.7}
+      style={{
+        opacity: isEnded ? 0.6 : 1,
+      }}
     >
       <View
         style={{
-          backgroundColor: "rgba(255, 255, 255, 0.04)",
+          backgroundColor: isEnded
+            ? "rgba(255, 255, 255, 0.02)"
+            : "rgba(255, 255, 255, 0.04)",
           borderWidth: 1,
-          borderColor: "rgba(255, 255, 255, 0.08)",
+          borderColor: isEnded
+            ? "rgba(255, 255, 255, 0.04)"
+            : "rgba(255, 255, 255, 0.08)",
           borderRadius: 16,
           padding: 16,
         }}
@@ -59,7 +69,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
             <View style={{ flex: 1 }}>
               <Text
                 style={{
-                  color: "white",
+                  color: isEnded ? "rgba(255,255,255,0.4)" : "white",
                   fontWeight: "600",
                   fontSize: 16,
                   marginBottom: 2,
@@ -69,7 +79,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               </Text>
               <Text
                 style={{
-                  color: "rgba(255,255,255,0.6)",
+                  color: isEnded
+                    ? "rgba(255,255,255,0.3)"
+                    : "rgba(255,255,255,0.6)",
                   fontSize: 13,
                 }}
               >
@@ -141,7 +153,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
             >
               <Text
                 style={{
-                  color: "rgba(255,255,255,0.6)",
+                  color: isEnded
+                    ? "rgba(255,255,255,0.3)"
+                    : "rgba(255,255,255,0.6)",
                   fontSize: 13,
                 }}
               >
@@ -149,7 +163,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               </Text>
               <Text
                 style={{
-                  color: "#00E5B8",
+                  color: isEnded ? "rgba(0,229,184,0.6)" : "#00E5B8",
                   fontWeight: "700",
                   fontSize: 16,
                   marginLeft: 6,
@@ -174,12 +188,16 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               >
                 <Users
                   size={13}
-                  color="rgba(255,255,255,0.5)"
+                  color={
+                    isEnded ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.5)"
+                  }
                   strokeWidth={2}
                 />
                 <Text
                   style={{
-                    color: "rgba(255,255,255,0.5)",
+                    color: isEnded
+                      ? "rgba(255,255,255,0.25)"
+                      : "rgba(255,255,255,0.5)",
                     fontSize: 13,
                     marginLeft: 3,
                   }}
@@ -197,12 +215,16 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               >
                 <Clock
                   size={13}
-                  color="rgba(255,255,255,0.5)"
+                  color={
+                    isEnded ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.5)"
+                  }
                   strokeWidth={2}
                 />
                 <Text
                   style={{
-                    color: "rgba(255,255,255,0.5)",
+                    color: isEnded
+                      ? "rgba(255,255,255,0.25)"
+                      : "rgba(255,255,255,0.5)",
                     fontSize: 13,
                     marginLeft: 3,
                   }}
