@@ -1100,16 +1100,27 @@ export const AuctionDetail = () => {
                 top: Platform.OS === "ios" ? 50 : 30,
                 right: 20,
                 zIndex: 999,
-                width: 44,
-                height: 44,
+                paddingHorizontal: 16,
+                paddingVertical: 8,
                 alignItems: "center",
                 justifyContent: "center",
-                backgroundColor: "rgba(0, 0, 0, 0.5)",
-                borderRadius: 22,
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.3)",
               }}
               onPress={closeImageViewer}
             >
-              <Ionicons name="close" size={24} color="white" />
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 14,
+                  fontWeight: "600",
+                  letterSpacing: 0.5,
+                }}
+              >
+                닫기
+              </Text>
             </TouchableOpacity>
           )}
           renderIndicator={(currentIndex, allSize) => (
