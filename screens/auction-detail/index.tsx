@@ -19,7 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import { useAuction, useBids } from "@/hooks/useAuctions";
+import { useAuction, useBids, useAuctionResult } from "@/hooks/useAuctions";
 import {
   formatAuctionPrice,
   getRemainingTime,
@@ -29,8 +29,8 @@ import {
   BidStatusSection,
   BidInputSection,
   BidHistorySection,
-  EndedAuctionSection,
 } from "@/components/auction/bid";
+import { AuctionResultSection } from "@/components/auction/result";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -44,6 +44,13 @@ export const AuctionDetail = () => {
 
   // 입찰 기록 조회
   const { data: bids = [], isLoading: bidsLoading } = useBids(id as string);
+
+  // 경매 결과 조회 (종료된 경매인 경우)
+  const {
+    data: auctionResult,
+    isLoading: resultLoading,
+    error: resultError,
+  } = useAuctionResult(id as string);
 
   console.log("📊 경매 데이터 조회 결과:", {
     auction: auction
@@ -951,16 +958,23 @@ export const AuctionDetail = () => {
                 hasBids={bids.length > 0}
               />
 
-              {/* Bid Input */}
-              <BidInputSection
-                auctionId={id as string}
-                currentTopBid={currentTopBid}
-                isActive={auctionDetail.status === "active"}
-              />
+              {/* Bid Input - 진행 중인 경매만 */}
+              {auctionDetail.status !== "ended" && (
+                <BidInputSection
+                  auctionId={id as string}
+                  currentTopBid={currentTopBid}
+                  isActive={auctionDetail.status === "active"}
+                />
+              )}
 
-              {/* Ended Auction Notice */}
+              {/* Auction Result - 종료된 경매 결과 */}
               {auctionDetail.status === "ended" && (
-                <EndedAuctionSection hasBids={bids.length > 0} />
+                <AuctionResultSection
+                  auction={auction}
+                  result={auctionResult}
+                  isLoading={resultLoading}
+                  error={resultError}
+                />
               )}
 
               {/* Bid History */}

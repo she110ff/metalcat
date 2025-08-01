@@ -31,13 +31,15 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react-native";
-import { useAuctions } from "@/hooks/useAuctions";
+import { useAuctions, useAuctionResult } from "@/hooks/useAuctions";
 import {
   formatAuctionPrice,
   getRemainingTime,
   getAuctionStatusColor,
 } from "@/data";
 import { AuctionCategory } from "@/data/types/auction";
+import { ResultBadge } from "@/components/auction/ui/ResultBadge";
+import { AuctionItemCard } from "./components/AuctionItemCard";
 
 interface AuctionItem {
   id: string;
@@ -1094,137 +1096,11 @@ export const AuctionList = () => {
               {!isLoading && !error && isLoggedIn && (
                 <View style={{ gap: 16 }}>
                   {auctionItems.map((item) => (
-                    <TouchableOpacity
+                    <AuctionItemCard
                       key={item.id}
-                      onPress={() => handleAuctionPress(item.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View
-                        style={{
-                          backgroundColor: "rgba(255, 255, 255, 0.04)",
-                          borderWidth: 1,
-                          borderColor: "rgba(255, 255, 255, 0.08)",
-                          borderRadius: 16,
-                          padding: 16,
-                        }}
-                      >
-                        <View style={{ gap: 12 }}>
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <View style={{ flex: 1 }}>
-                              <Text
-                                style={{
-                                  color: "white",
-                                  fontWeight: "600",
-                                  fontSize: 16,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                {item.title}
-                              </Text>
-                              <Text
-                                style={{
-                                  color: "rgba(255,255,255,0.6)",
-                                  fontSize: 14,
-                                }}
-                              >
-                                {item.metalType} • {item.weight}
-                              </Text>
-                            </View>
-
-                            <View style={{ alignItems: "flex-end" }}>
-                              <Text
-                                style={{
-                                  color: "white",
-                                  fontWeight: "bold",
-                                  fontSize: 18,
-                                }}
-                              >
-                                {item.currentBid}
-                              </Text>
-                              <View
-                                style={{
-                                  flexDirection: "row",
-                                  alignItems: "center",
-                                  marginTop: 2,
-                                }}
-                              >
-                                <Users
-                                  size={12}
-                                  color="rgba(255,255,255,0.6)"
-                                  strokeWidth={2}
-                                />
-                                <Text
-                                  style={{
-                                    color: "rgba(255,255,255,0.6)",
-                                    fontSize: 12,
-                                    marginLeft: 4,
-                                  }}
-                                >
-                                  {item.bidders}명 참여
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
-
-                          <View
-                            style={{
-                              flexDirection: "row",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                            }}
-                          >
-                            <View
-                              style={{
-                                backgroundColor: getStatusColor(item.status),
-                                paddingHorizontal: 8,
-                                paddingVertical: 4,
-                                borderRadius: 8,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: "white",
-                                  fontWeight: "600",
-                                  fontSize: 12,
-                                }}
-                              >
-                                {getStatusText(item.status)}
-                              </Text>
-                            </View>
-
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                              }}
-                            >
-                              <Clock
-                                size={14}
-                                color="rgba(255,255,255,0.6)"
-                                strokeWidth={2}
-                              />
-                              <Text
-                                style={{
-                                  color: "rgba(255,255,255,0.6)",
-                                  fontSize: 14,
-                                  marginLeft: 4,
-                                }}
-                              >
-                                {item.status === "ended"
-                                  ? "종료됨"
-                                  : item.endTime}
-                              </Text>
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
+                      item={item}
+                      onPress={handleAuctionPress}
+                    />
                   ))}
                 </View>
               )}
