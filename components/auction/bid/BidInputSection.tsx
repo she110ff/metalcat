@@ -8,12 +8,14 @@ import { ButtonText } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputField } from "@/components/ui/input";
 import { useCreateBid } from "@/hooks/useAuctions";
+import { useAuth } from "@/hooks/useAuth";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
 
 interface BidInputSectionProps {
   auctionId: string;
   currentTopBid: number;
   isActive: boolean;
+  isOwner?: boolean;
   onBidSuccess?: () => void;
 }
 
@@ -21,10 +23,12 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
   auctionId,
   currentTopBid,
   isActive,
+  isOwner = false,
   onBidSuccess,
 }) => {
   const [bidAmount, setBidAmount] = useState("");
   const createBidMutation = useCreateBid();
+  const { user } = useAuth();
 
   // 숫자에 콤마 추가하는 함수
   const formatNumberWithComma = (value: string) => {
@@ -67,13 +71,19 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
     }
 
     try {
+      // 🔐 로그인 상태 확인
+      if (!user) {
+        Alert.alert("로그인 필요", "입찰하려면 로그인이 필요합니다.");
+        return;
+      }
+
       await createBidMutation.mutateAsync({
         auctionId: auctionId,
         bidData: {
-          userId: "current_user", // 실제로는 로그인된 사용자 ID
-          userName: "현재 사용자", // 실제로는 로그인된 사용자 이름
+          userId: user.id,
+          userName: user.name || "익명",
           amount: amount,
-          location: "서울특별시", // 실제로는 사용자 위치
+          location: user.address || "위치 미상",
         },
       });
 
@@ -88,6 +98,40 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
   // 진행중인 경매가 아니면 렌더링하지 않음
   if (!isActive) {
     return null;
+  }
+
+  // 🚫 자신의 경매인 경우 입찰 폼 대신 안내 메시지 표시
+  if (isOwner) {
+    return (
+      <VStack space="lg" className="px-6">
+        <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
+          내 경매
+        </Text>
+
+        <Box className="rounded-2xl p-6 bg-orange-500/10 border border-orange-500/30 shadow-lg shadow-black/40">
+          <VStack space="md" className="items-center">
+            <Text className="text-orange-300 text-lg font-bold text-center">
+              자신이 등록한 경매입니다
+            </Text>
+            <Text className="text-orange-200/80 text-sm text-center leading-relaxed">
+              본인이 등록한 경매에는 입찰할 수 없습니다.{"\n"}
+              다른 사용자들의 입찰을 기다려주세요.
+            </Text>
+
+            {currentTopBid > 0 && (
+              <VStack space="xs" className="items-center mt-2">
+                <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                  현재 최고가
+                </Text>
+                <Text className="text-yellow-300 text-xl font-bold">
+                  {formatAuctionPrice(currentTopBid)}
+                </Text>
+              </VStack>
+            )}
+          </VStack>
+        </Box>
+      </VStack>
+    );
   }
 
   return (

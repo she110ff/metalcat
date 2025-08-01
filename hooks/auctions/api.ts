@@ -854,6 +854,9 @@ export async function createBid(
       userId: bidData.userId,
     });
 
+    // 🔧 커스텀 인증: 현재 사용자 ID 설정 (RLS 정책용)
+    await supabase.rpc("set_current_user_id", { user_id: bidData.userId });
+
     // 트랜잭션으로 처리해야 하지만, 여기서는 단순화
     // 1. 현재 경매 상태 확인
     const { data: auction, error: auctionError } = await auctionTables
@@ -868,6 +871,11 @@ export async function createBid(
 
     if ((auction as any).status === "ended") {
       throw new Error("이미 종료된 경매입니다.");
+    }
+
+    // 🚫 자신의 경매에는 입찰할 수 없음 (애플리케이션 레벨 체크)
+    if ((auction as any).user_id === bidData.userId) {
+      throw new Error("자신이 등록한 경매에는 입찰할 수 없습니다.");
     }
 
     // 2. 현재 최고 입찰가 확인

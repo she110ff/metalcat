@@ -20,6 +20,7 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useAuction, useBids, useAuctionResult } from "@/hooks/useAuctions";
+import { useAuth } from "@/hooks/useAuth";
 import {
   formatAuctionPrice,
   getRemainingTime,
@@ -38,6 +39,9 @@ export const AuctionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  // 현재 로그인된 사용자 정보
+  const { user } = useAuth();
 
   // TanStack Query로 경매 상세 데이터 조회
   const { data: auction, isLoading, error } = useAuction(id as string);
@@ -203,6 +207,9 @@ export const AuctionDetail = () => {
   // 현재 최고 입찰가 계산
   const currentTopBid =
     bids.length > 0 ? Math.max(...bids.map((bid) => bid.amount)) : 0;
+
+  // 현재 사용자가 경매 소유자인지 확인
+  const isAuctionOwner = user?.id === auction?.userId;
 
   const handleBack = () => {
     router.back();
@@ -967,6 +974,7 @@ export const AuctionDetail = () => {
                     auctionDetail.status === "active" ||
                     auctionDetail.status === "ending"
                   }
+                  isOwner={isAuctionOwner}
                 />
               )}
 
