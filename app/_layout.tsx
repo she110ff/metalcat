@@ -14,6 +14,9 @@ import { QueryDebugger } from "@/components/QueryDebugger";
 
 // Configure LogBox to ignore specific warnings
 LogBox.ignoreLogs([
+  // Reanimated strict 모드 경고
+  "[Reanimated] Reading from `value` during component render",
+
   // UI 스타일 관련 (React Native 호환성)
   "props.pointerEvents is deprecated",
   "shadow* style props are deprecated",
@@ -162,8 +165,8 @@ function RootLayoutNav() {
       {/* 개발용 디버거는 현재 숨김 처리 */}
       {false && __DEV__ && Platform.OS !== "web" && (
         <QueryDebugger
-          position={{ bottom: 100, right: 20 }}
-          panelProps={{ maxHeight: 600 }}
+          visible={showDebugger}
+          onClose={() => setShowDebugger(false)}
         />
       )}
       {/* 디버거 토글 버튼 */}
@@ -178,7 +181,7 @@ function RootLayoutNav() {
             borderRadius: 6,
             zIndex: 1000,
           }}
-          onPress={() => {}}
+          onPress={() => setShowDebugger(!showDebugger)}
         >
           <Text style={{ color: "#fff", fontSize: 12 }}>Query Debug</Text>
         </Pressable>
