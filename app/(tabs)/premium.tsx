@@ -7,7 +7,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
-import { Ionicons } from "@expo/vector-icons";
+import { CheckCircle } from "lucide-react-native";
 import { Crown } from "lucide-react-native";
 import { useRouter } from "expo-router";
 
@@ -122,11 +122,7 @@ export default function Premium() {
 
                 <VStack space="xs">
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text
                       className="text-white/80 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
@@ -135,11 +131,7 @@ export default function Premium() {
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text
                       className="text-white/80 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
@@ -148,11 +140,7 @@ export default function Premium() {
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text
                       className="text-white/80 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
@@ -161,11 +149,7 @@ export default function Premium() {
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text
                       className="text-white/80 text-sm"
                       style={{ fontFamily: "NanumGothic" }}
@@ -229,41 +213,25 @@ export default function Premium() {
 
                 <VStack space="xs">
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">
                       시장 최고가 매입
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">
                       현금 즉시 지급
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">
                       세금계산서 발급
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={16}
-                      color="#4CAF50"
-                    />
+                    <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">운송비 무료</Text>
                   </HStack>
                 </VStack>

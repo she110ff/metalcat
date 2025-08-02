@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
-import { ChevronLeftIcon, EditIcon, Icon } from "@/components/ui/icon";
+import { ChevronLeft, Edit } from "lucide-react-native";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
@@ -442,7 +442,7 @@ export default function ProfileEditScreen() {
             onPress={() => router.back()}
             className="flex-row items-center"
           >
-            <Icon as={ChevronLeftIcon} size="lg" className="mr-2" />
+            <ChevronLeft size={24} className="mr-2" />
             <Text className="text-lg font-medium">뒤로</Text>
           </Pressable>
           <Heading size="lg" className="text-typography-900">
@@ -489,7 +489,7 @@ export default function ProfileEditScreen() {
                   }}
                 />
                 <AvatarBadge className="justify-center items-center bg-background-500">
-                  <Icon as={EditPhotoIcon} />
+                  <Edit size={16} />
                 </AvatarBadge>
               </Avatar>
 

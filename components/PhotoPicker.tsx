@@ -5,8 +5,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
-import { Ionicons } from "@expo/vector-icons";
-import { Plus } from "lucide-react-native";
+import { Camera, Plus } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
 import { getOptimizedServicePhotoUrl } from "@/utils/imageOptimizer";
 import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
@@ -208,7 +207,7 @@ export const PhotoPicker = <T extends Photo>({
       {/* 제목 및 카운터 */}
       <HStack className="items-center justify-between">
         <HStack className="items-center space-x-3">
-          <Ionicons name="camera" size={20} color="#FCD34D" />
+          <Camera size={20} color="#FCD34D" strokeWidth={2} />
           <Text
             className="text-yellow-300 text-lg font-bold"
             style={{ fontFamily: "NanumGothic" }}

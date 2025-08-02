@@ -2,7 +2,7 @@ import React from "react";
 import { View } from "react-native";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Ionicons } from "@expo/vector-icons";
+import { Trophy, Heart, X, Ban, HelpCircle } from "lucide-react-native";
 import type { AuctionResult } from "@/data/types/auction";
 
 interface ResultBadgeProps {
@@ -32,7 +32,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
             backgroundColor: "bg-yellow-500",
             textColor: "text-black",
             borderColor: "border-yellow-600",
-            icon: "trophy" as const,
+            icon: Trophy,
             iconColor: "#000000",
           };
         } else {
@@ -41,7 +41,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
             backgroundColor: "bg-gray-500",
             textColor: "text-white",
             borderColor: "border-gray-600",
-            icon: "heart-dislike" as const,
+            icon: Heart,
             iconColor: "#FFFFFF",
           };
         }
@@ -52,7 +52,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
           backgroundColor: "bg-red-500",
           textColor: "text-white",
           borderColor: "border-red-600",
-          icon: "close-circle" as const,
+          icon: X,
           iconColor: "#FFFFFF",
         };
 
@@ -62,7 +62,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
           backgroundColor: "bg-gray-600",
           textColor: "text-white",
           borderColor: "border-gray-700",
-          icon: "ban" as const,
+          icon: Ban,
           iconColor: "#FFFFFF",
         };
 
@@ -72,7 +72,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
           backgroundColor: "bg-gray-500",
           textColor: "text-white",
           borderColor: "border-gray-600",
-          icon: "help-circle" as const,
+          icon: HelpCircle,
           iconColor: "#FFFFFF",
         };
     }
@@ -109,6 +109,7 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
 
   const config = getBadgeConfig();
   const sizeConfig = getSizeConfig();
+  const IconComponent = config.icon;
 
   const formatAmount = (amount: number) => {
     if (amount >= 100000000) {
@@ -125,10 +126,10 @@ export const ResultBadge: React.FC<ResultBadgeProps> = ({
       className={`${config.backgroundColor} ${config.borderColor} border ${sizeConfig.containerClass} shadow-sm`}
     >
       <HStack className="items-center space-x-1">
-        <Ionicons
-          name={config.icon}
+        <IconComponent
           size={sizeConfig.iconSize}
           color={config.iconColor}
+          strokeWidth={2}
         />
         <Text
           className={`${config.textColor} ${sizeConfig.textClass} font-bold`}
@@ -157,25 +158,25 @@ export const ResultBadgeCompact: React.FC<
     switch (result) {
       case "successful":
         return {
-          icon: isWinner ? "trophy" : ("heart-dislike" as const),
+          icon: isWinner ? Trophy : Heart,
           color: isWinner ? "#FCD34D" : "#6B7280",
           backgroundColor: isWinner ? "bg-yellow-500/20" : "bg-gray-500/20",
         };
       case "failed":
         return {
-          icon: "close-circle" as const,
+          icon: X,
           color: "#EF4444",
           backgroundColor: "bg-red-500/20",
         };
       case "cancelled":
         return {
-          icon: "ban" as const,
+          icon: Ban,
           color: "#6B7280",
           backgroundColor: "bg-gray-500/20",
         };
       default:
         return {
-          icon: "help-circle" as const,
+          icon: HelpCircle,
           color: "#6B7280",
           backgroundColor: "bg-gray-500/20",
         };
@@ -197,15 +198,16 @@ export const ResultBadgeCompact: React.FC<
 
   const config = getBadgeConfig();
   const sizeConfig = getSizeConfig();
+  const IconComponent = config.icon;
 
   return (
     <View
       className={`${config.backgroundColor} ${sizeConfig.containerClass} rounded-full items-center justify-center`}
     >
-      <Ionicons
-        name={config.icon}
+      <IconComponent
         size={sizeConfig.iconSize}
         color={config.color}
+        strokeWidth={2}
       />
     </View>
   );

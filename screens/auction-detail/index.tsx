@@ -20,7 +20,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { Ionicons } from "@expo/vector-icons";
+import { AlertCircle, Expand, ChevronLeft, Images } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { useAuction, useBids, useAuctionResult } from "@/hooks/useAuctions";
 import { useAuth } from "@/hooks/useAuth";
@@ -115,11 +115,7 @@ export const AuctionDetail = () => {
             space="lg"
             className="flex-1 items-center justify-center px-6"
           >
-            <Ionicons
-              name="alert-circle-outline"
-              size={64}
-              color="rgba(239, 68, 68, 0.8)"
-            />
+            <AlertCircle size={64} color="rgba(239, 68, 68, 0.8)" />
             <Text className="text-red-300 text-xl font-bold text-center">
               잘못된 경매 ID입니다
             </Text>
@@ -171,11 +167,7 @@ export const AuctionDetail = () => {
             space="lg"
             className="flex-1 items-center justify-center px-6"
           >
-            <Ionicons
-              name="alert-circle-outline"
-              size={64}
-              color="rgba(239, 68, 68, 0.8)"
-            />
+            <AlertCircle size={64} color="rgba(239, 68, 68, 0.8)" />
             <Text className="text-red-300 text-xl font-bold text-center">
               경매 정보를 불러올 수 없습니다
             </Text>
@@ -353,16 +345,7 @@ export const AuctionDetail = () => {
         )}
         {/* 확대 아이콘 힌트 */}
         <Box className="absolute top-4 right-4">
-          <Ionicons
-            name="expand-outline"
-            size={24}
-            color="rgba(255, 255, 255, 0.8)"
-            style={{
-              textShadowColor: "rgba(0, 0, 0, 0.5)",
-              textShadowOffset: { width: 1, height: 1 },
-              textShadowRadius: 2,
-            }}
-          />
+          <Expand size={24} color="rgba(255, 255, 255, 0.8)" />
         </Box>
       </TouchableOpacity>
     );
@@ -441,15 +424,9 @@ export const AuctionDetail = () => {
                     }}
                   >
                     <HStack className="items-center" space="xs">
-                      <Ionicons
-                        name={
-                          Platform.OS === "ios" ? "chevron-back" : "arrow-back"
-                        }
+                      <ChevronLeft
                         size={Platform.OS === "ios" ? 28 : 24}
                         color="#FFFFFF"
-                        style={{
-                          fontWeight: Platform.OS === "ios" ? "600" : "normal",
-                        }}
                       />
                       {Platform.OS === "ios" && (
                         <Text className="text-white text-base font-medium">
@@ -493,11 +470,7 @@ export const AuctionDetail = () => {
                     style={{ width: screenWidth, height: 256 }}
                     className="bg-white/5 border border-white/10 items-center justify-center"
                   >
-                    <Ionicons
-                      name="images-outline"
-                      size={64}
-                      color="rgba(255, 255, 255, 0.3)"
-                    />
+                    <Images size={64} color="rgba(255, 255, 255, 0.3)" />
                     <Text className="text-white/40 text-sm mt-2">
                       이미지 없음
                     </Text>

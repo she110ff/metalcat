@@ -3,7 +3,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
-import { Ionicons } from "@expo/vector-icons";
+import { Zap, Clock, Timer } from "lucide-react-native";
 import {
   getAuctionDurationInfo,
   getTimeUntilAuctionEnd,
@@ -41,11 +41,11 @@ export const AuctionDurationInfo: React.FC<AuctionDurationInfoProps> = ({
   if (variant === "compact") {
     return (
       <HStack className="items-center" space="xs">
-        <Ionicons
-          name={transactionType === "urgent" ? "flash" : "time"}
-          size={14}
-          color={iconColor}
-        />
+        {transactionType === "urgent" ? (
+          <Zap size={14} color={iconColor} strokeWidth={2} />
+        ) : (
+          <Clock size={14} color={iconColor} strokeWidth={2} />
+        )}
         <Text className={`${textColor} text-sm font-medium`}>
           {durationInfo.duration}
         </Text>
@@ -63,11 +63,11 @@ export const AuctionDurationInfo: React.FC<AuctionDurationInfoProps> = ({
     return (
       <HStack className="items-center justify-between">
         <HStack className="items-center" space="sm">
-          <Ionicons
-            name={transactionType === "urgent" ? "flash" : "time"}
-            size={16}
-            color={iconColor}
-          />
+          {transactionType === "urgent" ? (
+            <Zap size={16} color={iconColor} strokeWidth={2} />
+          ) : (
+            <Clock size={16} color={iconColor} strokeWidth={2} />
+          )}
           <Text className={`${textColor} text-base font-semibold`}>
             {durationInfo.description}
           </Text>
@@ -87,11 +87,11 @@ export const AuctionDurationInfo: React.FC<AuctionDurationInfoProps> = ({
       <VStack space="sm">
         <HStack className="items-center justify-between">
           <HStack className="items-center" space="sm">
-            <Ionicons
-              name={transactionType === "urgent" ? "flash" : "time"}
-              size={20}
-              color={iconColor}
-            />
+            {transactionType === "urgent" ? (
+              <Zap size={20} color={iconColor} strokeWidth={2} />
+            ) : (
+              <Clock size={20} color={iconColor} strokeWidth={2} />
+            )}
             <Text className={`${textColor} text-lg font-bold`}>
               {durationInfo.description}
             </Text>
@@ -112,11 +112,7 @@ export const AuctionDurationInfo: React.FC<AuctionDurationInfoProps> = ({
         )}
 
         <HStack className="items-center" space="xs">
-          <Ionicons
-            name="time-outline"
-            size={14}
-            color="rgba(255,255,255,0.6)"
-          />
+          <Timer size={14} color="rgba(255,255,255,0.6)" strokeWidth={2} />
           <Text className="text-white/60 text-sm">{durationInfo.endTime}</Text>
         </HStack>
       </VStack>

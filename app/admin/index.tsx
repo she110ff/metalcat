@@ -23,7 +23,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { ScrollView } from "@/components/ui/scroll-view";
 import { useRouter } from "expo-router";
-import { ChevronLeftIcon, Icon } from "@/components/ui/icon";
+import { ChevronLeft } from "lucide-react-native";
 import { Alert } from "react-native";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
@@ -94,7 +94,7 @@ export default function AdminScreen() {
       <Box className="py-4 px-4 border-b border-border-300 bg-background-0">
         <HStack className="items-center justify-between">
           <Pressable onPress={() => router.back()}>
-            <Icon as={ChevronLeftIcon} size="lg" />
+            <ChevronLeft size={24} />
           </Pressable>
           <Heading size="lg">🛠️ 관리자 대시보드</Heading>
           <Box style={{ width: 24 }} />

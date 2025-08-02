@@ -5,7 +5,15 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  Trophy,
+  CheckCircle,
+  CreditCard,
+  MapPin,
+  Phone,
+  AlertTriangle,
+  Info,
+} from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatAuctionPrice } from "@/data";
 import { useAuth } from "@/hooks/useAuth";
@@ -101,7 +109,7 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
         className="rounded-2xl p-6"
       >
         <VStack space="md" className="items-center">
-          <Ionicons name="trophy" size={48} color="#FFFFFF" />
+          <Trophy size={48} color="#FFFFFF" />
           <Text className="text-white text-2xl font-black text-center">
             🎉 축하합니다!
           </Text>
@@ -175,19 +183,19 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
 
           <VStack space="sm">
             <HStack className="items-center">
-              <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+              <CheckCircle size={20} color="#10B981" />
               <Text className="text-white/80 text-sm ml-2">
                 1. 판매자와 연락하여 거래 조건 확인
               </Text>
             </HStack>
             <HStack className="items-center">
-              <Ionicons name="card" size={20} color="#F59E0B" />
+              <CreditCard size={20} color="#F59E0B" />
               <Text className="text-white/80 text-sm ml-2">
                 2. 결제 기한 내 대금 결제
               </Text>
             </HStack>
             <HStack className="items-center">
-              <Ionicons name="location" size={20} color="#3B82F6" />
+              <MapPin size={20} color="#3B82F6" />
               <Text className="text-white/80 text-sm ml-2">
                 3. 물품 수령 장소 및 일정 조율
               </Text>
@@ -203,7 +211,7 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
           className="bg-green-600 hover:bg-green-700 rounded-xl py-4"
         >
           <HStack className="items-center justify-center space-x-2">
-            <Ionicons name="call" size={20} color="white" />
+            <Phone size={20} color="white" />
             <ButtonText className="text-white font-bold text-lg">
               판매자에게 연락하기
             </ButtonText>
@@ -216,7 +224,7 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
             className="bg-blue-600 hover:bg-blue-700 rounded-xl py-4"
           >
             <HStack className="items-center justify-center space-x-2">
-              <Ionicons name="card" size={20} color="white" />
+              <CreditCard size={20} color="white" />
               <ButtonText className="text-white font-bold text-lg">
                 결제 진행하기
               </ButtonText>
@@ -227,7 +235,7 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
         {isPaymentOverdue && (
           <Box className="rounded-xl p-4 bg-red-500/10 border border-red-500/30">
             <VStack space="sm" className="items-center">
-              <Ionicons name="warning" size={24} color="#EF4444" />
+              <AlertTriangle size={24} color="#EF4444" />
               <Text className="text-red-300 font-bold text-center">
                 결제 기한이 만료되었습니다
               </Text>
@@ -243,7 +251,7 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
       <Box className="rounded-xl p-4 bg-yellow-500/5 border border-yellow-500/20">
         <VStack space="sm">
           <HStack className="items-center">
-            <Ionicons name="information-circle" size={20} color="#F59E0B" />
+            <Info size={20} color="#F59E0B" />
             <Text className="text-yellow-300 font-bold ml-2">
               거래 시 주의사항
             </Text>

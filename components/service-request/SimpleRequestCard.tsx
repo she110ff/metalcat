@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { Ionicons } from "@expo/vector-icons";
+import { MapPin, Calendar, CheckCircle } from "lucide-react-native";
 import { ServiceRequest } from "@/types/service-request";
 
 interface SimpleRequestCardProps {
@@ -122,13 +122,13 @@ export function SimpleRequestCard({
           {/* 위치 + 요청 시간 */}
           <HStack space="md" className="items-center">
             <HStack space="xs" className="items-center">
-              <Ionicons name="location-outline" size={14} color="#666" />
+              <MapPin size={14} color="#666" strokeWidth={2} />
               <Text className="text-sm text-gray-600">
                 {getShortLocation(request.address)}
               </Text>
             </HStack>
             <HStack space="xs" className="items-center">
-              <Ionicons name="calendar-outline" size={14} color="#666" />
+              <Calendar size={14} color="#666" strokeWidth={2} />
               <Text className="text-sm text-gray-600">
                 {formatDate(request.created_at)}
               </Text>
@@ -138,11 +138,7 @@ export function SimpleRequestCard({
           {/* 완료 시간 (완료된 경우만) */}
           {request.status === "completed" && request.completed_at && (
             <HStack space="xs" className="items-center">
-              <Ionicons
-                name="checkmark-circle-outline"
-                size={14}
-                color="#10B981"
-              />
+              <CheckCircle size={14} color="#10B981" strokeWidth={2} />
               <Text className="text-sm text-green-600">
                 {formatDate(request.completed_at)} 완료
               </Text>

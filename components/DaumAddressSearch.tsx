@@ -7,7 +7,7 @@ import { Text } from "../components/ui/text";
 import { Pressable } from "../components/ui/pressable";
 import { Input, InputField } from "../components/ui/input";
 import { Button } from "../components/ui/button";
-import { Ionicons } from "@expo/vector-icons";
+import { MapPin, X, Search, Edit3 } from "lucide-react-native";
 import Postcode from "@actbase/react-daum-postcode";
 
 // 주소 결과 타입 정의
@@ -197,14 +197,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
               }`}
             >
               <HStack className="items-center justify-center">
-                <Ionicons
-                  name={
-                    searchMode === "current"
-                      ? "location"
-                      : searchMode === "api"
-                      ? "search"
-                      : "create"
-                  }
+                <MapPin
                   size={16}
                   color={
                     searchMode === "current"
@@ -228,8 +221,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                     "다음 주소 검색 - 정확하고 빠른 검색"}
                   {searchMode === "manual" && "주소 직접 입력"}
                 </Text>
-                <Ionicons
-                  name="chevron-down"
+                <Edit3
                   size={16}
                   color={
                     searchMode === "current"
@@ -254,7 +246,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                   <Box className="bg-green-50 border border-green-200 rounded-lg p-4">
                     <VStack className="space-y-3">
                       <HStack className="items-center">
-                        <Ionicons name="location" size={20} color="#059669" />
+                        <MapPin size={20} color="#059669" />
                         <Text className="text-green-700 font-medium ml-2">
                           현재 선택된 주소
                         </Text>
@@ -285,11 +277,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                       className="bg-green-600 active:bg-green-700 rounded-lg py-3"
                     >
                       <HStack className="items-center justify-center">
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color="white"
-                        />
+                        <MapPin size={20} color="white" />
                         <Text className="text-white font-medium ml-2">
                           이 주소 사용하기
                         </Text>
@@ -301,7 +289,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                       className="bg-red-500 active:bg-red-600 rounded-lg py-3"
                     >
                       <HStack className="items-center justify-center">
-                        <Ionicons name="trash" size={20} color="white" />
+                        <X size={20} color="white" />
                         <Text className="text-white font-medium ml-2">
                           주소 삭제
                         </Text>
@@ -320,7 +308,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
               ) : (
                 /* 주소가 없는 경우 */
                 <VStack className="items-center space-y-4 py-8">
-                  <Ionicons name="location-outline" size={48} color="#9CA3AF" />
+                  <MapPin size={48} color="#9CA3AF" />
                   <VStack className="items-center space-y-2">
                     <Text className="text-gray-600 font-medium">
                       선택된 주소가 없습니다
@@ -372,11 +360,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
               {/* 안내 메시지 */}
               <Box className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                 <HStack className="items-start">
-                  <Ionicons
-                    name="information-circle"
-                    size={20}
-                    color="#F59E0B"
-                  />
+                  <Search size={20} color="#F59E0B" />
                   <VStack className="flex-1 ml-3">
                     <Text className="text-yellow-800 font-medium mb-1">
                       수동 주소 입력
@@ -419,7 +403,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
                 }`}
               >
                 <HStack className="items-center justify-center">
-                  <Ionicons name="checkmark-circle" size={20} color="white" />
+                  <MapPin size={20} color="white" />
                   <Text className="text-white font-medium ml-2">
                     주소 입력 완료
                   </Text>
@@ -429,7 +413,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
               {/* 사용 팁 */}
               <Box className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <HStack className="items-start">
-                  <Ionicons name="bulb" size={16} color="#6B7280" />
+                  <Search size={16} color="#6B7280" />
                   <VStack className="flex-1 ml-2">
                     <Text className="text-gray-700 font-medium mb-1">
                       입력 팁
@@ -447,7 +431,7 @@ export const DaumAddressSearch: React.FC<DaumAddressSearchProps> = ({
               {/* 다음 주소 검색 장점 */}
               <Box className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <HStack className="items-start">
-                  <Ionicons name="star" size={16} color="#007BFF" />
+                  <Search size={16} color="#007BFF" />
                   <VStack className="flex-1 ml-2">
                     <Text className="text-blue-700 font-medium mb-1">
                       다음 주소 검색의 장점

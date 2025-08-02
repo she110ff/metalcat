@@ -7,7 +7,13 @@ import { Text } from "@/components/ui/text";
 import { Pressable } from "@/components/ui/pressable";
 import { Input, InputField } from "@/components/ui/input";
 import { Button, ButtonText } from "@/components/ui/button";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  ChevronLeft,
+  Wrench,
+  Settings,
+  Package,
+  Hammer,
+} from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -54,10 +60,10 @@ export const AuctionCreate = () => {
   };
 
   const auctionTypes = [
-    { id: "scrap", name: "고철", icon: "construct" },
-    { id: "machinery", name: "중고기계", icon: "settings" },
-    { id: "materials", name: "중고자재", icon: "cube" },
-    { id: "demolition", name: "철거", icon: "hammer" },
+    { id: "scrap", name: "고철", icon: Wrench },
+    { id: "machinery", name: "중고기계", icon: Settings },
+    { id: "materials", name: "중고자재", icon: Package },
+    { id: "demolition", name: "철거", icon: Hammer },
   ];
 
   const getTypeName = (typeId: string) => {
@@ -93,15 +99,9 @@ export const AuctionCreate = () => {
                   }}
                 >
                   <HStack className="items-center" space="xs">
-                    <Ionicons
-                      name={
-                        Platform.OS === "ios" ? "chevron-back" : "arrow-back"
-                      }
+                    <ChevronLeft
                       size={Platform.OS === "ios" ? 28 : 24}
                       color="#FFFFFF"
-                      style={{
-                        fontWeight: Platform.OS === "ios" ? "600" : "normal",
-                      }}
                     />
                     {Platform.OS === "ios" && (
                       <Text className="text-white text-base font-medium">
@@ -197,82 +197,63 @@ export const AuctionCreate = () => {
                     </Input>
                   </VStack>
 
+                  {/* 경매 유형 선택 */}
                   <VStack>
                     <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
-                      경매 종류
+                      경매 유형
                     </Text>
-                    <HStack className="flex-wrap" space="sm">
-                      {auctionTypes.map((auctionType) => (
-                        <Pressable
-                          key={auctionType.id}
-                          onPress={() => {
-                            // 각 경매 유형별 전용 등록 화면으로 이동
-                            switch (auctionType.id) {
-                              case "scrap":
-                                router.push("/auction-create/scrap");
-                                break;
-                              case "machinery":
-                                router.push("/auction-create/machinery");
-                                break;
-                              case "materials":
-                                Alert.alert(
-                                  "준비중",
-                                  "중고자재 경매 등록 화면을 준비 중입니다."
-                                );
-                                break;
-                              case "demolition":
-                                router.push("/auction-create/demolition");
-                                break;
-                              default:
-                                setFormData({
-                                  ...formData,
-                                  metalType: auctionType.id,
-                                });
+                    <HStack space="md" className="mt-2">
+                      {auctionTypes.map((auctionType) => {
+                        const IconComponent = auctionType.icon;
+                        return (
+                          <Pressable
+                            key={auctionType.id}
+                            onPress={() =>
+                              setFormData({
+                                ...formData,
+                                metalType: auctionType.id,
+                              })
                             }
-                          }}
-                        >
-                          <Box
-                            className="px-4 py-2 rounded-xl"
-                            style={{
-                              backgroundColor:
-                                formData.metalType === auctionType.id
-                                  ? "rgba(147, 51, 234, 0.25)"
-                                  : "rgba(147, 51, 234, 0.12)",
-                              borderWidth: 1,
-                              borderColor:
-                                formData.metalType === auctionType.id
-                                  ? "rgba(147, 51, 234, 0.4)"
-                                  : "rgba(147, 51, 234, 0.25)",
-                              shadowColor: "#9333EA",
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.3,
-                              shadowRadius: 4,
-                              elevation: 4,
-                            }}
+                            className="flex-1"
                           >
-                            <HStack className="items-center" space="sm">
-                              <Ionicons
-                                name={auctionType.icon as any}
-                                size={16}
-                                color={
-                                  formData.metalType === auctionType.id
-                                    ? "#C084FC"
-                                    : "#A855F7"
-                                }
-                              />
-                              <Text
-                                className={`font-semibold text-sm tracking-wide ${
-                                  formData.metalType === auctionType.id
-                                    ? "text-purple-200"
-                                    : "text-purple-300"
-                                }`}
-                              >
-                                {auctionType.name}
-                              </Text>
-                            </HStack>
-                          </Box>
-                        </Pressable>
-                      ))}
+                            <Box
+                              className={`rounded-xl p-4 ${
+                                formData.metalType === auctionType.id
+                                  ? "bg-purple-500/20 border-purple-400/30"
+                                  : "bg-purple-500/10 border-purple-500/20"
+                              } border`}
+                              style={{
+                                shadowColor: "#A855F7",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.2,
+                                shadowRadius: 4,
+                                elevation: 4,
+                              }}
+                            >
+                              <HStack className="items-center" space="sm">
+                                <IconComponent
+                                  size={16}
+                                  color={
+                                    formData.metalType === auctionType.id
+                                      ? "#C084FC"
+                                      : "#A855F7"
+                                  }
+                                  strokeWidth={2}
+                                />
+                                <Text
+                                  className={`font-semibold text-sm tracking-wide ${
+                                    formData.metalType === auctionType.id
+                                      ? "text-purple-200"
+                                      : "text-purple-300"
+                                  }`}
+                                >
+                                  {auctionType.name}
+                                </Text>
+                              </HStack>
+                            </Box>
+                          </Pressable>
+                        );
+                      })}
                     </HStack>
                     <Text className="text-gray-400 text-xs mt-2">
                       💡 각 경매 유형에 맞는 전용 등록 화면으로 이동합니다

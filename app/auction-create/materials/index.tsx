@@ -8,7 +8,7 @@ import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
-import { Ionicons } from "@expo/vector-icons";
+import { ChevronLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { materialsProductTypes } from "@/data";
 import { MaterialProductType } from "@/data/types";
@@ -95,8 +95,7 @@ export default function MaterialsAuctionCreate() {
               }}
             >
               <HStack className="items-center" space="xs">
-                <Ionicons
-                  name={Platform.OS === "ios" ? "chevron-back" : "arrow-back"}
+                <ChevronLeft
                   size={Platform.OS === "ios" ? 28 : 24}
                   color="#FFFFFF"
                   style={{

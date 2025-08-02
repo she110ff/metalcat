@@ -3,7 +3,7 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
-import { Ionicons } from "@expo/vector-icons";
+import { Users } from "lucide-react-native";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
 
 interface BidStatusSectionProps {
@@ -56,10 +56,10 @@ export const BidStatusSection: React.FC<BidStatusSectionProps> = ({
 
           <HStack className="items-center justify-between">
             <HStack className="items-center" space="xs">
-              <Ionicons
-                name="people"
+              <Users
                 size={16}
                 color="rgba(255, 255, 255, 0.6)"
+                strokeWidth={2}
               />
               <Text className="text-white/60 text-xs">{bidders}명 참여</Text>
             </HStack>
