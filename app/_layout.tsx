@@ -11,11 +11,22 @@ import {
 } from "react-native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QueryDebugger } from "@/components/QueryDebugger";
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
+
+// Reanimated 로거 설정 - strict 모드 비활성화
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false, // strict 모드 비활성화로 경고 감소
+});
 
 // Configure LogBox to ignore specific warnings
 LogBox.ignoreLogs([
-  // Reanimated strict 모드 경고
+  // Reanimated 관련 경고 (로거 설정으로 대체)
   "[Reanimated] Reading from `value` during component render",
+  "[Reanimated]",
 
   // UI 스타일 관련 (React Native 호환성)
   "props.pointerEvents is deprecated",
