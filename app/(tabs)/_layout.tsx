@@ -81,7 +81,9 @@ export default function TabLayout() {
           ),
           tabBarButton: (props) => (
             <TouchableOpacity
-              {...props}
+              style={props.style}
+              accessibilityLabel={props.accessibilityLabel}
+              accessibilityRole={props.accessibilityRole}
               onPress={(e) => {
                 if (!isLoading && !isLoggedIn) {
                   e.preventDefault();
@@ -90,7 +92,9 @@ export default function TabLayout() {
                   props.onPress?.(e);
                 }
               }}
-            />
+            >
+              {props.children}
+            </TouchableOpacity>
           ),
         }}
       />
@@ -103,6 +107,7 @@ export default function TabLayout() {
           ),
         }}
       />
+
       <Tabs.Screen
         name="profile"
         options={{
@@ -112,7 +117,9 @@ export default function TabLayout() {
           ),
           tabBarButton: (props) => (
             <TouchableOpacity
-              {...props}
+              style={props.style}
+              accessibilityLabel={props.accessibilityLabel}
+              accessibilityRole={props.accessibilityRole}
               onPress={(e) => {
                 if (!isLoading && !isLoggedIn) {
                   e.preventDefault();
@@ -121,7 +128,9 @@ export default function TabLayout() {
                   props.onPress?.(e);
                 }
               }}
-            />
+            >
+              {props.children}
+            </TouchableOpacity>
           ),
         }}
       />

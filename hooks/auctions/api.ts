@@ -454,7 +454,14 @@ export async function getAuctions(filters?: {
 
     return transformedAuctions;
   } catch (error) {
-    console.error("경매 목록 조회 실패:", error);
+    console.error("❌ [Auction API] 경매 목록 조회 실패:", error);
+    if (error instanceof Error) {
+      console.error("❌ [Auction API] 오류 상세:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+    }
     throw error;
   }
 }

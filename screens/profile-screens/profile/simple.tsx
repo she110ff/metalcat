@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useMyServiceRequests } from "@/hooks/service-request/myRequests";
@@ -33,6 +33,232 @@ import {
 } from "@/utils/imageOptimizer";
 import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
 import { supabase } from "@/hooks/auth/api";
+import { Switch } from "@/components/ui/switch";
+import { Divider } from "@/components/ui/divider";
+import * as Notifications from "expo-notifications";
+import * as Linking from "expo-linking";
+
+// 간소화된 알림 설정 컴포넌트
+const NotificationSettings = () => {
+  const [auctionNotifications, setAuctionNotifications] = useState(true);
+  const [priceNotifications, setPriceNotifications] = useState(true);
+  const [notificationPermission, setNotificationPermission] =
+    useState<string>("unknown");
+
+  // 알림 권한 상태 확인
+  const checkNotificationPermission = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      setNotificationPermission(status);
+    } catch (error) {
+      console.error("알림 권한 확인 실패:", error);
+      setNotificationPermission("unknown");
+    }
+  };
+
+  // 앱 설정으로 이동
+  const openAppSettings = async () => {
+    try {
+      await Linking.openSettings();
+    } catch (error) {
+      console.error("설정 열기 실패:", error);
+      Alert.alert("오류", "설정을 열 수 없습니다.");
+    }
+  };
+
+  // 알림 권한 요청
+  const requestNotificationPermission = async () => {
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      setNotificationPermission(status);
+
+      if (status !== "granted") {
+        Alert.alert(
+          "알림 권한 필요",
+          "알림을 받으려면 설정에서 알림을 허용해주세요.",
+          [
+            { text: "취소", style: "cancel" },
+            { text: "설정으로 이동", onPress: openAppSettings },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error("알림 권한 요청 실패:", error);
+    }
+  };
+
+  const handleAuctionToggle = (value: boolean) => {
+    if (notificationPermission !== "granted") {
+      Alert.alert(
+        "알림 권한 필요",
+        "알림을 받으려면 먼저 알림 권한을 허용해주세요.",
+        [
+          { text: "취소", style: "cancel" },
+          { text: "권한 요청", onPress: requestNotificationPermission },
+        ]
+      );
+      return;
+    }
+
+    setAuctionNotifications(value);
+    // TODO: 서버에 설정 저장
+    console.log("경매 알림 설정:", value);
+  };
+
+  const handlePriceToggle = (value: boolean) => {
+    if (notificationPermission !== "granted") {
+      Alert.alert(
+        "알림 권한 필요",
+        "알림을 받으려면 먼저 알림 권한을 허용해주세요.",
+        [
+          { text: "취소", style: "cancel" },
+          { text: "권한 요청", onPress: requestNotificationPermission },
+        ]
+      );
+      return;
+    }
+
+    setPriceNotifications(value);
+    // TODO: 서버에 설정 저장
+    console.log("가격 알림 설정:", value);
+  };
+
+  // 권한 상태에 따른 UI 렌더링
+  const renderPermissionStatus = () => {
+    switch (notificationPermission) {
+      case "granted":
+        return (
+          <Box className="bg-green-50 rounded-xl p-4 border border-green-200">
+            <HStack className="items-center space-x-2">
+              <Text className="text-green-600">✅</Text>
+              <Text className="text-green-800 font-medium">
+                알림이 활성화되어 있습니다
+              </Text>
+            </HStack>
+          </Box>
+        );
+      case "denied":
+        return (
+          <Box className="bg-red-50 rounded-xl p-4 border border-red-200">
+            <VStack space="sm">
+              <HStack className="items-center space-x-2">
+                <Text className="text-red-600">❌</Text>
+                <Text className="text-red-800 font-medium">
+                  알림이 비활성화되어 있습니다
+                </Text>
+              </HStack>
+              <Text className="text-red-700 text-sm">
+                설정에서 알림을 허용해주세요.
+              </Text>
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={openAppSettings}
+                className="self-start"
+              >
+                <ButtonText className="text-red-700">설정으로 이동</ButtonText>
+              </Button>
+            </VStack>
+          </Box>
+        );
+      case "unknown":
+        return (
+          <Box className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+            <VStack space="sm">
+              <HStack className="items-center space-x-2">
+                <Text className="text-yellow-600">⚠️</Text>
+                <Text className="text-yellow-800 font-medium">
+                  알림 권한을 확인해주세요
+                </Text>
+              </HStack>
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={requestNotificationPermission}
+                className="self-start"
+              >
+                <ButtonText className="text-yellow-700">권한 요청</ButtonText>
+              </Button>
+            </VStack>
+          </Box>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // 컴포넌트 마운트 시 권한 확인
+  useEffect(() => {
+    checkNotificationPermission();
+  }, []);
+
+  // 앱이 포그라운드로 돌아올 때 권한 상태 재확인
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener(() => {
+      // 알림을 받으면 권한 상태 재확인
+      checkNotificationPermission();
+    });
+
+    return () => {
+      if (subscription) {
+        subscription.remove();
+      }
+    };
+  }, []);
+
+  return (
+    <VStack space="md">
+      <Text className="text-lg font-bold text-gray-900">🔔 알림 설정</Text>
+
+      {/* 알림 권한 상태 표시 */}
+      {renderPermissionStatus()}
+
+      <Box className="bg-white rounded-xl p-4 border border-gray-200">
+        <VStack space="md">
+          {/* 경매 알림 */}
+          <HStack className="justify-between items-center">
+            <VStack className="flex-1">
+              <Text className="font-semibold text-gray-900">경매 알림</Text>
+              <Text className="text-sm text-gray-600">
+                내 경매 종료 및 낙찰 알림
+              </Text>
+            </VStack>
+            <Switch
+              value={auctionNotifications}
+              onValueChange={handleAuctionToggle}
+              isDisabled={notificationPermission !== "granted"}
+            />
+          </HStack>
+
+          <Divider />
+
+          {/* 가격 알림 */}
+          <HStack className="justify-between items-center">
+            <VStack className="flex-1">
+              <Text className="font-semibold text-gray-900">가격 알림</Text>
+              <Text className="text-sm text-gray-600">
+                관심 금속 가격 변동 알림
+              </Text>
+            </VStack>
+            <Switch
+              value={priceNotifications}
+              onValueChange={handlePriceToggle}
+              isDisabled={notificationPermission !== "granted"}
+            />
+          </HStack>
+        </VStack>
+      </Box>
+
+      {notificationPermission === "granted" && (
+        <Box className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+          <Text className="text-sm text-blue-800">
+            💡 경매가 종료되면 즉시 알림을 받을 수 있습니다.
+          </Text>
+        </Box>
+      )}
+    </VStack>
+  );
+};
 
 // 🧪 개발용: 이미지 최적화 테스트 함수
 const testImageOptimization = () => {
@@ -84,9 +310,9 @@ const testImageOptimization = () => {
 
 const MainContent = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"auction" | "bidding" | "premium">(
-    "auction"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "auction" | "bidding" | "premium" | "notifications"
+  >("auction");
 
   // 현재 사용자 정보 확인용
   const { user, isLoggedIn, logout, isLoggingOut } = useAuth();
@@ -187,6 +413,10 @@ const MainContent = () => {
   };
 
   const renderTabContent = () => {
+    if (activeTab === "notifications") {
+      return <NotificationSettings />;
+    }
+
     if (activeTab === "premium") {
       // 프리미엄 탭: 서비스 요청 목록
       if (requestsLoading) {
@@ -579,6 +809,25 @@ const MainContent = () => {
               }`}
             >
               프리미엄
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "notifications"
+                ? "bg-white shadow-sm"
+                : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("notifications")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "notifications"
+                  ? "text-gray-900"
+                  : "text-gray-600"
+              }`}
+            >
+              알림
             </Text>
           </Pressable>
         </HStack>
