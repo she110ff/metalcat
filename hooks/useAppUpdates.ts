@@ -19,6 +19,9 @@ export interface UpdateState {
   isDownloading: boolean;
   isDownloaded: boolean;
 
+  // 업데이트 메시지
+  updateMessage: string | null;
+
   // 버전 정보
   currentVersion: string;
   buildNumber: string;
@@ -43,6 +46,7 @@ export function useAppUpdates() {
     isAutoCheckEnabled: true,
     isDownloading: false,
     isDownloaded: false,
+    updateMessage: null,
     currentVersion: Constants.expoConfig?.version || "알 수 없음",
     buildNumber: String(
       Constants.expoConfig?.ios?.buildNumber ||
@@ -122,10 +126,22 @@ export function useAppUpdates() {
 
         if (update.isAvailable) {
           console.log("업데이트 발견:", update);
+
+          // 업데이트 메시지 추출
+          let updateMessage = null;
+          if (update.manifest) {
+            // manifest에서 메시지 추출 시도
+            updateMessage =
+              (update.manifest as any).message ||
+              (update.manifest as any).description ||
+              (update.manifest as any).releaseNotes;
+          }
+
           setState((prev) => ({
             ...prev,
             isUpdateAvailable: true,
             updateInfo: update,
+            updateMessage: updateMessage,
           }));
         } else {
           console.log("사용 가능한 업데이트 없음");
@@ -133,6 +149,7 @@ export function useAppUpdates() {
             ...prev,
             isUpdateAvailable: false,
             updateInfo: null,
+            updateMessage: null,
           }));
         }
 
@@ -210,8 +227,15 @@ export function useAppUpdates() {
       isDownloaded: false,
       error: null,
       updateInfo: null,
+      updateMessage: null,
     }));
   }, []);
+
+  // 강제 업데이트 체크 (24시간 제한 무시)
+  const forceCheckForUpdates = useCallback(async () => {
+    console.log("강제 업데이트 체크 시작...");
+    await checkForUpdates(true);
+  }, [checkForUpdates]);
 
   // useUpdates() 훅의 상태를 동기화 (현재는 주석 처리)
   // useEffect(() => {
@@ -252,6 +276,7 @@ export function useAppUpdates() {
   return {
     ...state,
     checkForUpdates,
+    forceCheckForUpdates,
     downloadUpdate,
     applyUpdate,
     resetUpdateState,

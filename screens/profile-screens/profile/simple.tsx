@@ -45,9 +45,12 @@ const UpdateSettings = () => {
     error,
     lastChecked,
     isAutoCheckEnabled,
+    updateMessage,
     checkForUpdates,
+    forceCheckForUpdates,
     downloadUpdate,
     applyUpdate,
+    resetUpdateState,
     saveAutoCheckSetting,
   } = useAppUpdates();
 
@@ -63,7 +66,7 @@ const UpdateSettings = () => {
   };
 
   const handleManualCheck = async () => {
-    await checkForUpdates(true);
+    await forceCheckForUpdates();
   };
 
   const handleDownload = async () => {
@@ -76,7 +79,7 @@ const UpdateSettings = () => {
 
   return (
     <VStack space="lg">
-      <Text className="text-lg font-bold text-gray-900">🔄 앱 업데이트2</Text>
+      <Text className="text-lg font-bold text-gray-900">🔄 앱 업데이트1</Text>
 
       {/* 현재 버전 정보 */}
       <Box className="bg-blue-50 rounded-lg p-4 border border-blue-200">
@@ -115,6 +118,7 @@ const UpdateSettings = () => {
                 lastChecked,
                 updateInfo: null,
                 isAutoCheckEnabled,
+                updateMessage,
                 currentVersion: Constants.expoConfig?.version || "알 수 없음",
                 buildNumber: String(
                   Constants.expoConfig?.ios?.buildNumber ||
@@ -137,6 +141,16 @@ const UpdateSettings = () => {
               onValueChange={saveAutoCheckSetting}
             />
           </HStack>
+
+          {/* 업데이트 메시지 표시 */}
+          {updateMessage && (
+            <VStack space="sm" className="mt-2">
+              <Text className="text-gray-700 font-medium">업데이트 메시지</Text>
+              <Box className="bg-green-50 p-3 rounded-lg border border-green-200">
+                <Text className="text-green-800 text-sm">{updateMessage}</Text>
+              </Box>
+            </VStack>
+          )}
         </VStack>
       </Box>
 
@@ -169,6 +183,14 @@ const UpdateSettings = () => {
         {error && (
           <Box className="bg-red-50 p-3 rounded-lg border border-red-200">
             <Text className="text-red-700 text-sm">오류: {error}</Text>
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={resetUpdateState}
+              className="mt-2 border-red-300"
+            >
+              <ButtonText className="text-red-700">상태 초기화</ButtonText>
+            </Button>
           </Box>
         )}
       </VStack>

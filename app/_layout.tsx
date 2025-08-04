@@ -244,6 +244,7 @@ function RootLayoutNav() {
                 Constants.expoConfig?.android?.versionCode ||
                 "알 수 없음"
             ),
+            updateMessage: null,
           }}
           onDownload={handleDownload}
           onDismiss={() => setShowUpdateModal(false)}
@@ -273,6 +274,7 @@ function RootLayoutNav() {
                 Constants.expoConfig?.android?.versionCode ||
                 "알 수 없음"
             ),
+            updateMessage: null,
           }}
           onApplyUpdate={handleApplyUpdate}
           onDismiss={handleDismissProgress}

@@ -115,11 +115,11 @@ export function UpdateAvailableModal({
               )}
 
               {/* 액션 버튼들 */}
-              <VStack className="space-y-3 mt-2">
+              <VStack className="space-y-4 mt-4">
                 <Button
                   onPress={handleDownload}
                   disabled={updateState.isDownloading}
-                  className="bg-blue-500 active:bg-blue-600"
+                  className="bg-blue-500 active:bg-blue-600 py-3"
                 >
                   <HStack className="items-center space-x-2">
                     <Download size={16} color="#ffffff" />
@@ -131,16 +131,7 @@ export function UpdateAvailableModal({
                   </HStack>
                 </Button>
 
-                <Button
-                  onPress={onCheckAgain}
-                  className="border border-gray-300"
-                >
-                  <GluestackText className="text-gray-700">
-                    다시 확인
-                  </GluestackText>
-                </Button>
-
-                <Button onPress={onDismiss} className="text-gray-500">
+                <Button onPress={onDismiss} className="text-gray-500 py-3">
                   <GluestackText className="text-gray-500">
                     나중에
                   </GluestackText>
