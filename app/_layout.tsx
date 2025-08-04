@@ -21,6 +21,11 @@ import {
   UpdateProgressModal,
 } from "@/components/updates";
 import Constants from "expo-constants";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionRequestScreen } from "@/components/PermissionRequestScreen";
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import { useColorScheme } from "@/components/useColorScheme";
+import "../global.css";
 
 // Reanimated 로거 설정 - strict 모드 비활성화
 configureReanimatedLogger({
@@ -54,9 +59,6 @@ LogBox.ignoreLogs([
 
   // 폰트 관련 경고 제거 (FontAwesome 제거 후 불필요)
 ]);
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
-import { useColorScheme } from "@/components/useColorScheme";
-import "../global.css";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -153,6 +155,9 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const [showDebugger, setShowDebugger] = useState(false);
 
+  // 권한 관리 훅 사용
+  const { isFirstLaunch, isLoading: permissionsLoading } = usePermissions();
+
   // 업데이트 관리 훅 사용
   const {
     isUpdateAvailable,
@@ -198,6 +203,11 @@ function RootLayoutNav() {
     setShowProgressModal(false);
     resetUpdateState();
   };
+
+  // 첫 실행 시 권한 요청 화면 표시
+  if (isFirstLaunch && !permissionsLoading) {
+    return <PermissionRequestScreen />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -258,11 +268,7 @@ function RootLayoutNav() {
             isDownloading,
             isDownloaded,
             error,
-            updateStatus: isDownloading
-              ? "downloading"
-              : isDownloaded
-              ? "downloaded"
-              : "idle",
+            updateStatus: "idle",
             downloadProgress: null,
             isUpdatePending: false,
             lastChecked: null,
@@ -279,32 +285,33 @@ function RootLayoutNav() {
           onApplyUpdate={handleApplyUpdate}
           onDismiss={handleDismissProgress}
         />
+
+        {/* 디버거 토글 (개발 모드에서만) */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={{
+              position: "absolute",
+              top: 50,
+              right: 20,
+              backgroundColor: "rgba(0,0,0,0.7)",
+              padding: 10,
+              borderRadius: 5,
+              zIndex: 1000,
+            }}
+            onPress={() => setShowDebugger(!showDebugger)}
+          >
+            <Text style={{ color: "white", fontSize: 12 }}>Debug</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* 쿼리 디버거 */}
+        {showDebugger && (
+          <QueryDebugger
+            visible={showDebugger}
+            onClose={() => setShowDebugger(false)}
+          />
+        )}
       </GluestackUIProvider>
-      {/* 개발 환경에서만 Query Debugger 표시 */}
-      {/* 개발용 디버거는 현재 숨김 처리 */}
-      {false && __DEV__ && Platform.OS !== "web" && (
-        <QueryDebugger
-          visible={showDebugger}
-          onClose={() => setShowDebugger(false)}
-        />
-      )}
-      {/* 디버거 토글 버튼 */}
-      {false && __DEV__ && Platform.OS !== "web" && (
-        <Pressable
-          style={{
-            position: "absolute",
-            bottom: 50,
-            right: 20,
-            backgroundColor: "#007AFF",
-            padding: 8,
-            borderRadius: 6,
-            zIndex: 1000,
-          }}
-          onPress={() => setShowDebugger(!showDebugger)}
-        >
-          <Text style={{ color: "#fff", fontSize: 12 }}>Query Debug</Text>
-        </Pressable>
-      )}
     </QueryClientProvider>
   );
 }

@@ -15,6 +15,7 @@ import { Alert } from "react-native";
 import { Heading } from "@/components/ui/heading";
 import { Image } from "react-native";
 import { ScrollView } from "@/components/ui/scroll-view";
+import { FlatList } from "react-native";
 import { Avatar, AvatarBadge, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -35,6 +36,8 @@ import * as Linking from "expo-linking";
 import { useAppUpdates } from "@/hooks/useAppUpdates";
 import { UpdateStatusBadge } from "@/components/updates";
 import Constants from "expo-constants";
+import { usePermissions } from "@/hooks/usePermissions";
+import { AllPermissionsStatus } from "@/components/PermissionStatus";
 
 // 업데이트 설정 컴포넌트
 const UpdateSettings = () => {
@@ -202,176 +205,22 @@ const UpdateSettings = () => {
 const NotificationSettings = () => {
   const [auctionNotifications, setAuctionNotifications] = useState(true);
   const [priceNotifications, setPriceNotifications] = useState(true);
-  const [notificationPermission, setNotificationPermission] =
-    useState<string>("unknown");
-
-  // 알림 권한 상태 확인
-  const checkNotificationPermission = async () => {
-    try {
-      const { status } = await Notifications.getPermissionsAsync();
-      setNotificationPermission(status);
-    } catch (error) {
-      console.error("알림 권한 확인 실패:", error);
-      setNotificationPermission("unknown");
-    }
-  };
-
-  // 앱 설정으로 이동
-  const openAppSettings = async () => {
-    try {
-      await Linking.openSettings();
-    } catch (error) {
-      console.error("설정 열기 실패:", error);
-      Alert.alert("오류", "설정을 열 수 없습니다.");
-    }
-  };
-
-  // 알림 권한 요청
-  const requestNotificationPermission = async () => {
-    try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      setNotificationPermission(status);
-
-      if (status !== "granted") {
-        Alert.alert(
-          "알림 권한 필요",
-          "알림을 받으려면 설정에서 알림을 허용해주세요.",
-          [
-            { text: "취소", style: "cancel" },
-            { text: "설정으로 이동", onPress: openAppSettings },
-          ]
-        );
-      }
-    } catch (error) {
-      console.error("알림 권한 요청 실패:", error);
-    }
-  };
 
   const handleAuctionToggle = (value: boolean) => {
-    if (notificationPermission !== "granted") {
-      Alert.alert(
-        "알림 권한 필요",
-        "알림을 받으려면 먼저 알림 권한을 허용해주세요.",
-        [
-          { text: "취소", style: "cancel" },
-          { text: "권한 요청", onPress: requestNotificationPermission },
-        ]
-      );
-      return;
-    }
-
     setAuctionNotifications(value);
     // TODO: 서버에 설정 저장
     console.log("경매 알림 설정:", value);
   };
 
   const handlePriceToggle = (value: boolean) => {
-    if (notificationPermission !== "granted") {
-      Alert.alert(
-        "알림 권한 필요",
-        "알림을 받으려면 먼저 알림 권한을 허용해주세요.",
-        [
-          { text: "취소", style: "cancel" },
-          { text: "권한 요청", onPress: requestNotificationPermission },
-        ]
-      );
-      return;
-    }
-
     setPriceNotifications(value);
     // TODO: 서버에 설정 저장
     console.log("가격 알림 설정:", value);
   };
 
-  // 권한 상태에 따른 UI 렌더링
-  const renderPermissionStatus = () => {
-    switch (notificationPermission) {
-      case "granted":
-        return (
-          <Box className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <HStack className="items-center space-x-2">
-              <Text className="text-green-600">✅</Text>
-              <Text className="text-green-800 font-medium">
-                알림이 활성화되어 있습니다
-              </Text>
-            </HStack>
-          </Box>
-        );
-      case "denied":
-        return (
-          <Box className="bg-red-50 rounded-xl p-4 border border-red-200">
-            <VStack space="sm">
-              <HStack className="items-center space-x-2">
-                <Text className="text-red-600">❌</Text>
-                <Text className="text-red-800 font-medium">
-                  알림이 비활성화되어 있습니다
-                </Text>
-              </HStack>
-              <Text className="text-red-700 text-sm">
-                설정에서 알림을 허용해주세요.
-              </Text>
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={openAppSettings}
-                className="self-start"
-              >
-                <ButtonText className="text-red-700">설정으로 이동</ButtonText>
-              </Button>
-            </VStack>
-          </Box>
-        );
-      case "unknown":
-        return (
-          <Box className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
-            <VStack space="sm">
-              <HStack className="items-center space-x-2">
-                <Text className="text-yellow-600">⚠️</Text>
-                <Text className="text-yellow-800 font-medium">
-                  알림 권한을 확인해주세요
-                </Text>
-              </HStack>
-              <Button
-                size="sm"
-                variant="outline"
-                onPress={requestNotificationPermission}
-                className="self-start"
-              >
-                <ButtonText className="text-yellow-700">권한 요청</ButtonText>
-              </Button>
-            </VStack>
-          </Box>
-        );
-      default:
-        return null;
-    }
-  };
-
-  // 컴포넌트 마운트 시 권한 확인
-  useEffect(() => {
-    checkNotificationPermission();
-  }, []);
-
-  // 앱이 포그라운드로 돌아올 때 권한 상태 재확인
-  useEffect(() => {
-    const subscription = Notifications.addNotificationReceivedListener(() => {
-      // 알림을 받으면 권한 상태 재확인
-      checkNotificationPermission();
-    });
-
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-    };
-  }, []);
-
   return (
     <VStack space="md">
       <Text className="text-lg font-bold text-gray-900">🔔 알림 설정</Text>
-
-      {/* 알림 권한 상태 표시 */}
-      {renderPermissionStatus()}
 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <VStack space="md">
@@ -386,7 +235,6 @@ const NotificationSettings = () => {
             <Switch
               value={auctionNotifications}
               onValueChange={handleAuctionToggle}
-              isDisabled={notificationPermission !== "granted"}
             />
           </HStack>
 
@@ -403,19 +251,16 @@ const NotificationSettings = () => {
             <Switch
               value={priceNotifications}
               onValueChange={handlePriceToggle}
-              isDisabled={notificationPermission !== "granted"}
             />
           </HStack>
         </VStack>
       </Box>
 
-      {notificationPermission === "granted" && (
-        <Box className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-          <Text className="text-sm text-blue-800">
-            💡 경매가 종료되면 즉시 알림을 받을 수 있습니다.
-          </Text>
-        </Box>
-      )}
+      <Box className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+        <Text className="text-sm text-blue-800">
+          💡 경매가 종료되면 즉시 알림을 받을 수 있습니다.
+        </Text>
+      </Box>
     </VStack>
   );
 };
@@ -471,8 +316,23 @@ const testImageOptimization = () => {
 const MainContent = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "auction" | "bidding" | "premium" | "notifications" | "updates"
+    | "auction"
+    | "bidding"
+    | "premium"
+    | "notifications"
+    | "permissions"
+    | "updates"
   >("auction");
+
+  // 탭 데이터 정의
+  const tabs = [
+    { id: "auction", title: "경매", icon: "🏷️" },
+    { id: "bidding", title: "입찰", icon: "💰" },
+    { id: "premium", title: "프리미엄", icon: "⭐" },
+    { id: "notifications", title: "알림", icon: "🔔" },
+    { id: "permissions", title: "권한", icon: "🔐" },
+    { id: "updates", title: "업데이트", icon: "🔄" },
+  ] as const;
 
   // 현재 사용자 정보 확인용
   const { user, isLoggedIn, logout, isLoggingOut } = useAuth();
@@ -579,6 +439,22 @@ const MainContent = () => {
 
     if (activeTab === "notifications") {
       return <NotificationSettings />;
+    }
+
+    if (activeTab === "permissions") {
+      return (
+        <VStack space="lg">
+          <Text className="text-lg font-bold text-gray-900">📱 권한 관리</Text>
+          <Text className="text-sm text-gray-600 mb-4">
+            앱 기능을 원활하게 사용하기 위해 필요한 권한들을 관리할 수 있습니다.
+          </Text>
+
+          <AllPermissionsStatus
+            showRequestButtons={true}
+            showSettingsButtons={true}
+          />
+        </VStack>
+      );
     }
 
     if (activeTab === "premium") {
@@ -871,151 +747,97 @@ const MainContent = () => {
             <AvatarBadge />
           </Avatar>
           <VStack space="md" className="flex-1">
+            {/* 사용자 이름, 편집 아이콘, 관리자 배지 */}
             <HStack space="sm" className="items-center">
-              <Text size="2xl" className="font-roboto text-dark">
+              <Text size="2xl" className="font-roboto text-dark font-bold">
                 {user?.name || "사용자"}
               </Text>
+
+              {/* 편집 아이콘 */}
+              <Pressable
+                onPress={() => router.push("/profile-edit")}
+                className="p-1"
+              >
+                <Text className="text-gray-500 text-lg">✏️</Text>
+              </Pressable>
+
               {isAdmin && (
                 <Pressable
                   onPress={() => router.push("/admin")}
-                  className="bg-orange-500 px-2 py-1 rounded-md"
+                  className="bg-orange-500 px-3 py-1 rounded-full"
                 >
                   <Text className="text-white text-xs font-bold">관리자</Text>
                 </Pressable>
               )}
             </HStack>
+
+            {/* 회사명 (비즈니스 사용자인 경우) */}
             {user?.isBusiness && user?.companyName && (
-              <Text size="sm" className="text-gray-600 font-medium">
-                🏢 {user.companyName}
-              </Text>
+              <HStack space="sm" className="items-center">
+                <Text className="text-gray-500">🏢</Text>
+                <Text size="sm" className="text-gray-600 font-medium">
+                  {user.companyName}
+                </Text>
+              </HStack>
             )}
 
-            <HStack space="sm" className="items-center">
-              <Button
-                variant="outline"
-                action="secondary"
-                onPress={() => router.push("/profile-edit")}
-                className="gap-3 relative flex-1"
-              >
-                <ButtonText className="text-dark">프로필 수정</ButtonText>
-              </Button>
-              {/* 🧪 개발 모드에서만 테스트 버튼 표시 */}
-              {__DEV__ && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onPress={testImageOptimization}
-                  className="mr-2"
-                >
-                  <ButtonText className="text-xs">🧪 이미지</ButtonText>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                action="negative"
-                onPress={handleLogout}
-                disabled={isLoggingOut}
-                className="gap-3 relative"
-              >
-                <ButtonText className="text-red-600">
-                  {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
-                </ButtonText>
-              </Button>
-            </HStack>
+            {/* 로그아웃 버튼 */}
+            <Button
+              variant="outline"
+              action="negative"
+              onPress={handleLogout}
+              disabled={isLoggingOut}
+              className="w-full mt-2"
+            >
+              <ButtonText className="text-red-600 font-medium">
+                {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+              </ButtonText>
+            </Button>
           </VStack>
         </HStack>
       </Box>
 
       {/* 활동 내역 탭 섹션 */}
       <VStack className="mx-6 flex-1" space="lg">
-        {/* 탭 헤더 */}
-        <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "auction" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("auction")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "auction" ? "text-gray-900" : "text-gray-600"
-              }`}
-            >
-              경매
-            </Text>
-          </Pressable>
-
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "bidding" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("bidding")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "bidding" ? "text-gray-900" : "text-gray-600"
-              }`}
-            >
-              입찰
-            </Text>
-          </Pressable>
-
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "premium" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("premium")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "premium" ? "text-gray-900" : "text-gray-600"
-              }`}
-            >
-              프리미엄
-            </Text>
-          </Pressable>
-
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "notifications"
-                ? "bg-white shadow-sm"
-                : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("notifications")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "notifications"
-                  ? "text-gray-900"
-                  : "text-gray-600"
-              }`}
-            >
-              알림
-            </Text>
-          </Pressable>
-
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "updates" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("updates")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "updates" ? "text-gray-900" : "text-gray-600"
-              }`}
-            >
-              업데이트
-            </Text>
-          </Pressable>
-        </HStack>
+        {/* 스크롤 가능한 탭 헤더 */}
+        <Box className="bg-gray-100 rounded-xl p-1">
+          <FlatList
+            data={tabs}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 4 }}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <Pressable
+                className={`py-3 px-4 rounded-lg mx-1 min-w-[80px] ${
+                  activeTab === item.id
+                    ? "bg-white shadow-sm"
+                    : "bg-transparent"
+                }`}
+                onPress={() => setActiveTab(item.id as any)}
+              >
+                <VStack className="items-center space-y-1">
+                  <Text className="text-lg">{item.icon}</Text>
+                  <Text
+                    className={`text-center font-medium text-xs ${
+                      activeTab === item.id ? "text-gray-900" : "text-gray-600"
+                    }`}
+                    numberOfLines={1}
+                  >
+                    {item.title}
+                  </Text>
+                </VStack>
+              </Pressable>
+            )}
+          />
+        </Box>
 
         {/* 탭 컨텐츠 - 스크롤 적용 */}
         <ScrollView
           style={{ flex: 1 }}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingBottom: 20,
+            paddingBottom: 100, // 하단 메뉴 높이만큼 여백 추가
           }}
         >
           {renderTabContent()}

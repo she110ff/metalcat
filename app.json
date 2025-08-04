@@ -19,7 +19,10 @@
       "buildNumber": "1",
       "deploymentTarget": "13.0",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "경매 물품의 사진을 촬영하기 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "기존 사진을 업로드하기 위해 사진 라이브러리 접근이 필요합니다.",
+        "NSPhotoLibraryAddUsageDescription": "촬영한 사진을 저장하기 위해 사진 라이브러리 접근이 필요합니다."
       }
     },
     "android": {
@@ -28,7 +31,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.metalcatapp.metalcat",
-      "versionCode": 1
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",

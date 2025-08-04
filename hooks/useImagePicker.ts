@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, Platform, ActionSheetIOS } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export interface ImagePickerOptions {
   aspect?: [number, number];
@@ -45,23 +46,16 @@ export const useImagePicker = (
   // 단일 이미지용 (기존 호환성 유지)
   const selectedImage = selectedImages.length > 0 ? selectedImages[0] : null;
 
+  // 권한 관리 훅 사용
+  const { requestPermission } = usePermissions();
+
   // 권한 요청 함수
   const requestPermissions = async (): Promise<boolean> => {
     try {
-      const { status: cameraStatus } =
-        await ImagePicker.requestCameraPermissionsAsync();
-      const { status: libraryStatus } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const cameraGranted = await requestPermission("camera");
+      const photoGranted = await requestPermission("photo");
 
-      if (cameraStatus !== "granted" || libraryStatus !== "granted") {
-        Alert.alert(
-          "권한 필요",
-          "카메라와 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
-          [{ text: "확인" }]
-        );
-        return false;
-      }
-      return true;
+      return cameraGranted && photoGranted;
     } catch (error) {
       console.error("권한 요청 에러:", error);
       return false;

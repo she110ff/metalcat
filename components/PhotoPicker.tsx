@@ -10,6 +10,7 @@ import * as ImagePicker from "expo-image-picker";
 import { getOptimizedServicePhotoUrl } from "@/utils/imageOptimizer";
 import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
 import { supabase } from "@/hooks/service-request/supabaseClient";
+import { usePermissions } from "@/hooks/usePermissions";
 
 // 사진 정보 타입들
 export interface PhotoInfo {
@@ -53,22 +54,15 @@ export const PhotoPicker = <T extends Photo>({
   style = "default",
   allowsMultipleSelection = true,
 }: PhotoPickerProps<T>) => {
+  // 권한 관리 훅 사용
+  const { permissions, requestPermission, openSettings } = usePermissions();
+
   // 권한 요청 함수
   const requestPermissions = async () => {
-    const { status: cameraStatus } =
-      await ImagePicker.requestCameraPermissionsAsync();
-    const { status: libraryStatus } =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const cameraGranted = await requestPermission("camera");
+    const photoGranted = await requestPermission("photo");
 
-    if (cameraStatus !== "granted" || libraryStatus !== "granted") {
-      Alert.alert(
-        "권한 필요",
-        "카메라와 갤러리 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
-        [{ text: "확인" }]
-      );
-      return false;
-    }
-    return true;
+    return cameraGranted && photoGranted;
   };
 
   // 이미지 선택 옵션
