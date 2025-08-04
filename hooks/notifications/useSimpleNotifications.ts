@@ -156,5 +156,6 @@ export function useSimpleNotifications() {
     markAsRead,
     markAllAsRead,
     loadNotificationHistory,
+    registerForPushNotificationsAsync,
   };
 }

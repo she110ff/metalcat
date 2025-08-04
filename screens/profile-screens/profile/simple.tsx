@@ -38,6 +38,7 @@ import { UpdateStatusBadge } from "@/components/updates";
 import Constants from "expo-constants";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AllPermissionsStatus } from "@/components/PermissionStatus";
+import { useSimpleNotifications } from "@/hooks/notifications/useSimpleNotifications";
 
 // 업데이트 설정 컴포넌트
 const UpdateSettings = () => {
@@ -206,6 +207,13 @@ const NotificationSettings = () => {
   const [auctionNotifications, setAuctionNotifications] = useState(true);
   const [priceNotifications, setPriceNotifications] = useState(true);
 
+  // 푸시 토큰 관련 상태
+  const {
+    expoPushToken,
+    isLoading: tokenLoading,
+    registerForPushNotificationsAsync,
+  } = useSimpleNotifications();
+
   const handleAuctionToggle = (value: boolean) => {
     setAuctionNotifications(value);
     // TODO: 서버에 설정 저장
@@ -218,9 +226,85 @@ const NotificationSettings = () => {
     console.log("가격 알림 설정:", value);
   };
 
+  // 토큰 재등록 처리
+  const handleReRegisterToken = async () => {
+    try {
+      await registerForPushNotificationsAsync();
+      Alert.alert("토큰 재등록", "푸시 토큰이 재등록되었습니다.");
+    } catch (error) {
+      Alert.alert("오류", "토큰 재등록에 실패했습니다.");
+      console.error("토큰 재등록 실패:", error);
+    }
+  };
+
+  // 토큰 상태에 따른 표시 텍스트
+  const getTokenStatusText = () => {
+    if (tokenLoading) return "확인 중...";
+    if (expoPushToken) return "등록됨";
+    return "등록되지 않음";
+  };
+
+  // 토큰 상태에 따른 색상
+  const getTokenStatusColor = () => {
+    if (tokenLoading) return "text-gray-500";
+    if (expoPushToken) return "text-green-600";
+    return "text-red-600";
+  };
+
+  // 토큰 미리보기 (처음 20자 + ...)
+  const getTokenPreview = () => {
+    if (!expoPushToken) return "토큰 없음";
+    return `${expoPushToken.substring(0, 20)}...`;
+  };
+
   return (
     <VStack space="md">
       <Text className="text-lg font-bold text-gray-900">🔔 알림 설정</Text>
+
+      {/* 푸시 토큰 상태 */}
+      <Box className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <VStack space="md">
+          <HStack className="justify-between items-center">
+            <VStack className="flex-1">
+              <Text className="font-semibold text-gray-900">푸시 토큰</Text>
+              <Text className="text-sm text-gray-600">
+                알림을 받기 위한 디바이스 토큰
+              </Text>
+            </VStack>
+            <VStack className="items-end">
+              <Text className={`text-sm font-medium ${getTokenStatusColor()}`}>
+                {getTokenStatusText()}
+              </Text>
+              {expoPushToken && (
+                <Text className="text-xs text-gray-500 font-mono">
+                  {getTokenPreview()}
+                </Text>
+              )}
+            </VStack>
+          </HStack>
+
+          <Divider />
+
+          {/* 토큰 관리 버튼 */}
+          <HStack className="justify-between items-center">
+            <VStack className="flex-1">
+              <Text className="text-sm text-gray-600">
+                토큰이 등록되지 않았거나 문제가 있는 경우 재등록하세요
+              </Text>
+            </VStack>
+            <Button
+              size="sm"
+              variant="outline"
+              onPress={handleReRegisterToken}
+              isDisabled={tokenLoading}
+            >
+              <ButtonText>
+                {tokenLoading ? "처리 중..." : "토큰 재등록"}
+              </ButtonText>
+            </Button>
+          </HStack>
+        </VStack>
+      </Box>
 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <VStack space="md">
@@ -260,6 +344,40 @@ const NotificationSettings = () => {
         <Text className="text-sm text-blue-800">
           💡 경매가 종료되면 즉시 알림을 받을 수 있습니다.
         </Text>
+      </Box>
+
+      {/* 토큰 등록 안내 */}
+      {!expoPushToken && !tokenLoading && (
+        <Box className="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+          <VStack space="sm">
+            <Text className="text-sm font-medium text-yellow-800">
+              ⚠️ 푸시 토큰이 등록되지 않았습니다
+            </Text>
+            <Text className="text-xs text-yellow-700">
+              알림을 받으려면 "토큰 재등록" 버튼을 눌러주세요. 앱에서 알림
+              권한을 허용해야 합니다.
+            </Text>
+          </VStack>
+        </Box>
+      )}
+
+      {/* 토큰 등록 시점 안내 */}
+      <Box className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <VStack space="sm">
+          <Text className="text-sm font-medium text-gray-800">
+            📋 푸시 토큰 등록 시점
+          </Text>
+          <VStack space="xs">
+            <Text className="text-xs text-gray-600">
+              • 앱 첫 실행 시 자동 등록
+            </Text>
+            <Text className="text-xs text-gray-600">• 로그인 후 자동 등록</Text>
+            <Text className="text-xs text-gray-600">• 알림 권한 허용 필요</Text>
+            <Text className="text-xs text-gray-600">
+              • 디바이스 변경 시 재등록 필요
+            </Text>
+          </VStack>
+        </VStack>
       </Box>
     </VStack>
   );
