@@ -6,12 +6,7 @@ import { useMyAuctions, useMyBiddings } from "@/hooks/auctions/useMyAuctions";
 import { SimpleRequestCard } from "@/components/service-request/SimpleRequestCard";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
-import {
-  ChevronLeftIcon,
-  EditIcon,
-  Icon,
-  SettingsIcon,
-} from "@/components/ui/icon";
+import { Icon } from "@/components/ui/icon";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
@@ -734,7 +729,6 @@ const MainContent = () => {
                 className="gap-3 relative flex-1"
               >
                 <ButtonText className="text-dark">프로필 수정</ButtonText>
-                <ButtonIcon as={EditIcon} />
               </Button>
               {/* 🧪 개발 모드에서만 테스트 버튼 표시 */}
               {__DEV__ && (
