@@ -15,6 +15,12 @@ import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from "react-native-reanimated";
+import { useAppUpdates } from "@/hooks/useAppUpdates";
+import {
+  UpdateAvailableModal,
+  UpdateProgressModal,
+} from "@/components/updates";
+import Constants from "expo-constants";
 
 // Reanimated 로거 설정 - strict 모드 비활성화
 configureReanimatedLogger({
@@ -147,6 +153,52 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const [showDebugger, setShowDebugger] = useState(false);
 
+  // 업데이트 관리 훅 사용
+  const {
+    isUpdateAvailable,
+    isDownloading,
+    isDownloaded,
+    error,
+    checkForUpdates,
+    downloadUpdate,
+    applyUpdate,
+    resetUpdateState,
+  } = useAppUpdates();
+
+  // 업데이트 모달 상태 관리
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
+
+  // 업데이트 사용 가능 시 모달 표시
+  useEffect(() => {
+    if (isUpdateAvailable && !isDownloading && !isDownloaded) {
+      setShowUpdateModal(true);
+    }
+  }, [isUpdateAvailable, isDownloading, isDownloaded]);
+
+  // 다운로드 시작 시 진행률 모달 표시
+  useEffect(() => {
+    if (isDownloading || isDownloaded || error) {
+      setShowProgressModal(true);
+      setShowUpdateModal(false);
+    }
+  }, [isDownloading, isDownloaded, error]);
+
+  const handleDownload = async () => {
+    setShowUpdateModal(false);
+    await downloadUpdate();
+  };
+
+  const handleApplyUpdate = async () => {
+    setShowProgressModal(false);
+    await applyUpdate();
+  };
+
+  const handleDismissProgress = () => {
+    setShowProgressModal(false);
+    resetUpdateState();
+  };
+
   return (
     <QueryClientProvider client={queryClient}>
       <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
@@ -171,6 +223,60 @@ function RootLayoutNav() {
               - auction-create/demolition and its sub-routes
               These are automatically handled by Expo Router */}
         </Stack>
+
+        {/* 업데이트 모달들 */}
+        <UpdateAvailableModal
+          visible={showUpdateModal}
+          updateState={{
+            isUpdateAvailable,
+            isDownloading,
+            isDownloaded,
+            error,
+            updateStatus: "idle",
+            downloadProgress: null,
+            isUpdatePending: false,
+            lastChecked: null,
+            updateInfo: null,
+            isAutoCheckEnabled: true,
+            currentVersion: Constants.expoConfig?.version || "알 수 없음",
+            buildNumber: String(
+              Constants.expoConfig?.ios?.buildNumber ||
+                Constants.expoConfig?.android?.versionCode ||
+                "알 수 없음"
+            ),
+          }}
+          onDownload={handleDownload}
+          onDismiss={() => setShowUpdateModal(false)}
+          onCheckAgain={() => checkForUpdates(true)}
+        />
+
+        <UpdateProgressModal
+          visible={showProgressModal}
+          updateState={{
+            isUpdateAvailable,
+            isDownloading,
+            isDownloaded,
+            error,
+            updateStatus: isDownloading
+              ? "downloading"
+              : isDownloaded
+              ? "downloaded"
+              : "idle",
+            downloadProgress: null,
+            isUpdatePending: false,
+            lastChecked: null,
+            updateInfo: null,
+            isAutoCheckEnabled: true,
+            currentVersion: Constants.expoConfig?.version || "알 수 없음",
+            buildNumber: String(
+              Constants.expoConfig?.ios?.buildNumber ||
+                Constants.expoConfig?.android?.versionCode ||
+                "알 수 없음"
+            ),
+          }}
+          onApplyUpdate={handleApplyUpdate}
+          onDismiss={handleDismissProgress}
+        />
       </GluestackUIProvider>
       {/* 개발 환경에서만 Query Debugger 표시 */}
       {/* 개발용 디버거는 현재 숨김 처리 */}

@@ -32,6 +32,149 @@ import { Switch } from "@/components/ui/switch";
 import { Divider } from "@/components/ui/divider";
 import * as Notifications from "expo-notifications";
 import * as Linking from "expo-linking";
+import { useAppUpdates } from "@/hooks/useAppUpdates";
+import { UpdateStatusBadge } from "@/components/updates";
+import Constants from "expo-constants";
+
+// 업데이트 설정 컴포넌트
+const UpdateSettings = () => {
+  const {
+    isUpdateAvailable,
+    isDownloading,
+    isDownloaded,
+    error,
+    lastChecked,
+    isAutoCheckEnabled,
+    checkForUpdates,
+    downloadUpdate,
+    applyUpdate,
+    saveAutoCheckSetting,
+  } = useAppUpdates();
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return "알 수 없음";
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleManualCheck = async () => {
+    await checkForUpdates(true);
+  };
+
+  const handleDownload = async () => {
+    await downloadUpdate();
+  };
+
+  const handleApply = async () => {
+    await applyUpdate();
+  };
+
+  return (
+    <VStack space="lg">
+      <Text className="text-lg font-bold text-gray-900">🔄 앱 업데이트2</Text>
+
+      {/* 현재 버전 정보 */}
+      <Box className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <VStack space="md">
+          <HStack className="items-center justify-between">
+            <Text className="text-gray-700">현재 버전</Text>
+            <Text className="text-blue-900 font-semibold">
+              {Constants.expoConfig?.version || "알 수 없음"}
+            </Text>
+          </HStack>
+          <HStack className="items-center justify-between">
+            <Text className="text-gray-700">빌드 번호</Text>
+            <Text className="text-blue-900 font-semibold">
+              {Constants.expoConfig?.ios?.buildNumber ||
+                Constants.expoConfig?.android?.versionCode ||
+                "알 수 없음"}
+            </Text>
+          </HStack>
+        </VStack>
+      </Box>
+
+      {/* 업데이트 상태 */}
+      <Box className="bg-white rounded-lg p-4 border border-gray-200">
+        <VStack space="md">
+          <HStack className="items-center justify-between">
+            <Text className="text-gray-700">업데이트 상태</Text>
+            <UpdateStatusBadge
+              updateState={{
+                isUpdateAvailable,
+                isDownloading,
+                isDownloaded,
+                error,
+                updateStatus: "idle",
+                downloadProgress: null,
+                isUpdatePending: false,
+                lastChecked,
+                updateInfo: null,
+                isAutoCheckEnabled,
+                currentVersion: Constants.expoConfig?.version || "알 수 없음",
+                buildNumber: String(
+                  Constants.expoConfig?.ios?.buildNumber ||
+                    Constants.expoConfig?.android?.versionCode ||
+                    "알 수 없음"
+                ),
+              }}
+            />
+          </HStack>
+
+          <HStack className="items-center justify-between">
+            <Text className="text-gray-700">마지막 체크</Text>
+            <Text className="text-gray-900">{formatDate(lastChecked)}</Text>
+          </HStack>
+
+          <HStack className="items-center justify-between">
+            <Text className="text-gray-700">자동 체크</Text>
+            <Switch
+              value={isAutoCheckEnabled}
+              onValueChange={saveAutoCheckSetting}
+            />
+          </HStack>
+        </VStack>
+      </Box>
+
+      {/* 액션 버튼들 */}
+      <VStack space="md">
+        <Button
+          onPress={handleManualCheck}
+          disabled={isDownloading}
+          className="bg-primary-600"
+        >
+          <ButtonText>업데이트 확인</ButtonText>
+        </Button>
+
+        {isUpdateAvailable && !isDownloading && !isDownloaded && (
+          <Button
+            onPress={handleDownload}
+            variant="outline"
+            className="border-primary-600"
+          >
+            <ButtonText>업데이트 다운로드</ButtonText>
+          </Button>
+        )}
+
+        {isDownloaded && (
+          <Button onPress={handleApply} className="bg-green-600">
+            <ButtonText>업데이트 적용</ButtonText>
+          </Button>
+        )}
+
+        {error && (
+          <Box className="bg-red-50 p-3 rounded-lg border border-red-200">
+            <Text className="text-red-700 text-sm">오류: {error}</Text>
+          </Box>
+        )}
+      </VStack>
+    </VStack>
+  );
+};
 
 // 간소화된 알림 설정 컴포넌트
 const NotificationSettings = () => {
@@ -306,7 +449,7 @@ const testImageOptimization = () => {
 const MainContent = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "auction" | "bidding" | "premium" | "notifications"
+    "auction" | "bidding" | "premium" | "notifications" | "updates"
   >("auction");
 
   // 현재 사용자 정보 확인용
@@ -353,7 +496,7 @@ const MainContent = () => {
         style: "destructive",
         onPress: () => {
           logout();
-          router.replace("/(tabs)/");
+          router.replace("/");
         },
       },
     ]);
@@ -408,6 +551,10 @@ const MainContent = () => {
   };
 
   const renderTabContent = () => {
+    if (activeTab === "updates") {
+      return <UpdateSettings />;
+    }
+
     if (activeTab === "notifications") {
       return <NotificationSettings />;
     }
@@ -579,7 +726,7 @@ const MainContent = () => {
             </Text>
             <Button
               variant="outline"
-              onPress={() => router.push("/(tabs)/auction")}
+              onPress={() => router.push("/auction")}
               className="mt-4"
             >
               <ButtonText>경매 둘러보기</ButtonText>
@@ -822,6 +969,21 @@ const MainContent = () => {
               }`}
             >
               알림
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "updates" ? "bg-white shadow-sm" : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("updates")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "updates" ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
+              업데이트
             </Text>
           </Pressable>
         </HStack>

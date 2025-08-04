@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.metalcatapp.metalcat",
+      "buildNumber": "1",
       "deploymentTarget": "13.0",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -26,7 +27,8 @@
         "foregroundImage": "./assets/images/metalcat_logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.metalcatapp.metalcat"
+      "package": "com.metalcatapp.metalcat",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",
@@ -70,7 +72,10 @@
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/19829544-dd83-47d5-8c48-ffcdc913c8b1"
+      "enabled": true,
+      "url": "https://u.expo.dev/19829544-dd83-47d5-8c48-ffcdc913c8b1",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
     "owner": "metalcatapp"
   }
