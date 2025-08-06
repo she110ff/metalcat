@@ -21,6 +21,7 @@ import { BlurView } from "expo-blur";
 import { MetalPriceCard } from "@/components/dashboard/metal-price-card";
 import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 import { useLatestLmePricesCompatible } from "@/hooks/lme";
+import { useAuctions } from "@/hooks/useAuctions";
 import { EnvironmentDebugger } from "@/components/EnvironmentDebugger";
 
 export const Dashboard = () => {
@@ -33,6 +34,11 @@ export const Dashboard = () => {
     error: lmeError,
     refetch: refetchLme,
   } = useLatestLmePricesCompatible();
+
+  // 최근 경매 데이터 Hook
+  const { data: recentAuctions, isLoading: isAuctionsLoading } = useAuctions({
+    sortBy: "createdAt",
+  });
 
   // 애니메이션을 위한 Animated Values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -353,35 +359,6 @@ export const Dashboard = () => {
               </Pressable>
             </VStack>
 
-            {/* DOMESTIC SCRAP Section - Enhanced with animations */}
-            <VStack
-              space="lg"
-              className="mt-12 animate-slide-up [animation-delay:400ms]"
-            >
-              <Text
-                className="text-slate-50 text-xl font-black tracking-[2px] uppercase font-nanum-bold"
-                accessible={true}
-                accessibilityLabel="국내 고철 가격 정보 섹션"
-                accessibilityRole="header"
-              >
-                Domestic Scrap
-              </Text>
-
-              <VStack space="md">
-                {groupMetalData(domesticScrapData).map((row, rowIndex) => (
-                  <HStack key={`domestic-row-${rowIndex}`} space="md">
-                    {row.map((item, itemIndex) => (
-                      <MetalPriceCard
-                        key={`domestic-${rowIndex}-${itemIndex}`}
-                        {...item}
-                        onPress={() => handleMetalPress(item.metalName)}
-                      />
-                    ))}
-                  </HStack>
-                ))}
-              </VStack>
-            </VStack>
-
             {/* TRENDING AUCTIONS Section - Enhanced with animations and fonts */}
             <VStack
               space="lg"
@@ -397,75 +374,131 @@ export const Dashboard = () => {
               </Text>
 
               <VStack space="md">
-                <Pressable
-                  accessible={true}
-                  accessibilityLabel="알루미늄 프로파일 경매, 4백9십6만원, 2일 남음"
-                  accessibilityRole="button"
-                  accessibilityHint="경매 상세 정보를 보려면 탭하세요"
-                  className="active:scale-[0.98] transform transition-transform duration-150"
-                >
-                  <Box className="rounded-2xl p-4 bg-purple-900/8 border border-purple-500/15 shadow-lg shadow-purple-500/30 hover:bg-purple-900/12 transition-colors duration-200">
-                    <HStack className="items-center">
-                      <Box className="w-12 h-12 rounded-xl items-center justify-center mr-4 bg-purple-600 shadow-lg shadow-purple-500/60">
-                        <Ionicons name="hammer" size={20} color="#FFFFFF" />
+                {isAuctionsLoading ? (
+                  // 로딩 상태
+                  <VStack space="md">
+                    {[1, 2].map((index) => (
+                      <Box
+                        key={`auction-loading-${index}`}
+                        className="rounded-2xl p-4 bg-purple-900/8 border border-purple-500/15 animate-pulse"
+                      >
+                        <HStack className="items-center">
+                          <Box className="w-12 h-12 rounded-xl bg-purple-600/20 mr-4" />
+                          <VStack className="flex-1 space-y-2">
+                            <Box className="h-4 bg-slate-600/20 rounded" />
+                            <Box className="h-3 bg-slate-600/20 rounded w-2/3" />
+                          </VStack>
+                          <VStack className="items-end space-y-2">
+                            <Box className="h-4 bg-slate-600/20 rounded w-20" />
+                            <Box className="h-3 bg-slate-600/20 rounded w-16" />
+                          </VStack>
+                        </HStack>
                       </Box>
-                      <VStack className="flex-1">
-                        <Text className="text-slate-50 font-bold text-base mb-1 tracking-wide font-nanum-bold">
-                          Aluminum Profiles
-                        </Text>
-                        <Text className="text-slate-400 text-xs uppercase tracking-[1px] font-nanum">
-                          Gyeonggi • 1,600kg
-                        </Text>
-                      </VStack>
-                      <VStack className="items-end">
-                        <Text className="text-green-400 font-black text-lg tracking-wide font-mono">
-                          4,960,000
-                        </Text>
-                        <Text className="text-slate-400 text-3xs uppercase tracking-[1px] font-nanum">
-                          KRW
-                        </Text>
-                        <Text className="text-orange-400 text-xs uppercase tracking-[1px] font-semibold font-nanum animate-pulse-slow">
-                          2 Days Left
-                        </Text>
-                      </VStack>
-                    </HStack>
-                  </Box>
-                </Pressable>
+                    ))}
+                  </VStack>
+                ) : recentAuctions && recentAuctions.length > 0 ? (
+                  // 실제 경매 데이터
+                  recentAuctions.slice(0, 2).map((auction) => (
+                    <Pressable
+                      key={auction.id}
+                      onPress={() =>
+                        router.push(`/auction-detail/${auction.id}`)
+                      }
+                      accessible={true}
+                      accessibilityLabel={`${auction.title} 경매, ${auction.currentBid}원`}
+                      accessibilityRole="button"
+                      accessibilityHint="경매 상세 정보를 보려면 탭하세요"
+                      className="active:scale-[0.98] transform transition-transform duration-150"
+                    >
+                      <Box className="rounded-2xl p-4 bg-purple-900/8 border border-purple-500/15 shadow-lg shadow-purple-500/30 hover:bg-purple-900/12 transition-colors duration-200">
+                        <HStack className="items-center">
+                          <Box className="w-12 h-12 rounded-xl items-center justify-center mr-4 bg-purple-600 shadow-lg shadow-purple-500/60">
+                            <Ionicons
+                              name={
+                                auction.auctionCategory === "scrap"
+                                  ? "trash"
+                                  : auction.auctionCategory === "machinery"
+                                  ? "settings"
+                                  : auction.auctionCategory === "materials"
+                                  ? "cube"
+                                  : "hammer"
+                              }
+                              size={20}
+                              color="#FFFFFF"
+                            />
+                          </Box>
+                          <VStack className="flex-1">
+                            <Text className="text-slate-50 font-bold text-base mb-1 tracking-wide font-nanum-bold">
+                              {auction.title}
+                            </Text>
+                            <Text className="text-slate-400 text-xs uppercase tracking-[1px] font-nanum">
+                              {auction.address.address.split(" ")[0]} •{" "}
+                              {auction.quantity.quantity}
+                              {auction.quantity.unit}
+                            </Text>
+                          </VStack>
+                          <VStack className="items-end">
+                            <Text className="text-green-400 font-black text-lg tracking-wide font-mono">
+                              {auction.currentBid?.toLocaleString() ||
+                                "입찰 없음"}
+                            </Text>
+                            <Text className="text-slate-400 text-3xs uppercase tracking-[1px] font-nanum">
+                              KRW
+                            </Text>
+                            {(() => {
+                              const now = new Date();
+                              const endTime = new Date(auction.endTime);
+                              const timeLeft =
+                                endTime.getTime() - now.getTime();
+                              const hoursLeft = Math.floor(
+                                timeLeft / (1000 * 60 * 60)
+                              );
+                              const daysLeft = Math.floor(hoursLeft / 24);
 
-                <Pressable
-                  accessible={true}
-                  accessibilityLabel="중고 모터 경매, 40만5천원, 15시간 남음"
-                  accessibilityRole="button"
-                  accessibilityHint="경매 상세 정보를 보려면 탭하세요"
-                  className="active:scale-[0.98] transform transition-transform duration-150"
-                >
-                  <Box className="rounded-2xl p-4 bg-purple-900/8 border border-purple-500/15 shadow-lg shadow-purple-500/30 hover:bg-purple-900/12 transition-colors duration-200">
-                    <HStack className="items-center">
-                      <Box className="w-12 h-12 rounded-xl items-center justify-center mr-4 bg-purple-600 shadow-lg shadow-purple-500/60">
-                        <Ionicons name="settings" size={20} color="#FFFFFF" />
+                              let statusText = "진행중";
+                              let statusColor = "text-orange-400";
+
+                              if (auction.status === "ended" || timeLeft <= 0) {
+                                statusText = "종료됨";
+                                statusColor = "text-gray-400";
+                              } else if (hoursLeft <= 24) {
+                                statusText =
+                                  hoursLeft <= 1
+                                    ? "마감 임박"
+                                    : `${hoursLeft}시간 남음`;
+                                statusColor = "text-red-400";
+                              } else if (daysLeft <= 3) {
+                                statusText = `${daysLeft}일 남음`;
+                                statusColor = "text-yellow-400";
+                              }
+
+                              return (
+                                <Text
+                                  className={`text-xs uppercase tracking-[1px] font-semibold font-nanum animate-pulse-slow ${statusColor}`}
+                                >
+                                  {statusText}
+                                </Text>
+                              );
+                            })()}
+                          </VStack>
+                        </HStack>
                       </Box>
-                      <VStack className="flex-1">
-                        <Text className="text-slate-50 font-bold text-base mb-1 tracking-wide font-nanum-bold">
-                          Used Motors
-                        </Text>
-                        <Text className="text-slate-400 text-xs uppercase tracking-[1px] font-nanum">
-                          Chungbuk • 300kg
-                        </Text>
-                      </VStack>
-                      <VStack className="items-end">
-                        <Text className="text-green-400 font-black text-lg tracking-wide font-mono">
-                          405,000
-                        </Text>
-                        <Text className="text-slate-400 text-3xs uppercase tracking-[1px] font-nanum">
-                          KRW
-                        </Text>
-                        <Text className="text-red-400 text-xs uppercase tracking-[1px] font-semibold font-nanum animate-pulse-slow">
-                          15 Hours Left
-                        </Text>
-                      </VStack>
-                    </HStack>
+                    </Pressable>
+                  ))
+                ) : (
+                  // 데이터가 없는 경우
+                  <Box className="rounded-2xl p-6 bg-purple-900/8 border border-purple-500/15">
+                    <VStack className="items-center space-y-2">
+                      <Ionicons name="hammer" size={32} color="#8B5CF6" />
+                      <Text className="text-slate-400 text-sm font-semibold text-center">
+                        현재 진행중인 경매가 없습니다
+                      </Text>
+                      <Text className="text-slate-500 text-xs text-center">
+                        새로운 경매를 확인해보세요
+                      </Text>
+                    </VStack>
                   </Box>
-                </Pressable>
+                )}
               </VStack>
             </VStack>
           </Box>
