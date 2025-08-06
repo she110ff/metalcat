@@ -200,21 +200,10 @@ $$ language 'plpgsql';
 CREATE OR REPLACE FUNCTION get_current_environment()
 RETURNS text AS $$
 BEGIN
-    -- 더 정확한 로컬 환경 감지 로직
-    -- 로컬 Supabase는 특정 포트(54332)를 사용하고, 특정 설정들이 있음
+    -- 간단하고 확실한 환경 감지
+    -- Supabase 원격 환경에서는 특정 system identifier나 설정이 다름
     RETURN CASE 
-        WHEN current_setting('port', true)::integer = 54332 
-        THEN 'local'
-        WHEN current_setting('port', true)::integer = 5432
-             AND EXISTS (
-                 SELECT 1 FROM pg_stat_activity 
-                 WHERE application_name LIKE '%supabase%' 
-                 OR client_addr::text LIKE '172.%'
-             )
-        THEN 'local'
-        WHEN current_setting('listen_addresses', true) = '*' 
-             AND current_setting('port', true)::integer IN (5432, 54332)
-        THEN 'local'  -- Supabase 로컬은 보통 이 조건
+        WHEN current_setting('port', true)::integer = 54332 THEN 'local'
         ELSE 'production'
     END;
 END;
@@ -363,15 +352,28 @@ BEGIN
     
     RAISE NOTICE 'LME 크롤러 시작: % (로그 ID: %, URL: %)', start_time, log_id, crawler_url;
     
-    -- Edge Function 호출 (Authorization 헤더 추가)
-    SELECT net.http_post(
-        url := crawler_url,
-        headers := jsonb_build_object(
-            'Content-Type', 'application/json',
-            'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
-        ),
-        body := '{}'::jsonb
-    ) INTO request_id;
+    -- Edge Function 호출 (환경별 Authorization 헤더)
+    IF current_env = 'production' THEN
+        -- 프로덕션 환경: 실제 service_role 키 사용
+        SELECT net.http_post(
+            url := crawler_url,
+            headers := jsonb_build_object(
+                'Content-Type', 'application/json',
+                'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMjMyMTIsImV4cCI6MjA2OTY5OTIxMn0.Sh2kGjkOON-OiD2SNeh2YeCqcgL-MlxY4YhbTCGjSOw'
+            ),
+            body := '{}'::jsonb
+        ) INTO request_id;
+    ELSE
+        -- 로컬 환경: 로컬 개발용 키 사용
+        SELECT net.http_post(
+            url := crawler_url,
+            headers := jsonb_build_object(
+                'Content-Type', 'application/json',
+                'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+            ),
+            body := '{}'::jsonb
+        ) INTO request_id;
+    END IF;
     
     -- 응답 대기
     PERFORM pg_sleep(3);
