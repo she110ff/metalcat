@@ -2,10 +2,7 @@
   "build": {
     "base": {
       "node": "20.18.3",
-      "env": {
-        "EXPO_PUBLIC_UPDATE_CODE": "2",
-        "EXPO_PUBLIC_ENV": "production"
-      },
+
       "android": {
         "image": "latest",
         "env": {
@@ -38,9 +35,7 @@
     "preview": {
       "extends": "base",
       "channel": "preview",
-      "env": {
-        "EXPO_PUBLIC_ENV": "preview"
-      },
+      "environment": "preview",
       "distribution": "internal",
       "android": {
         "buildType": "apk"

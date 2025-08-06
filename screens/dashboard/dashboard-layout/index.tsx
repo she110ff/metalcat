@@ -21,6 +21,7 @@ import { BlurView } from "expo-blur";
 import { MetalPriceCard } from "@/components/dashboard/metal-price-card";
 import { domesticScrapData, groupMetalData, lmePricesData } from "@/data";
 import { useLatestLmePricesCompatible } from "@/hooks/lme";
+import { EnvironmentDebugger } from "@/components/EnvironmentDebugger";
 
 export const Dashboard = () => {
   const router = useRouter();
@@ -123,6 +124,16 @@ export const Dashboard = () => {
                 METALCAT
               </Text>
             </Animated.View>
+
+            {/* Environment Variables Debug Section - Development only */}
+
+            <VStack className="mt-8 animate-slide-up">
+              <EnvironmentDebugger
+                visible={true}
+                collapsible={true}
+                defaultExpanded={false}
+              />
+            </VStack>
 
             {/* LME PRICES Section - Enhanced with animations and proper fonts */}
             <VStack space="lg" className="mt-12 animate-slide-up">

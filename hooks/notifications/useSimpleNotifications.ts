@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import * as Notifications from "expo-notifications";
-import * as Device from "expo-device";
-import { Platform } from "react-native";
 import { supabase } from "@/hooks/auth/api";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotificationToken } from "./useNotificationToken";
 
 // 알림 핸들러 설정
 Notifications.setNotificationHandler({
@@ -17,43 +16,22 @@ Notifications.setNotificationHandler({
 
 export function useSimpleNotifications() {
   const { user } = useAuth();
-  const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
-  const [isLoading, setIsLoading] = useState(true);
 
-  // 푸시 토큰 등록
+  // 새로운 토큰 관리 훅 사용
+  const {
+    token: expoPushToken,
+    isLoading,
+    forceRegister,
+  } = useNotificationToken();
+
+  // 레거시 호환성을 위한 래퍼 함수
   const registerForPushNotificationsAsync = async () => {
-    if (!Device.isDevice || !user) return;
-
-    const { status } = await Notifications.requestPermissionsAsync();
-    if (status !== "granted") {
-      console.log("알림 권한이 거부되었습니다");
-      return;
-    }
+    if (!user) return;
 
     try {
-      const token = (
-        await Notifications.getExpoPushTokenAsync({
-          projectId: "19829544-dd83-47d5-8c48-ffcdc913c8b1", // EAS 프로젝트 ID
-        })
-      ).data;
-
-      // 서버에 토큰 등록
-      const { error } = await supabase.from("user_push_tokens").upsert({
-        user_id: user.id,
-        expo_push_token: token,
-        platform: Platform.OS,
-        device_id: Device.osInternalBuildId,
-        is_active: true,
-      });
-
-      if (error) {
-        console.error("토큰 등록 실패:", error);
-      } else {
-        console.log("토큰 등록 성공:", token);
-        setExpoPushToken(token);
-      }
+      forceRegister();
     } catch (error) {
-      console.error("토큰 생성 실패:", error);
+      console.error("토큰 등록 실패:", error);
     }
   };
 
@@ -142,10 +120,8 @@ export function useSimpleNotifications() {
 
   useEffect(() => {
     if (user) {
-      registerForPushNotificationsAsync();
       loadNotificationHistory();
     }
-    setIsLoading(false);
   }, [user]);
 
   return {
