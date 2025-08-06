@@ -25,6 +25,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionRequestScreen } from "@/components/PermissionRequestScreen";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { useColorScheme } from "@/components/useColorScheme";
+import { useSimpleNotifications } from "@/hooks/notifications/useSimpleNotifications";
 import "../global.css";
 
 // Reanimated 로거 설정 - strict 모드 비활성화
@@ -95,6 +96,12 @@ const initializeSplashScreen = async () => {
 
 // 초기화 실행
 initializeSplashScreen();
+
+// 알림 시스템 Provider 컴포넌트
+function NotificationProvider() {
+  useSimpleNotifications();
+  return null; // UI를 렌더링하지 않음
+}
 
 // Create a client
 const queryClient = new QueryClient({
@@ -212,6 +219,9 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
+        {/* 알림 시스템 초기화 (QueryClientProvider 안에서 사용) */}
+        <NotificationProvider />
+
         <Stack
           screenOptions={{
             headerShown: false,
