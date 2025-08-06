@@ -24,10 +24,8 @@ async function getExchangeRate(): Promise<number> {
     console.warn("환율 API 호출 실패:", error);
   }
 
-  // 환율 API 실패시 환경변수 또는 기본값 사용
-  const fallbackRate = parseFloat(
-    Deno.env.get("DEFAULT_EXCHANGE_RATE") || "1320"
-  );
+  // 환율 API 실패시 기본값 사용
+  const fallbackRate = 1320;
   console.log(`💱 기본 환율 사용: ${fallbackRate} KRW/USD`);
   return fallbackRate;
 }
@@ -68,9 +66,7 @@ async function crawlSinglePage(
   pageNumber: number,
   exchangeRate?: number
 ): Promise<{ data: LmeData[]; dates: string[] }> {
-  const baseUrl =
-    Deno.env.get("LME_SOURCE_URL") ||
-    "https://www.nonferrous.or.kr/stats/?act=sub3";
+  const baseUrl = "https://www.nonferrous.or.kr/stats/?act=sub3";
   const url = `${baseUrl}&page=${pageNumber}`;
 
   console.log(`🕷️ ${pageNumber}페이지 크롤링 시작: ${url}`);
@@ -257,12 +253,14 @@ Deno.serve(async (req) => {
     );
 
     // Supabase 클라이언트 생성
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("EXPO_PUBLIC_SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get(
+      "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"
+    );
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error(
-        "환경 변수가 설정되지 않았습니다: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
+        "환경 변수가 설정되지 않았습니다: EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"
       );
     }
 

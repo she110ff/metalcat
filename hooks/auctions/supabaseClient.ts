@@ -1,21 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
-// 환경변수에서 Supabase 설정 가져오기 (기존 LME 패턴과 동일)
-// 임시로 하드코딩된 값 사용 (디버깅용)
-const supabaseUrl = "https://vxdncswvbhelstpkfcvv.supabase.co";
+// 환경변수에서 Supabase 설정 가져오기 (Expo Public 변수 사용)
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || "http://127.0.0.1:54331";
 const supabaseAnonKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMjMyMTIsImV4cCI6MjA2OTY5OTIxMn0.Sh2kGjkOON-OiD2SNeh2YeCqcgL-MlxY4YhbTCGjSOw";
-
-// 원래 환경 변수 로직 (주석 처리)
-// const supabaseUrl =
-//   process.env.EXPO_PUBLIC_SUPABASE_URL ||
-//   process.env.SUPABASE_URL ||
-//   "http://127.0.0.1:54331";
-// const supabaseAnonKey =
-//   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-//   process.env.SUPABASE_ANON_KEY ||
-//   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJl" +
-//     "eHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJl" +
+    "eHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0";
 
 // 경매 전용 Supabase 클라이언트 생성 (타입 제약 제거)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

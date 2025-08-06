@@ -222,7 +222,7 @@ BEGIN
       
       -- 오류 로그 저장
       INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
-      VALUES ('auction', 'auction-end-processor', 'error', 
+      VALUES ('auction', 'auction-end-processor', 'failed', 
               jsonb_build_object(
                 'auction_id', ended_auction.id,
                 'error', auction_error,
@@ -233,7 +233,7 @@ BEGIN
 
   -- 로그 완료
   INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
-  VALUES ('auction', 'auction-end-processor', 'completed', 
+  VALUES ('auction', 'auction-end-processor', 'success', 
           jsonb_build_object(
             'processed', total_processed,
             'successful', total_successful,

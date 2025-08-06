@@ -91,8 +91,12 @@ yarn-error.*
 # local env files
 .env
 .env*.local
-.env.local.remote
-.env.local.backup
+.env.local.*
+.env.local.backup.*
+
+# 개인별 환경 설정
+.env.personal
+.env.development.local
 
 # typescript
 *.tsbuildinfo
@@ -128,5 +132,3 @@ Desktop.ini
 expo-env.d.ts
 # @end expo-cli
 
-# eas.json
-# app.json

@@ -1,5 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  getEnvironmentConfig,
+  getEnvironmentSpecificConfig,
+} from "../_shared/env-utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -24,23 +28,11 @@ async function getExchangeRate(): Promise<number> {
     console.warn("환율 API 호출 실패:", error);
   }
 
-  // 환율 API 실패시 환경변수 또는 기본값 사용
-  const fallbackRate = parseFloat(
-    Deno.env.get("DEFAULT_EXCHANGE_RATE") || "1320"
-  );
+  // 환율 API 실패시 기본값 사용
+  const fallbackRate = 1320;
   console.log(`💱 기본 환율 사용: ${fallbackRate} KRW/USD`);
   return fallbackRate;
 }
-
-// 환경변수에서 설정값 로드
-const getConfig = () => {
-  return {
-    maxRetries: parseInt(Deno.env.get("MAX_RETRY_ATTEMPTS") || "3"),
-    crawlerIntervalSeconds: parseInt(
-      Deno.env.get("LME_CRAWLER_INTERVAL") || "60"
-    ),
-  };
-};
 
 interface LmeData {
   metal_code: string;
@@ -54,187 +46,176 @@ interface LmeData {
 }
 
 // 실제 LME 데이터 크롤링 함수
-async function crawlLmeData(exchangeRate?: number): Promise<LmeData[]> {
+async function crawlLmeData(
+  exchangeRate?: number,
+  config?: any
+): Promise<LmeData[]> {
   const baseUrl =
-    Deno.env.get("LME_SOURCE_URL") ||
-    "https://www.nonferrous.or.kr/stats/?act=sub3";
+    config?.lmeSourceUrl || "https://www.nonferrous.or.kr/stats/?act=sub3";
   const url = `${baseUrl}&page=1`;
+  const maxRetries = config?.maxRetries || 3;
 
-  try {
-    console.log("🕷️ LME 데이터 크롤링 시작:", url);
-
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5",
-        "Accept-Encoding": "gzip, deflate",
-        Connection: "keep-alive",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
-    }
-
-    const html = await response.text();
-    console.log("📄 HTML 데이터 수신 완료, 길이:", html.length);
-
-    // TD 태그에서 데이터 추출 (성공한 로컬 스크립트 방식과 동일하게)
-    const tdMatches = html.match(/<td[^>]*>.*?<\/td>/gs);
-
-    if (!tdMatches || tdMatches.length < 20) {
-      throw new Error(
-        `충분한 TD 태그를 찾을 수 없습니다. 발견된 개수: ${
-          tdMatches?.length || 0
-        }`
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(
+        `🕷️ LME 데이터 크롤링 시작 (시도 ${attempt}/${maxRetries}):`,
+        url
       );
-    }
 
-    console.log("📊 TD 태그 발견:", tdMatches.length, "개");
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "ko-KR,ko;q=0.8,en-US;q=0.5",
+          "Accept-Encoding": "gzip, deflate",
+          Connection: "keep-alive",
+        },
+      });
 
-    // TD 내용 추출 및 정리
-    const tdContents = tdMatches
-      .map((td) => {
-        return td
-          .replace(/<td[^>]*>/, "")
-          .replace(/<\/td>/, "")
-          .replace(/&nbsp;/g, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-      })
-      .filter((content) => content.length > 0);
+      if (!response.ok) {
+        throw new Error(`HTTP 오류: ${response.status} ${response.statusText}`);
+      }
 
-    // 금속 코드 매핑
-    const metalMapping: Record<string, string> = {
-      AL: "알루미늄",
-      CU: "구리",
-      NI: "니켈",
-      ZN: "아연",
-      PB: "납",
-      SN: "주석",
-    };
+      const html = await response.text();
+      console.log("📄 HTML 데이터 수신 완료, 길이:", html.length);
 
-    const lmeData: LmeData[] = [];
+      // TD 태그에서 데이터 추출
+      const tdMatches = html.match(/<td[^>]*>.*?<\/td>/gs);
 
-    // 환율 설정 (파라미터로 전달되지 않으면 기본값 사용)
-    const currentExchangeRate = exchangeRate || (await getExchangeRate());
+      if (!tdMatches || tdMatches.length < 20) {
+        throw new Error(
+          `충분한 TD 태그를 찾을 수 없습니다. 발견된 개수: ${
+            tdMatches?.length || 0
+          }`
+        );
+      }
 
-    // 날짜 변환 함수 (한국 형식 → ISO 형식)
-    function parseKoreanDate(dateStr: string): string | null {
-      const match = dateStr.match(/(\d{4})[\s./-]+(\d{1,2})[\s./-]+(\d{1,2})/);
-      if (!match) return null;
+      console.log("📊 TD 태그 발견:", tdMatches.length, "개");
 
-      const year = match[1];
-      const month = match[2].padStart(2, "0");
-      const day = match[3].padStart(2, "0");
+      // 데이터 파싱 로직 (기존과 동일)
+      const tdContents = tdMatches
+        .map((td) => {
+          return td
+            .replace(/<td[^>]*>/, "")
+            .replace(/<\/td>/, "")
+            .replace(/&nbsp;/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+        })
+        .filter((content) => content.length > 0);
 
-      return `${year}-${month}-${day}`;
-    }
+      const lmeData: LmeData[] = [];
+      const currentExchangeRate = exchangeRate || (await getExchangeRate());
 
-    // 7개씩 그룹화 (날짜 + 6개 금속) - 실제 거래 날짜 사용
-    let processedRows = 0;
-    const maxDays = parseInt(Deno.env.get("LME_MAX_DAYS") || "5"); // 환경변수로 설정 가능, 기본값 5일
-    let processedDays = 0;
+      // 날짜 변환 함수
+      function parseKoreanDate(dateStr: string): string | null {
+        const match = dateStr.match(
+          /(\d{4})[\s./-]+(\d{1,2})[\s./-]+(\d{1,2})/
+        );
+        if (!match) return null;
 
-    for (let i = 0; i < tdContents.length - 6; i += 7) {
-      const dateStr = tdContents[i];
+        const year = match[1];
+        const month = match[2].padStart(2, "0");
+        const day = match[3].padStart(2, "0");
 
-      // 실제 거래 날짜 파싱
-      const tradeDate = parseKoreanDate(dateStr);
-      if (!tradeDate) {
-        continue;
+        return `${year}-${month}-${day}`;
+      }
+
+      // 데이터 처리 로직 (기존과 동일)
+      let processedRows = 0;
+      const maxDays = 5;
+      let processedDays = 0;
+
+      for (let i = 0; i < tdContents.length - 6; i += 7) {
+        const dateStr = tdContents[i];
+        const tradeDate = parseKoreanDate(dateStr);
+        if (!tradeDate) continue;
+
+        console.log(
+          `📅 ${dateStr} (거래일: ${tradeDate}) 데이터 처리 중... (${
+            processedDays + 1
+          }/${maxDays}일)`
+        );
+
+        const metalMapping = ["CU", "AL", "ZN", "PB", "NI", "SN"];
+        const metalNames = ["구리", "알루미늄", "아연", "납", "니켈", "주석"];
+
+        for (let j = 0; j < 6; j++) {
+          const priceStr = tdContents[i + 1 + j];
+          const metalCode = metalMapping[j];
+          const metalNameKr = metalNames[j];
+
+          const cleanPrice = priceStr.replace(/[^\d.,]/g, "");
+          const priceMatch = cleanPrice.match(/[\d,]+\.?\d*/);
+
+          if (!priceMatch) {
+            console.log(`   ❌ ${metalNameKr}: 가격 파싱 실패 (${priceStr})`);
+            continue;
+          }
+
+          const priceUsd = parseFloat(priceMatch[0].replace(/,/g, ""));
+
+          if (isNaN(priceUsd) || priceUsd <= 0) {
+            console.log(`   ❌ ${metalNameKr}: 무효한 가격 (${priceUsd})`);
+            continue;
+          }
+
+          console.log(
+            `   ✅ ${metalNameKr}(${metalCode}): $${priceUsd.toLocaleString()}/MT`
+          );
+
+          const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
+          const changePercent = (Math.random() - 0.5) * 2;
+          const changeType: "positive" | "negative" | "unchanged" =
+            changePercent > 0.1
+              ? "positive"
+              : changePercent < -0.1
+              ? "negative"
+              : "unchanged";
+
+          const changeAmountKrw = (priceKrwPerKg * changePercent) / 100;
+
+          lmeData.push({
+            metal_code: metalCode,
+            metal_name_kr: metalNameKr,
+            price_usd_per_ton: priceUsd,
+            price_krw_per_kg: parseFloat(priceKrwPerKg.toFixed(3)),
+            change_percent: parseFloat(changePercent.toFixed(2)),
+            change_type: changeType,
+            change_amount_krw: parseFloat(changeAmountKrw.toFixed(2)),
+            price_date: tradeDate,
+          });
+        }
+
+        processedRows++;
+        processedDays++;
+
+        if (processedDays >= maxDays) {
+          console.log(`🎯 최근 ${maxDays}일 데이터 수집 완료`);
+          break;
+        }
       }
 
       console.log(
-        `📅 ${dateStr} (거래일: ${tradeDate}) 데이터 처리 중... (${
-          processedDays + 1
-        }/${maxDays}일)`
+        `🎯 ${processedDays}일 ${processedRows}개 행에서 총 ${lmeData.length}개 가격 데이터 추출`
       );
 
-      // 6개 금속 가격 데이터 순서: Cu, Al, Zn, Pb, Ni, Sn
-      const metalMapping = ["CU", "AL", "ZN", "PB", "NI", "SN"];
-      const metalNames = ["구리", "알루미늄", "아연", "납", "니켈", "주석"];
+      return lmeData;
+    } catch (error) {
+      console.error(`❌ 크롤링 시도 ${attempt} 실패:`, error);
 
-      for (let j = 0; j < 6; j++) {
-        const priceStr = tdContents[i + 1 + j];
-        const metalCode = metalMapping[j];
-        const metalNameKr = metalNames[j];
-
-        // 가격 파싱 - 쉼표 제거하고 숫자만 추출
-        const cleanPrice = priceStr.replace(/[^\d.,]/g, "");
-        const priceMatch = cleanPrice.match(/[\d,]+\.?\d*/);
-
-        if (!priceMatch) {
-          console.log(`   ❌ ${metalNameKr}: 가격 파싱 실패 (${priceStr})`);
-          continue;
-        }
-
-        const priceUsd = parseFloat(priceMatch[0].replace(/,/g, ""));
-
-        if (isNaN(priceUsd) || priceUsd <= 0) {
-          console.log(`   ❌ ${metalNameKr}: 무효한 가격 (${priceUsd})`);
-          continue;
-        }
-
-        console.log(
-          `   ✅ ${metalNameKr}(${metalCode}): $${priceUsd.toLocaleString()}/MT`
-        );
-
-        // KRW/kg 변환 (USD/ton -> KRW/kg)
-        const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
-
-        // 간단한 변화량 계산 (실제로는 전일 대비 계산이 필요)
-        const changePercent = (Math.random() - 0.5) * 2; // -1% ~ +1% 랜덤
-        const changeType: "positive" | "negative" | "unchanged" =
-          changePercent > 0.1
-            ? "positive"
-            : changePercent < -0.1
-            ? "negative"
-            : "unchanged";
-
-        const changeAmountKrw = (priceKrwPerKg * changePercent) / 100;
-
-        lmeData.push({
-          metal_code: metalCode,
-          metal_name_kr: metalNameKr,
-          price_usd_per_ton: priceUsd,
-          price_krw_per_kg: parseFloat(priceKrwPerKg.toFixed(3)),
-          change_percent: parseFloat(changePercent.toFixed(2)),
-          change_type: changeType,
-          change_amount_krw: parseFloat(changeAmountKrw.toFixed(2)),
-          price_date: tradeDate,
-        });
+      if (attempt === maxRetries) {
+        throw error;
       }
 
-      processedRows++;
-      processedDays++;
-
-      // 설정된 일수만큼 데이터 수집 완료 시 종료
-      if (processedDays >= maxDays) {
-        console.log(`🎯 최근 ${maxDays}일 데이터 수집 완료`);
-        break;
-      }
+      // 재시도 전 대기
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
-
-    console.log(
-      `🎯 ${processedDays}일 ${processedRows}개 행에서 총 ${lmeData.length}개 가격 데이터 추출`
-    );
-
-    console.log(
-      "✅ 크롤링 완료:",
-      lmeData.length,
-      "개 데이터 추출 (최근",
-      processedDays,
-      "일)"
-    );
-    return lmeData;
-  } catch (error) {
-    console.error("❌ 크롤링 실패:", error);
-    throw error;
   }
+
+  throw new Error("모든 크롤링 시도 실패");
 }
 
 Deno.serve(async (req) => {
@@ -243,17 +224,20 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Supabase 클라이언트 생성
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    // 환경 설정 로드
+    const envConfig = getEnvironmentConfig();
+    const appConfig = getEnvironmentSpecificConfig(envConfig);
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error(
-        "환경 변수가 설정되지 않았습니다: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
-      );
-    }
+    console.log(
+      `🌍 환경: ${envConfig.environment} (로컬: ${envConfig.isLocal})`
+    );
+    console.log(`🔗 Supabase URL: ${envConfig.supabaseUrl}`);
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Supabase 클라이언트 생성 (환경별 URL 사용)
+    const supabase = createClient(
+      envConfig.supabaseUrl,
+      envConfig.serviceRoleKey
+    );
 
     const startTime = Date.now();
     const now = new Date().toISOString();
@@ -281,20 +265,19 @@ Deno.serve(async (req) => {
       // 2. 실시간 환율 조회
       const exchangeRate = await getExchangeRate();
 
-      // 3. 실제 LME 데이터 크롤링 (환율 전달)
-      const lmeData = await crawlLmeData(exchangeRate);
+      // 3. 실제 LME 데이터 크롤링 (환경별 설정 전달)
+      const lmeData = await crawlLmeData(exchangeRate, appConfig);
 
       if (lmeData.length === 0) {
         throw new Error("크롤링된 데이터가 없습니다");
       }
 
-      // 4. UPSERT를 사용한 데이터 삽입/업데이트 (중복 시 업데이트)
+      // 4. UPSERT를 사용한 데이터 삽입/업데이트
       const insertData = lmeData.map((item) => ({
         ...item,
         exchange_rate: exchangeRate,
         exchange_rate_source: "api",
         processed_at: new Date().toISOString(),
-        // price_date는 이미 item에 실제 거래 날짜가 포함됨
       }));
 
       console.log(`📥 UPSERT로 ${insertData.length}개 데이터 처리 중...`);
@@ -302,7 +285,7 @@ Deno.serve(async (req) => {
       const { error: upsertError } = await supabase
         .from("lme_processed_prices")
         .upsert(insertData, {
-          onConflict: "metal_code,price_date", // 유니크 제약조건과 일치
+          onConflict: "metal_code,price_date",
         });
 
       if (upsertError) {
@@ -328,12 +311,15 @@ Deno.serve(async (req) => {
         JSON.stringify(
           {
             success: true,
-            message: `✅ 실제 LME 데이터 크롤링 성공!`,
+            message: `✅ LME 데이터 크롤링 성공! (${envConfig.environment})`,
             data: {
+              environment: envConfig.environment,
               crawled_metals: lmeData.length,
               crawling_log_id: logId,
               duration_ms: duration,
-              extracted_data: lmeData,
+              exchange_rate: exchangeRate,
+              supabase_url: envConfig.supabaseUrl,
+              config_used: appConfig,
               timestamp: now,
             },
           },
@@ -371,6 +357,7 @@ Deno.serve(async (req) => {
           success: false,
           message: "❌ LME 크롤링 실패",
           error: error instanceof Error ? error.message : "알 수 없는 오류",
+          environment: Deno.env.get("ENVIRONMENT") || "unknown",
         },
         null,
         2

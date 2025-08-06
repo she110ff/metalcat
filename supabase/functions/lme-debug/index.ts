@@ -12,9 +12,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const baseUrl =
-      Deno.env.get("LME_SOURCE_URL") ||
-      "https://www.nonferrous.or.kr/stats/?act=sub3";
+    const baseUrl = "https://www.nonferrous.or.kr/stats/?act=sub3";
     const url = baseUrl;
 
     console.log("🔍 LME 디버깅 시작:", url);

@@ -22,12 +22,14 @@ Deno.serve(async (req) => {
 
   try {
     // Supabase 클라이언트 생성 (service_role 키 사용)
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("EXPO_PUBLIC_SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get(
+      "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"
+    );
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error(
-        "환경 변수가 설정되지 않았습니다: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY"
+        "환경 변수가 설정되지 않았습니다: EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY"
       );
     }
 

@@ -152,8 +152,72 @@ export const Dashboard = () => {
                   </VStack>
                 ) : (
                   // 실시간 데이터 또는 정적 데이터 표시
-                  groupMetalData(realTimeLmeData || lmePricesData).map(
-                    (row, rowIndex) => (
+                  (() => {
+                    const dataToShow = realTimeLmeData || lmePricesData;
+
+                    // 데이터가 없는 경우 하드코딩된 테스트 데이터 사용
+                    if (!dataToShow || dataToShow.length === 0) {
+                      const fallbackData = [
+                        {
+                          metalName: "구리",
+                          price: 13220,
+                          unit: "원/KG",
+                          changePercent: "+0.70%",
+                          changeType: "positive" as const,
+                        },
+                        {
+                          metalName: "알루미늄",
+                          price: 3575,
+                          unit: "원/KG",
+                          changePercent: "+0.76%",
+                          changeType: "positive" as const,
+                        },
+                        {
+                          metalName: "아연",
+                          price: 3829,
+                          unit: "원/KG",
+                          changePercent: "+0.48%",
+                          changeType: "positive" as const,
+                        },
+                        {
+                          metalName: "납",
+                          price: 2684,
+                          unit: "원/KG",
+                          changePercent: "+0.14%",
+                          changeType: "positive" as const,
+                        },
+                        {
+                          metalName: "주석",
+                          price: 45716,
+                          unit: "원/KG",
+                          changePercent: "+1.12%",
+                          changeType: "positive" as const,
+                        },
+                        {
+                          metalName: "니켈",
+                          price: 20678,
+                          unit: "원/KG",
+                          changePercent: "+1.96%",
+                          changeType: "positive" as const,
+                        },
+                      ];
+
+                      return groupMetalData(fallbackData).map(
+                        (row, rowIndex) => (
+                          <HStack key={`fallback-row-${rowIndex}`} space="md">
+                            {row.map((item, itemIndex) => (
+                              <MetalPriceCard
+                                key={`fallback-${rowIndex}-${itemIndex}`}
+                                {...item}
+                                onPress={() => handleMetalPress(item.metalName)}
+                              />
+                            ))}
+                          </HStack>
+                        )
+                      );
+                    }
+
+                    return groupMetalData(dataToShow).map((row, rowIndex) => (
                       <HStack key={`lme-row-${rowIndex}`} space="md">
                         {row.map((item, itemIndex) => (
                           <MetalPriceCard
@@ -163,8 +227,8 @@ export const Dashboard = () => {
                           />
                         ))}
                       </HStack>
-                    )
-                  )
+                    ));
+                  })()
                 )}
 
                 {/* 에러 상태 처리 */}
