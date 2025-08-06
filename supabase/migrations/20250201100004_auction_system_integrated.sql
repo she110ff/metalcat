@@ -462,30 +462,46 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 입찰시 경매 정보 자동 업데이트
+-- 입찰시 경매 정보 자동 업데이트 (개선된 버전 - 동시성 제어 및 검증 강화)
 CREATE OR REPLACE FUNCTION update_auction_on_bid()
 RETURNS TRIGGER AS $$
+DECLARE
+  max_amount NUMERIC;
 BEGIN
-  -- 경매의 현재 입찰가와 입찰자 수 업데이트
-  UPDATE auctions 
-  SET 
-    current_bid = NEW.amount,
-    total_bid_amount = NEW.amount,
-    bidder_count = (
-      SELECT COUNT(DISTINCT user_id) 
-      FROM auction_bids 
-      WHERE auction_id = NEW.auction_id
-    ),
-    updated_at = NOW()
-  WHERE id = NEW.auction_id;
+  -- 경매 테이블에 락 적용하여 동시성 제어
+  PERFORM 1 FROM auctions WHERE id = NEW.auction_id FOR UPDATE;
   
-  -- 이전 최고 입찰을 false로 변경
-  UPDATE auction_bids 
-  SET is_top_bid = false 
-  WHERE auction_id = NEW.auction_id AND id != NEW.id;
+  -- 현재 최고 입찰가 확인
+  SELECT COALESCE(MAX(amount), 0) INTO max_amount
+  FROM auction_bids 
+  WHERE auction_id = NEW.auction_id;
   
-  -- 새 입찰을 최고 입찰로 설정
-  NEW.is_top_bid = true;
+  -- 새 입찰이 최고 입찰가보다 높은 경우에만 처리
+  IF NEW.amount > max_amount THEN
+    -- 모든 이전 입찰을 false로 설정
+    UPDATE auction_bids 
+    SET is_top_bid = false 
+    WHERE auction_id = NEW.auction_id;
+    
+    -- 현재 입찰을 최고 입찰로 설정
+    NEW.is_top_bid = true;
+    
+    -- 경매 정보 업데이트
+    UPDATE auctions 
+    SET 
+      current_bid = NEW.amount,
+      total_bid_amount = NEW.amount,
+      bidder_count = (
+        SELECT COUNT(DISTINCT user_id) 
+        FROM auction_bids 
+        WHERE auction_id = NEW.auction_id
+      ),
+      updated_at = NOW()
+    WHERE id = NEW.auction_id;
+  ELSE
+    -- 최고 입찰가보다 낮은 경우 false로 설정
+    NEW.is_top_bid = false;
+  END IF;
   
   RETURN NEW;
 END;
@@ -777,13 +793,8 @@ BEGIN
       a.starting_price,
       a.user_id as seller_id,
       a.end_time,
-      a.status,
-      ab.id as winning_bid_id,
-      ab.user_id as winning_user_id,
-      ab.amount as winning_amount,
-      ab.user_name as winning_user_name
+      a.status
     FROM auctions a
-    LEFT JOIN auction_bids ab ON a.id = ab.auction_id AND ab.is_top_bid = true
     WHERE a.end_time <= NOW() 
       AND a.status IN ('active', 'ending')
     ORDER BY a.end_time ASC
@@ -793,24 +804,39 @@ BEGIN
       total_processed := total_processed + 1;
       auction_title := ended_auction.title;
       
-      -- 알림을 위한 토큰 조회
-      -- 경매 등록자 토큰
-      SELECT array_agg(expo_push_token) INTO seller_tokens
-      FROM user_push_tokens 
-      WHERE user_id = ended_auction.seller_id AND is_active = true;
-      
-      -- 낙찰자 토큰 (낙찰된 경우)
-      IF ended_auction.winning_user_id IS NOT NULL THEN
-        SELECT array_agg(expo_push_token) INTO winner_tokens
-        FROM user_push_tokens 
-        WHERE user_id = ended_auction.winning_user_id AND is_active = true;
-      END IF;
-      
-      -- 낙찰/유찰 결정
-      IF ended_auction.winning_amount IS NOT NULL 
-         AND ended_auction.winning_amount >= ended_auction.starting_price THEN
+      -- 실제 최고 입찰자 재확인 (is_top_bid 신뢰하지 않음)
+      DECLARE
+        actual_winning_bid RECORD;
+      BEGIN
+        SELECT 
+          ab.id as winning_bid_id,
+          ab.user_id as winning_user_id,
+          ab.amount as winning_amount,
+          ab.user_name as winning_user_name
+        INTO actual_winning_bid
+        FROM auction_bids ab
+        WHERE ab.auction_id = ended_auction.id
+        ORDER BY ab.amount DESC, ab.bid_time ASC
+        LIMIT 1;
         
-        -- 낙찰 처리 (기존 로직)
+        -- 알림을 위한 토큰 조회
+        -- 경매 등록자 토큰
+        SELECT array_agg(expo_push_token) INTO seller_tokens
+        FROM user_push_tokens 
+        WHERE user_id = ended_auction.seller_id AND is_active = true;
+        
+        -- 낙찰자 토큰 (낙찰된 경우)
+        IF actual_winning_bid.winning_user_id IS NOT NULL THEN
+          SELECT array_agg(expo_push_token) INTO winner_tokens
+          FROM user_push_tokens 
+          WHERE user_id = actual_winning_bid.winning_user_id AND is_active = true;
+        END IF;
+        
+        -- 낙찰/유찰 결정 (실제 최고 입찰 기준)
+        IF actual_winning_bid.winning_amount IS NOT NULL 
+           AND actual_winning_bid.winning_amount >= ended_auction.starting_price THEN
+        
+        -- 낙찰 처리 (개선된 로직 - 실제 최고 입찰 기준)
         INSERT INTO auction_results (
           auction_id, 
           result_type, 
@@ -821,13 +847,15 @@ BEGIN
         ) VALUES (
           ended_auction.id, 
           'successful', 
-          ended_auction.winning_bid_id, 
-          ended_auction.winning_user_id, 
-          ended_auction.winning_amount,
+          actual_winning_bid.winning_bid_id, 
+          actual_winning_bid.winning_user_id, 
+          actual_winning_bid.winning_amount,
           jsonb_build_object(
-            'winning_user_name', ended_auction.winning_user_name,
+            'winning_user_name', actual_winning_bid.winning_user_name,
             'processing_time', NOW(),
-            'seller_id', ended_auction.seller_id
+            'seller_id', ended_auction.seller_id,
+            'validation_method', 'amount_based_verification',
+            'fixed_version', 'v2.0'
           )
         );
         
@@ -864,23 +892,23 @@ BEGIN
               'auction_title', auction_title,
               'user_type', 'winner',
               'result', 'successful',
-              'winning_amount', ended_auction.winning_amount
+              'winning_amount', actual_winning_bid.winning_amount
             )
           );
           
           -- 히스토리 저장
           INSERT INTO notification_history (user_id, type, title, body, data)
-          VALUES (ended_auction.winning_user_id, 'auction_won', '경매에 낙찰되었습니다!', 
+          VALUES (actual_winning_bid.winning_user_id, 'auction_won', '경매에 낙찰되었습니다!', 
                   auction_title || ' 경매에 낙찰되었습니다!',
                   jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
         END IF;
         
         total_successful := total_successful + 1;
         
-        RAISE NOTICE '✅ 낙찰 처리: % (₩%) - 알림 발송 완료', ended_auction.title, ended_auction.winning_amount;
+        RAISE NOTICE '✅ 낙찰 처리: % (₩%) - 알림 발송 완료', ended_auction.title, actual_winning_bid.winning_amount;
         
       ELSE
-        -- 유찰 처리 (기존 로직)
+        -- 유찰 처리 (개선된 로직 - 실제 최고 입찰 기준)
         INSERT INTO auction_results (
           auction_id, 
           result_type,
@@ -890,14 +918,16 @@ BEGIN
           'failed',
           jsonb_build_object(
             'reason', CASE 
-              WHEN ended_auction.winning_amount IS NULL THEN 'no_bids'
-              WHEN ended_auction.winning_amount < ended_auction.starting_price THEN 'below_starting_price'
+              WHEN actual_winning_bid.winning_amount IS NULL THEN 'no_bids'
+              WHEN actual_winning_bid.winning_amount < ended_auction.starting_price THEN 'below_starting_price'
               ELSE 'unknown'
             END,
-            'highest_bid', ended_auction.winning_amount,
+            'highest_bid', actual_winning_bid.winning_amount,
             'starting_price', ended_auction.starting_price,
             'processing_time', NOW(),
-            'seller_id', ended_auction.seller_id
+            'seller_id', ended_auction.seller_id,
+            'validation_method', 'amount_based_verification',
+            'fixed_version', 'v2.0'
           )
         );
         
@@ -912,7 +942,7 @@ BEGIN
               'auction_title', auction_title,
               'user_type', 'seller',
               'result', 'failed',
-              'highest_bid', ended_auction.winning_amount
+              'highest_bid', actual_winning_bid.winning_amount
             )
           );
           
@@ -927,9 +957,10 @@ BEGIN
         
         RAISE NOTICE '❌ 유찰 처리: % (최고가: ₩%, 시작가: ₩%) - 알림 발송 완료', 
           ended_auction.title, 
-          COALESCE(ended_auction.winning_amount, 0), 
+          COALESCE(actual_winning_bid.winning_amount, 0), 
           ended_auction.starting_price;
-      END IF;
+        END IF;
+      END; -- actual_winning_bid 블록 종료
       
       -- 경매 상태를 ended로 업데이트
       UPDATE auctions 
@@ -1141,7 +1172,7 @@ GRANT SELECT ON auction_transactions TO authenticated, anon;
 -- 뷰 접근 권한
 GRANT SELECT ON auction_list_view TO authenticated, anon;
 
--- 경매 등록 시 모든 사용자에게 알림 발송 함수
+-- 경매 등록 시 모든 사용자에게 알림 발송 함수 (알림 히스토리 저장 포함)
 CREATE OR REPLACE FUNCTION send_auction_create_notification(
   auction_id TEXT,
   auction_title TEXT,
@@ -1156,6 +1187,7 @@ DECLARE
   all_tokens TEXT[];
   notification_title TEXT;
   notification_body TEXT;
+  user_record RECORD;
 BEGIN
   -- 현재 환경 확인
   SELECT get_current_environment() INTO current_env;
@@ -1176,6 +1208,26 @@ BEGIN
   notification_body := auction_title || ' 경매가 새로 등록되었습니다.';
   
   RAISE NOTICE '📢 새 경매 알림 발송: % - % (토큰 수: %)', notification_title, notification_body, array_length(all_tokens, 1);
+  
+  -- 모든 사용자에게 알림 히스토리 저장
+  FOR user_record IN 
+    SELECT user_id FROM user_push_tokens WHERE is_active = true
+  LOOP
+    INSERT INTO notification_history (user_id, type, title, body, data)
+    VALUES (
+      user_record.user_id, 
+      'auction_created', 
+      notification_title, 
+      notification_body,
+      jsonb_build_object(
+        'auction_id', auction_id,
+        'auction_title', auction_title,
+        'auction_category', auction_category,
+        'seller_name', seller_name,
+        'notification_type', 'auction_created'
+      )
+    );
+  END LOOP;
   
   -- 환경별 처리
   IF current_env = 'local' THEN
@@ -1323,19 +1375,128 @@ COMMENT ON POLICY "basic_bid_policy" ON auction_bids IS
 '기본 입찰 정책: 데이터 무결성 체크. 자신의 경매 입찰 방지는 애플리케이션 레벨에서 처리';
 
 -- ============================================
+-- 19. 데이터 정합성 검증 및 복구 시스템 (v2.0 추가)
+-- ============================================
+
+-- 데이터 정합성 검증 함수
+CREATE OR REPLACE FUNCTION validate_auction_bids(auction_id TEXT)
+RETURNS TABLE (
+  is_valid BOOLEAN,
+  error_message TEXT,
+  top_bid_amount NUMERIC,
+  top_bid_user_id UUID
+) AS $$
+DECLARE
+  max_bid RECORD;
+  top_bid_count INTEGER;
+BEGIN
+  -- 최고 입찰 확인
+  SELECT amount, user_id INTO max_bid
+  FROM auction_bids 
+  WHERE auction_id = validate_auction_bids.auction_id
+  ORDER BY amount DESC, bid_time ASC
+  LIMIT 1;
+  
+  -- is_top_bid가 true인 레코드 수 확인
+  SELECT COUNT(*) INTO top_bid_count
+  FROM auction_bids 
+  WHERE auction_id = validate_auction_bids.auction_id
+  AND is_top_bid = true;
+  
+  -- 검증 결과 반환
+  IF top_bid_count = 1 AND max_bid.amount IS NOT NULL THEN
+    RETURN QUERY SELECT 
+      true,
+      'Valid',
+      max_bid.amount,
+      max_bid.user_id;
+  ELSE
+    RETURN QUERY SELECT 
+      false,
+      'Multiple or no top bids found',
+      max_bid.amount,
+      max_bid.user_id;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 입찰 데이터 자동 복구 함수
+CREATE OR REPLACE FUNCTION repair_auction_bids(auction_id TEXT)
+RETURNS BOOLEAN AS $$
+DECLARE
+  max_bid RECORD;
+BEGIN
+  -- 모든 is_top_bid를 false로 초기화
+  UPDATE auction_bids 
+  SET is_top_bid = false 
+  WHERE auction_id = repair_auction_bids.auction_id;
+  
+  -- 실제 최고 입찰을 찾아서 true로 설정
+  SELECT id, amount, user_id INTO max_bid
+  FROM auction_bids 
+  WHERE auction_id = repair_auction_bids.auction_id
+  ORDER BY amount DESC, bid_time ASC
+  LIMIT 1;
+  
+  IF max_bid.id IS NOT NULL THEN
+    UPDATE auction_bids 
+    SET is_top_bid = true 
+    WHERE id = max_bid.id;
+    
+    -- 경매 정보도 업데이트
+    UPDATE auctions 
+    SET 
+      current_bid = max_bid.amount,
+      updated_at = NOW()
+    WHERE id = repair_auction_bids.auction_id;
+    
+    RETURN true;
+  END IF;
+  
+  RETURN false;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 데이터 불일치 감지 뷰
+CREATE OR REPLACE VIEW auction_data_inconsistencies AS
+SELECT 
+  a.id as auction_id,
+  a.title,
+  a.current_bid as auction_current_bid,
+  (SELECT MAX(amount) FROM auction_bids WHERE auction_id = a.id) as actual_max_bid,
+  (SELECT COUNT(*) FROM auction_bids WHERE auction_id = a.id AND is_top_bid = true) as top_bid_count,
+  CASE 
+    WHEN a.current_bid != (SELECT MAX(amount) FROM auction_bids WHERE auction_id = a.id) THEN 'current_bid_mismatch'
+    WHEN (SELECT COUNT(*) FROM auction_bids WHERE auction_id = a.id AND is_top_bid = true) != 1 THEN 'top_bid_count_error'
+    ELSE 'consistent'
+  END as issue_type
+FROM auctions a
+WHERE a.status IN ('active', 'ending', 'ended')
+AND (
+  a.current_bid != (SELECT MAX(amount) FROM auction_bids WHERE auction_id = a.id)
+  OR (SELECT COUNT(*) FROM auction_bids WHERE auction_id = a.id AND is_top_bid = true) != 1
+);
+
+-- 데이터 정합성 검증 함수 권한 부여
+GRANT EXECUTE ON FUNCTION validate_auction_bids(TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION repair_auction_bids(TEXT) TO authenticated;
+GRANT SELECT ON auction_data_inconsistencies TO authenticated;
+
+-- ============================================
 -- 완료 메시지
 -- ============================================
 DO $$
 BEGIN
-  RAISE NOTICE '🎉 경매 시스템 통합 완료!';
+  RAISE NOTICE '🎉 경매 시스템 통합 완료! (v2.0 - 데이터 정합성 강화)';
   RAISE NOTICE '🏷️ 카테고리: scrap, machinery, materials, demolition';
   RAISE NOTICE '📊 테이블: auctions + 카테고리별 테이블 + 입찰/사진/결과';
   RAISE NOTICE '🔒 RLS 정책: 사용자별 접근 제어 + 자기 입찰 방지';
   RAISE NOTICE '📁 Storage: auction-photos 버킷 설정';
-  RAISE NOTICE '🤖 자동화: 경매 종료, 상태 업데이트';
+  RAISE NOTICE '🤖 자동화: 경매 종료, 상태 업데이트 (개선된 로직)';
   RAISE NOTICE '📈 통계: 처리 현황, 성공률, 위반 사례 확인';
   RAISE NOTICE '🔗 호환성: auction_list_view 통합 뷰로 기존 API 지원';
   RAISE NOTICE '⏰ 크론: 매분/5분 자동 실행';
+  RAISE NOTICE '🔍 데이터 정합성: 검증 및 자동 복구 시스템 추가';
   RAISE NOTICE '🚀 완전한 경매 시스템 준비 완료!';
   RAISE NOTICE '📱 알림 시스템: 경매 종료/등록 시 자동 푸시 알림 발송';
 END $$;

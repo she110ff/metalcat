@@ -340,7 +340,6 @@ export interface AuctionResultInfo {
 
   // 처리 정보
   processedAt: Date;
-  paymentDeadline?: Date;
 
   // 메타데이터
   metadata?: {

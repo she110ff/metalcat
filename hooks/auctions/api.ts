@@ -1108,9 +1108,6 @@ function transformAuctionResultRow(row: any): AuctionResultInfo {
       : undefined,
     winningUserName: row.metadata?.winning_user_name,
     processedAt: new Date(row.processed_at),
-    paymentDeadline: row.payment_deadline
-      ? new Date(row.payment_deadline)
-      : undefined,
     metadata: row.metadata || {},
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at),
