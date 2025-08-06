@@ -759,7 +759,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 경매 종료 처리 메인 함수 (알림 기능 통합)
+-- 경매 종료 처리 메인 함수 (타임아웃 및 예외 처리 개선)
 CREATE OR REPLACE FUNCTION process_ended_auctions()
 RETURNS TABLE(
   processed_count INTEGER,
@@ -774,16 +774,21 @@ DECLARE
   total_failed INTEGER := 0;
   total_errors INTEGER := 0;
   auction_error TEXT;
+  log_id UUID;
   
   -- 알림 관련 변수
   seller_tokens TEXT[];
   winner_tokens TEXT[];
   auction_title TEXT;
 BEGIN
-  -- 로그 시작
+  -- 로그 시작 - UUID 생성
   INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
   VALUES ('auction', 'auction-end-processor', 'running', 
-          jsonb_build_object('started_at', NOW()));
+          jsonb_build_object('started_at', NOW()))
+  RETURNING id INTO log_id;
+
+  -- 타임아웃 설정 (5분)
+  SET statement_timeout = '5min';
 
   -- 종료된 경매들 처리 (락 적용)
   FOR ended_auction IN 
@@ -798,7 +803,7 @@ BEGIN
     WHERE a.end_time <= NOW() 
       AND a.status IN ('active', 'ending')
     ORDER BY a.end_time ASC
-    FOR UPDATE OF a -- 동시성 제어를 위한 락
+    FOR UPDATE OF a SKIP LOCKED -- 동시성 제어 개선
   LOOP
     BEGIN
       total_processed := total_processed + 1;
@@ -855,53 +860,58 @@ BEGIN
             'processing_time', NOW(),
             'seller_id', ended_auction.seller_id,
             'validation_method', 'amount_based_verification',
-            'fixed_version', 'v2.0'
+            'fixed_version', 'v3.0'
           )
         );
         
-        -- 알림 발송
-        -- 경매 등록자에게 알림
-        IF array_length(seller_tokens, 1) > 0 THEN
-          PERFORM send_auction_end_notification(
-            seller_tokens,
-            '경매가 종료되었습니다',
-            auction_title || ' 경매가 종료되었습니다.',
-            jsonb_build_object(
-              'auction_id', ended_auction.id,
-              'auction_title', auction_title,
-              'user_type', 'seller',
-              'result', 'successful'
-            )
-          );
+        -- 알림 발송 (예외 처리 개선)
+        BEGIN
+          -- 경매 등록자에게 알림
+          IF array_length(seller_tokens, 1) > 0 THEN
+            PERFORM send_auction_end_notification(
+              seller_tokens,
+              '경매가 종료되었습니다',
+              auction_title || ' 경매가 종료되었습니다.',
+              jsonb_build_object(
+                'auction_id', ended_auction.id,
+                'auction_title', auction_title,
+                'user_type', 'seller',
+                'result', 'successful'
+              )
+            );
+            
+            -- 히스토리 저장
+            INSERT INTO notification_history (user_id, type, title, body, data)
+            VALUES (ended_auction.seller_id, 'auction_ended', '경매가 종료되었습니다', 
+                    auction_title || ' 경매가 종료되었습니다.',
+                    jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+          END IF;
           
-          -- 히스토리 저장
-          INSERT INTO notification_history (user_id, type, title, body, data)
-          VALUES (ended_auction.seller_id, 'auction_ended', '경매가 종료되었습니다', 
-                  auction_title || ' 경매가 종료되었습니다.',
-                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
-        END IF;
-        
-        -- 낙찰자에게 알림
-        IF array_length(winner_tokens, 1) > 0 THEN
-          PERFORM send_auction_end_notification(
-            winner_tokens,
-            '경매에 낙찰되었습니다!',
-            auction_title || ' 경매에 낙찰되었습니다!',
-            jsonb_build_object(
-              'auction_id', ended_auction.id,
-              'auction_title', auction_title,
-              'user_type', 'winner',
-              'result', 'successful',
-              'winning_amount', actual_winning_bid.winning_amount
-            )
-          );
-          
-          -- 히스토리 저장
-          INSERT INTO notification_history (user_id, type, title, body, data)
-          VALUES (actual_winning_bid.winning_user_id, 'auction_won', '경매에 낙찰되었습니다!', 
-                  auction_title || ' 경매에 낙찰되었습니다!',
-                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
-        END IF;
+          -- 낙찰자에게 알림
+          IF array_length(winner_tokens, 1) > 0 THEN
+            PERFORM send_auction_end_notification(
+              winner_tokens,
+              '경매에 낙찰되었습니다!',
+              auction_title || ' 경매에 낙찰되었습니다!',
+              jsonb_build_object(
+                'auction_id', ended_auction.id,
+                'auction_title', auction_title,
+                'user_type', 'winner',
+                'result', 'successful',
+                'winning_amount', actual_winning_bid.winning_amount
+              )
+            );
+            
+            -- 히스토리 저장
+            INSERT INTO notification_history (user_id, type, title, body, data)
+            VALUES (actual_winning_bid.winning_user_id, 'auction_won', '경매에 낙찰되었습니다!', 
+                    auction_title || ' 경매에 낙찰되었습니다!',
+                    jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          RAISE WARNING '❌ 알림 발송 실패: % - %', auction_title, SQLERRM;
+          -- 알림 실패가 경매 처리를 중단시키지 않도록 예외를 흡수
+        END;
         
         total_successful := total_successful + 1;
         
@@ -927,31 +937,35 @@ BEGIN
             'processing_time', NOW(),
             'seller_id', ended_auction.seller_id,
             'validation_method', 'amount_based_verification',
-            'fixed_version', 'v2.0'
+            'fixed_version', 'v3.0'
           )
         );
         
-        -- 경매 등록자에게 유찰 알림
-        IF array_length(seller_tokens, 1) > 0 THEN
-          PERFORM send_auction_end_notification(
-            seller_tokens,
-            '경매가 유찰되었습니다',
-            auction_title || ' 경매가 유찰되었습니다.',
-            jsonb_build_object(
-              'auction_id', ended_auction.id,
-              'auction_title', auction_title,
-              'user_type', 'seller',
-              'result', 'failed',
-              'highest_bid', actual_winning_bid.winning_amount
-            )
-          );
-          
-          -- 히스토리 저장
-          INSERT INTO notification_history (user_id, type, title, body, data)
-          VALUES (ended_auction.seller_id, 'auction_failed', '경매가 유찰되었습니다', 
-                  auction_title || ' 경매가 유찰되었습니다.',
-                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
-        END IF;
+        -- 경매 등록자에게 유찰 알림 (예외 처리 개선)
+        BEGIN
+          IF array_length(seller_tokens, 1) > 0 THEN
+            PERFORM send_auction_end_notification(
+              seller_tokens,
+              '경매가 유찰되었습니다',
+              auction_title || ' 경매가 유찰되었습니다.',
+              jsonb_build_object(
+                'auction_id', ended_auction.id,
+                'auction_title', auction_title,
+                'user_type', 'seller',
+                'result', 'failed',
+                'highest_bid', actual_winning_bid.winning_amount
+              )
+            );
+            
+            -- 히스토리 저장
+            INSERT INTO notification_history (user_id, type, title, body, data)
+            VALUES (ended_auction.seller_id, 'auction_failed', '경매가 유찰되었습니다', 
+                    auction_title || ' 경매가 유찰되었습니다.',
+                    jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+          END IF;
+        EXCEPTION WHEN OTHERS THEN
+          RAISE WARNING '❌ 유찰 알림 발송 실패: % - %', auction_title, SQLERRM;
+        END;
         
         total_failed := total_failed + 1;
         
@@ -984,18 +998,36 @@ BEGIN
     END;
   END LOOP;
 
-  -- 로그 완료
-  INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
-  VALUES ('auction', 'auction-end-processor', 'success', 
-          jsonb_build_object(
-            'processed', total_processed,
-            'successful', total_successful,
-            'failed', total_failed,
-            'errors', total_errors,
-            'completed_at', NOW()
-          ));
+  -- 로그 완료 - 기존 로그 업데이트
+  UPDATE cron_execution_logs 
+  SET status = 'success', 
+      completed_at = NOW(),
+      metadata = jsonb_build_object(
+        'processed', total_processed,
+        'successful', total_successful,
+        'failed', total_failed,
+        'errors', total_errors,
+        'completed_at', NOW(),
+        'version', 'v3.0'
+      )
+  WHERE id = log_id;
 
   RETURN QUERY SELECT total_processed, total_successful, total_failed, total_errors;
+EXCEPTION WHEN OTHERS THEN
+  -- 전체 함수 실패 시 로그 업데이트
+  IF log_id IS NOT NULL THEN
+    UPDATE cron_execution_logs 
+    SET status = 'failed', 
+        completed_at = NOW(),
+        metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object(
+          'error', SQLERRM,
+          'failed_at', NOW(),
+          'version', 'v3.0'
+        )
+    WHERE id = log_id;
+  END IF;
+  
+  RAISE;
 END;
 $$ LANGUAGE plpgsql;
 
