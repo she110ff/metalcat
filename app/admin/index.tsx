@@ -8,6 +8,8 @@ import {
 import {
   useAdminServiceRequests,
   usePremiumStats,
+  useUpdateServiceRequestStatus,
+  AdminServiceRequest,
 } from "@/hooks/admin/useAdminPremium";
 import {
   useAuctionStats,
@@ -29,8 +31,9 @@ import { Heading } from "@/components/ui/heading";
 import { Pressable } from "@/components/ui/pressable";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { ScrollView } from "@/components/ui/scroll-view";
+import { Button } from "@/components/ui/button";
 import { useRouter } from "expo-router";
-import { ChevronLeft, RefreshCw } from "lucide-react-native";
+import { ChevronLeft, RefreshCw, Edit3 } from "lucide-react-native";
 import { Alert, TextInput } from "react-native";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
@@ -482,6 +485,7 @@ const PremiumTabContent = () => {
   const { data: stats, isLoading: statsLoading } = usePremiumStats();
   const { data: requests, isLoading: requestsLoading } =
     useAdminServiceRequests();
+  const updateStatusMutation = useUpdateServiceRequestStatus();
 
   // 서비스 타입 텍스트 변환
   const getServiceTypeText = (type: string) => {
@@ -545,6 +549,87 @@ const PremiumTabContent = () => {
     }).format(price);
   };
 
+  // 상태 변경 처리
+  const handleStatusUpdate = async (request: AdminServiceRequest) => {
+    const statusOptions = [
+      { label: "대기 중", value: "pending" },
+      { label: "담당자 배정", value: "assigned" },
+      { label: "진행 중", value: "in_progress" },
+      { label: "완료", value: "completed" },
+      { label: "취소", value: "cancelled" },
+    ];
+
+    Alert.alert(
+      "상태 변경",
+      `${getServiceTypeText(request.serviceType)} • ${request.userName}\n${
+        request.address
+      }`,
+      [
+        ...statusOptions.map((option) => ({
+          text: option.label,
+          onPress: async () => {
+            let finalOfferNumber: number | undefined;
+
+            if (option.value === "completed") {
+              // 완료 상태일 때 최종 견적 입력 받기
+              Alert.prompt(
+                "최종 견적 입력",
+                "금액을 입력하세요 (선택사항)",
+                [
+                  { text: "취소", style: "cancel" },
+                  {
+                    text: "확인",
+                    onPress: async (finalOffer) => {
+                      finalOfferNumber = finalOffer
+                        ? parseInt(finalOffer.replace(/[^0-9]/g, ""))
+                        : undefined;
+
+                      const result = await updateStatusMutation.mutateAsync({
+                        requestId: request.id,
+                        status: option.value as any,
+                        finalOffer: finalOfferNumber,
+                      });
+
+                      if (result.success) {
+                        Alert.alert(
+                          "성공",
+                          "상태가 성공적으로 변경되었습니다."
+                        );
+                      } else {
+                        Alert.alert(
+                          "오류",
+                          result.error || "상태 변경에 실패했습니다."
+                        );
+                      }
+                    },
+                  },
+                ],
+                "plain-text",
+                request.finalOffer?.toString() || ""
+              );
+            } else {
+              const result = await updateStatusMutation.mutateAsync({
+                requestId: request.id,
+                status: option.value as any,
+                finalOffer: finalOfferNumber,
+              });
+
+              if (result.success) {
+                Alert.alert("성공", "상태가 성공적으로 변경되었습니다.");
+              } else {
+                Alert.alert(
+                  "오류",
+                  result.error || "상태 변경에 실패했습니다."
+                );
+              }
+            }
+          },
+        })),
+        { text: "취소", style: "cancel" },
+      ]
+    );
+  };
+
   if (statsLoading) {
     return (
       <Box className="flex-1 items-center justify-center py-8">
@@ -595,13 +680,13 @@ const PremiumTabContent = () => {
 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <Heading size="md" className="mb-3">
-          📋 최근 서비스 요청 목록
+          📋 서비스 요청 목록
         </Heading>
         {requestsLoading ? (
           <Text className="text-gray-500">요청 목록을 불러오는 중...</Text>
         ) : requests && requests.length > 0 ? (
           <VStack space="md">
-            {requests.slice(0, 10).map((request) => (
+            {requests.map((request) => (
               <Box key={request.id} className="p-3 bg-gray-50 rounded-lg">
                 <VStack space="sm">
                   <HStack className="justify-between items-start">
@@ -616,6 +701,11 @@ const PremiumTabContent = () => {
                       <Text className="text-xs text-gray-500">
                         📞 {request.contactPhone}
                       </Text>
+                      {request.description && (
+                        <Text className="text-xs text-gray-500 mt-1">
+                          {request.description}
+                        </Text>
+                      )}
                     </VStack>
                     <VStack className="items-end">
                       <Text
@@ -628,46 +718,28 @@ const PremiumTabContent = () => {
                       <Text className="text-xs text-gray-500">
                         {formatDate(request.createdAt)}
                       </Text>
+                      <Pressable
+                        onPress={() => handleStatusUpdate(request)}
+                        className="mt-2 p-2 bg-blue-100 rounded-lg"
+                      >
+                        <Edit3 size={16} color="#3B82F6" />
+                      </Pressable>
                     </VStack>
                   </HStack>
-
-                  {request.description && (
-                    <Text className="text-sm text-gray-700 mt-2">
-                      💬{" "}
-                      {request.description.length > 50
-                        ? `${request.description.substring(0, 50)}...`
-                        : request.description}
-                    </Text>
-                  )}
-
-                  {(request.estimatedValue || request.finalOffer) && (
-                    <HStack className="justify-between items-center mt-2 pt-2 border-t border-gray-200">
-                      {request.estimatedValue && (
-                        <Text className="text-xs text-blue-600">
-                          예상가: {formatPrice(request.estimatedValue)}
-                        </Text>
-                      )}
-                      {request.finalOffer && (
-                        <Text className="text-xs text-green-600 font-bold">
-                          최종가: {formatPrice(request.finalOffer)}
-                        </Text>
-                      )}
+                  {request.finalOffer && (
+                    <HStack className="justify-between items-center pt-2 border-t border-gray-200">
+                      <Text className="text-sm font-medium">최종 견적</Text>
+                      <Text className="text-sm font-bold text-purple-600">
+                        {formatPrice(request.finalOffer)}
+                      </Text>
                     </HStack>
                   )}
                 </VStack>
               </Box>
             ))}
-
-            {requests.length > 10 && (
-              <Text className="text-center text-gray-500 text-sm mt-4">
-                {`총 ${requests.length}건 중 최근 10건 표시`}
-              </Text>
-            )}
           </VStack>
         ) : (
-          <Text className="text-gray-500 text-center py-4">
-            등록된 서비스 요청이 없습니다.
-          </Text>
+          <Text className="text-gray-500">등록된 서비스 요청이 없습니다.</Text>
         )}
       </Box>
     </VStack>

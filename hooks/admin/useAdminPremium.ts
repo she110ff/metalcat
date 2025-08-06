@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/hooks/service-request/supabaseClient";
 
 export interface AdminServiceRequest {
@@ -33,19 +33,38 @@ export interface PremiumStats {
  */
 export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
   try {
+    // 먼저 조인 없이 서비스 요청만 조회
     const { data, error } = await supabase
       .from("service_requests")
-      .select(
-        `
-        *,
-        users!inner(name)
-      `
-      )
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) {
       console.error("서비스 요청 목록 조회 실패:", error);
       return [];
+    }
+
+    // 사용자 정보를 별도로 조회하여 매핑
+    const userIds = [
+      ...new Set((data || []).map((item) => item.user_id).filter(Boolean)),
+    ];
+    const userMap = new Map<string, string>();
+
+    if (userIds.length > 0) {
+      try {
+        const { data: usersData } = await supabase
+          .from("users")
+          .select("id, name")
+          .in("id", userIds);
+
+        if (usersData) {
+          usersData.forEach((user) => {
+            userMap.set(user.id, user.name || "이름 없음");
+          });
+        }
+      } catch (userError) {
+        console.warn("사용자 정보 조회 실패, 기본값 사용:", userError);
+      }
     }
 
     return (data || []).map((item: any) => ({
@@ -62,7 +81,10 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
       createdAt: item.created_at,
       updatedAt: item.updated_at,
       completedAt: item.completed_at,
-      userName: item.users?.name || "알 수 없음",
+      userName: item.user_id
+        ? userMap.get(item.user_id) ||
+          `회원 (${item.user_id.substring(0, 8)}...)`
+        : "비회원",
     }));
   } catch (error) {
     console.error("서비스 요청 조회 중 오류:", error);
@@ -144,6 +166,45 @@ export async function getPremiumStats(): Promise<PremiumStats> {
 }
 
 /**
+ * 서비스 요청 상태 변경
+ */
+export async function updateServiceRequestStatus(
+  requestId: string,
+  status: "pending" | "assigned" | "in_progress" | "completed" | "cancelled",
+  finalOffer?: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const updateData: any = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+
+    // 완료 상태일 때 final_offer와 completed_at 추가
+    if (status === "completed") {
+      if (finalOffer) {
+        updateData.final_offer = finalOffer;
+      }
+      updateData.completed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from("service_requests")
+      .update(updateData)
+      .eq("id", requestId);
+
+    if (error) {
+      console.error("서비스 요청 상태 변경 실패:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("서비스 요청 상태 변경 중 오류:", error);
+    return { success: false, error: "알 수 없는 오류가 발생했습니다." };
+  }
+}
+
+/**
  * 관리자용 모든 서비스 요청 훅
  */
 export const useAdminServiceRequests = () => {
@@ -166,5 +227,36 @@ export const usePremiumStats = () => {
     refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
     staleTime: 5 * 60 * 1000, // 5분
     refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
+  });
+};
+
+/**
+ * 서비스 요청 상태 변경 훅
+ */
+export const useUpdateServiceRequestStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      requestId,
+      status,
+      finalOffer,
+    }: {
+      requestId: string;
+      status:
+        | "pending"
+        | "assigned"
+        | "in_progress"
+        | "completed"
+        | "cancelled";
+      finalOffer?: number;
+    }) => updateServiceRequestStatus(requestId, status, finalOffer),
+    onSuccess: () => {
+      // 관련 쿼리 무효화하여 데이터 갱신
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "service-requests"],
+      });
+      queryClient.invalidateQueries({ queryKey: ["admin", "premium-stats"] });
+    },
   });
 };
