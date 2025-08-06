@@ -72,16 +72,6 @@ CREATE TABLE IF NOT EXISTS crawling_logs (
 -- 3. 크론 시스템 테이블
 -- ============================================
 
--- 애플리케이션 설정 테이블
-CREATE TABLE IF NOT EXISTS app_config (
-    key text PRIMARY KEY,
-    value text NOT NULL,
-    environment text NOT NULL DEFAULT 'local',
-    description text,
-    created_at timestamptz DEFAULT NOW(),
-    updated_at timestamptz DEFAULT NOW()
-);
-
 -- 통합 Cron 실행 로그 테이블
 CREATE TABLE IF NOT EXISTS cron_execution_logs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -217,43 +207,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 개선된 환경 감지 (설정 테이블 기반)
-CREATE OR REPLACE FUNCTION get_current_environment_simple()
-RETURNS text AS $$
-DECLARE
-    env_value text;
-BEGIN
-    SELECT value INTO env_value 
-    FROM app_config 
-    WHERE key = 'current_environment' AND environment = 'system';
-    
-    RETURN COALESCE(env_value, 'local');
-END;
-$$ LANGUAGE plpgsql;
-
--- 앱 설정 조회 함수
-CREATE OR REPLACE FUNCTION get_app_config(config_key text)
-RETURNS text AS $$
-DECLARE
-    current_env text;
-    config_value text;
-BEGIN
-    SELECT get_current_environment_simple() INTO current_env;
-    
-    SELECT value INTO config_value 
-    FROM app_config 
-    WHERE key = config_key AND environment = current_env;
-    
-    IF config_value IS NULL THEN
-        SELECT value INTO config_value 
-        FROM app_config 
-        WHERE key = config_key AND environment = 'local';
-    END IF;
-    
-    RETURN config_value;
-END;
-$$ LANGUAGE plpgsql;
-
 -- ============================================
 -- 8. LME 데이터 조회 함수
 -- ============================================
@@ -352,12 +305,9 @@ $$;
 -- 9. 크롤러 실행 함수
 -- ============================================
 
--- 공통 크롤러 실행 함수
-CREATE OR REPLACE FUNCTION run_generic_crawler(
-    crawler_type text,
-    url_key text,
-    job_name text
-) RETURNS uuid AS $$
+-- LME 크롤러 실행 함수
+CREATE OR REPLACE FUNCTION run_lme_crawler()
+RETURNS void AS $$
 DECLARE
     log_id uuid;
     crawler_url text;
@@ -365,14 +315,21 @@ DECLARE
     response_record record;
     start_time timestamptz;
     exec_duration_ms integer;
+    current_env text;
 BEGIN
     start_time := NOW();
     
-    -- URL 설정 조회
-    SELECT get_app_config(url_key) INTO crawler_url;
+    -- 환경별 URL 설정 (Edge Function에서 환경 변수로 자동 처리)
+    SELECT get_current_environment() INTO current_env;
     
-    IF crawler_url IS NULL THEN
-        RAISE EXCEPTION '설정을 찾을 수 없습니다: %', url_key;
+    IF current_env = 'production' THEN
+        -- 프로덕션: 환경 변수는 Edge Function 내부에서 처리
+        -- 여기서는 임시로 플레이스홀더 사용 (실제 배포시 수정 필요)
+        crawler_url := 'https://your-project.supabase.co/functions/v1/lme-crawler';
+        RAISE NOTICE '⚠️ 프로덕션 URL을 실제 프로젝트 URL로 수정해주세요';
+    ELSE
+        -- 로컬 환경: Docker 내부 URL 사용
+        crawler_url := 'http://host.docker.internal:54331/functions/v1/lme-crawler';
     END IF;
     
     -- 실행 로그 시작 기록
@@ -383,14 +340,14 @@ BEGIN
         started_at,
         metadata
     ) VALUES (
-        crawler_type,
-        job_name,
+        'lme',
+        'lme-crawler-minutely',
         'running',
         start_time,
-        jsonb_build_object('url', crawler_url, 'environment', get_current_environment_simple())
+        jsonb_build_object('url', crawler_url, 'environment', current_env)
     ) RETURNING id INTO log_id;
     
-    RAISE NOTICE '% 크롤러 시작: % (로그 ID: %, URL: %)', upper(crawler_type), start_time, log_id, crawler_url;
+    RAISE NOTICE 'LME 크롤러 시작: % (로그 ID: %, URL: %)', start_time, log_id, crawler_url;
     
     -- Edge Function 호출
     SELECT net.http_post(
@@ -427,7 +384,7 @@ BEGIN
             )
         WHERE id = log_id;
         
-        RAISE NOTICE '% 크롤러 성공: % (로그 ID: %, 소요시간: %ms)', upper(crawler_type), NOW(), log_id, exec_duration_ms;
+        RAISE NOTICE 'LME 크롤러 성공: % (로그 ID: %, 소요시간: %ms)', NOW(), log_id, exec_duration_ms;
     ELSE
         -- 실패
         UPDATE cron_execution_logs 
@@ -442,10 +399,8 @@ BEGIN
             )
         WHERE id = log_id;
         
-        RAISE NOTICE '% 크롤러 실패: % (오류: %)', upper(crawler_type), NOW(), COALESCE(response_record.error_msg, 'HTTP Error');
+        RAISE NOTICE 'LME 크롤러 실패: % (오류: %)', NOW(), COALESCE(response_record.error_msg, 'HTTP Error');
     END IF;
-    
-    RETURN log_id;
     
 EXCEPTION WHEN OTHERS THEN
     -- 예외 발생시 로그 업데이트
@@ -463,18 +418,7 @@ EXCEPTION WHEN OTHERS THEN
         )
     WHERE id = log_id;
     
-    RAISE NOTICE '% 크롤러 예외 발생: %', upper(crawler_type), SQLERRM;
-    RETURN log_id;
-END;
-$$ LANGUAGE plpgsql;
-
--- LME 크롤러 전용 함수
-CREATE OR REPLACE FUNCTION run_lme_crawler()
-RETURNS void AS $$
-DECLARE
-    log_id uuid;
-BEGIN
-    SELECT run_generic_crawler('lme', 'lme_crawler_url', 'lme-crawler-minutely') INTO log_id;
+    RAISE NOTICE 'LME 크롤러 예외 발생: %', SQLERRM;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -623,7 +567,7 @@ DECLARE
     active_jobs integer;
     recent_failures integer;
 BEGIN
-    SELECT get_current_environment_simple() INTO current_env;
+    SELECT get_current_environment() INTO current_env;
     
     -- cron job 통계
     SELECT COUNT(*), COUNT(*) FILTER (WHERE active = true)
@@ -658,117 +602,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 설정 관리 함수
-CREATE OR REPLACE FUNCTION update_app_config(
-    config_key text,
-    config_value text,
-    config_environment text DEFAULT 'local',
-    config_description text DEFAULT NULL
-)
-RETURNS void AS $$
-BEGIN
-    INSERT INTO app_config (key, value, environment, description, updated_at)
-    VALUES (config_key, config_value, config_environment, config_description, NOW())
-    ON CONFLICT (key) 
-    DO UPDATE SET 
-        value = EXCLUDED.value,
-        description = COALESCE(EXCLUDED.description, app_config.description),
-        updated_at = NOW();
-        
-    RAISE NOTICE '설정 업데이트됨: % = % (환경: %)', config_key, config_value, config_environment;
-END;
-$$ LANGUAGE plpgsql;
 
--- 현재 환경의 모든 설정 조회
-CREATE OR REPLACE FUNCTION get_current_app_config()
-RETURNS TABLE (
-    key text,
-    value text,
-    environment text,
-    description text,
-    updated_at timestamptz
-)
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    current_env text;
-BEGIN
-    SELECT get_current_environment_simple() INTO current_env;
-    
-    RETURN QUERY
-    SELECT 
-        ac.key,
-        ac.value,
-        ac.environment,
-        ac.description,
-        ac.updated_at
-    FROM app_config ac
-    WHERE ac.environment = current_env
-    ORDER BY ac.key;
-END;
-$$ LANGUAGE plpgsql;
-
--- 크론 스케줄 관리 함수
-CREATE OR REPLACE FUNCTION update_cron_schedule(
-    job_name_param text,
-    new_schedule text,
-    description_text text DEFAULT NULL
-)
-RETURNS boolean AS $$
-DECLARE
-    job_exists boolean;
-    old_schedule text;
-    job_command text;
-BEGIN
-    -- 기존 job 정보 확인
-    SELECT 
-        (COUNT(*) > 0),
-        MAX(j.schedule),
-        MAX(j.command)
-    INTO job_exists, old_schedule, job_command
-    FROM cron.job j 
-    WHERE j.jobname = job_name_param;
-    
-    IF NOT job_exists THEN
-        RAISE NOTICE 'Job not found: %', job_name_param;
-        RETURN false;
-    END IF;
-    
-    -- 기존 job 제거
-    PERFORM cron.unschedule(job_name_param);
-    
-    -- 새로운 스케줄로 재생성
-    PERFORM cron.schedule(job_name_param, new_schedule, job_command);
-    
-    -- 설정 테이블에 기록
-    INSERT INTO app_config (key, value, environment, description) 
-    VALUES (
-        job_name_param || '_schedule', 
-        new_schedule, 
-        'system', 
-        COALESCE(description_text, '크론 스케줄: ' || old_schedule || ' → ' || new_schedule)
-    )
-    ON CONFLICT (key) DO UPDATE SET 
-        value = EXCLUDED.value,
-        description = EXCLUDED.description,
-        updated_at = NOW();
-    
-    RAISE NOTICE '크론 스케줄 변경 완료: % (% → %)', job_name_param, old_schedule, new_schedule;
-    RETURN true;
-END;
-$$ LANGUAGE plpgsql;
 
 -- ============================================
 -- 11. 초기 설정 데이터
 -- ============================================
 
--- 환경별 설정 초기 데이터
-INSERT INTO app_config (key, value, environment, description) VALUES 
-('lme_crawler_url', 'http://host.docker.internal:54331/functions/v1/lme-crawler', 'local', 'LME 크롤러 로컬 환경 URL'),
-('lme_crawler_url', 'https://your-project.supabase.co/functions/v1/lme-crawler', 'production', 'LME 크롤러 프로덕션 환경 URL'),
-('current_environment', 'local', 'system', '현재 실행 환경 (local/development/staging/production)')
-ON CONFLICT (key) DO NOTHING;
+
 
 -- ============================================
 -- 12. 크론 작업 스케줄링
@@ -799,7 +639,6 @@ GRANT EXECUTE ON FUNCTION get_cron_system_health() TO authenticated;
 
 COMMENT ON TABLE lme_processed_prices IS 'LME 가격 데이터 (처리된 형태)';
 COMMENT ON TABLE crawling_logs IS '크롤링 실행 로그 (구버전 호환성)';
-COMMENT ON TABLE app_config IS '애플리케이션 설정 관리';
 COMMENT ON TABLE cron_execution_logs IS '통합 크론 실행 로그';
 
 COMMENT ON COLUMN lme_processed_prices.change_type IS '가격 변화 방향: positive(상승), negative(하락), unchanged(변화없음)';
@@ -810,14 +649,19 @@ COMMENT ON FUNCTION get_crawling_status() IS '크롤링 시스템의 현재 상�
 COMMENT ON FUNCTION run_lme_crawler() IS 'LME 크롤러 실행 함수 - 크론 작업에서 호출';
 
 -- ============================================
--- 완료 메시지
+-- 완료 메시지 및 추가 설정 안내
 -- ============================================
 DO $$
 BEGIN
   RAISE NOTICE '🎉 LME 시스템 통합 완료!';
-  RAISE NOTICE '📊 테이블: lme_processed_prices, crawling_logs, app_config, cron_execution_logs';
+  RAISE NOTICE '📊 테이블: lme_processed_prices, crawling_logs, cron_execution_logs';
   RAISE NOTICE '🔒 RLS 정책: 익명/인증/서비스 역할별 권한 설정';
   RAISE NOTICE '⚙️ 함수: 가격 조회, 상태 확인, 크롤러 실행, 모니터링';
   RAISE NOTICE '⏰ 크론 작업: lme-crawler-minutely (15분마다 실행)';
+  RAISE NOTICE '';
+  RAISE NOTICE '🔧 프로덕션 배포시 추가 설정:';
+  RAISE NOTICE '   1. 마이그레이션 파일에서 ''https://your-project.supabase.co''를 실제 프로젝트 URL로 변경';
+  RAISE NOTICE '   2. Edge Function에서는 환경 변수(EXPO_PUBLIC_SUPABASE_URL)가 자동으로 사용됩니다';
+  RAISE NOTICE '';
   RAISE NOTICE '🚀 LME 가격 수집 및 모니터링 시스템 준비 완료!';
 END $$;

@@ -1,0 +1,3 @@
+-- Remote Database Schema Backup
+-- Generated at: Wed Aug  6 15:42:53 KST 2025
+-- Note: Manual database backup recommended via Supabase Dashboard

@@ -1,0 +1,12 @@
+
+  
+   ID                                   | NAME                        | SLUG                        | STATUS | VERSION | UPDATED_AT (UTC)    
+  --------------------------------------|-----------------------------|-----------------------------|--------|---------|---------------------
+   2fab2540-8095-4f1f-a4a5-157d6e6d1bba | lme-crawler                 | lme-crawler                 | ACTIVE | 46      | 2025-08-06 06:08:03 
+   b77da413-88ba-4b88-944c-9f62f1a093bf | lme-bulk-crawler            | lme-bulk-crawler            | ACTIVE | 44      | 2025-08-06 06:08:03 
+   fe5d974c-128a-4327-9964-3fc8aca3472c | lme-debug                   | lme-debug                   | ACTIVE | 44      | 2025-08-06 06:08:03 
+   8e39b104-ff0a-4428-9999-21acea879dd5 | lme-test                    | lme-test                    | ACTIVE | 44      | 2025-08-06 06:08:03 
+   e9a68362-b30d-45b8-a3f8-ec1f4c158e66 | send-auction-notification   | send-auction-notification   | ACTIVE | 45      | 2025-08-04 11:18:23 
+   555d6ecb-ec69-4eee-9244-6301e3d7510a | check-notification-receipts | check-notification-receipts | ACTIVE | 43      | 2025-08-04 11:19:19 
+   fda4e89c-a9d1-465f-ae30-6ca7729dbe8c | env-debug                   | env-debug                   | ACTIVE | 22      | 2025-08-06 06:08:03 
+
