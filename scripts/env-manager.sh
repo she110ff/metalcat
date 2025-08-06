@@ -53,6 +53,8 @@ show_help() {
     validate             환경 변수 유효성 검사
     
     deploy-secrets       현재 환경 변수를 Supabase에 배포
+    deploy-secrets --force 확인 없이 모든 환경 변수를 Supabase에 배포
+    preview-secrets      배포될 환경 변수 미리보기
     sync-secrets         Supabase에서 환경 변수 동기화
     list-secrets         배포된 환경 변수 목록 확인
     check-env            Edge Function에서 환경 변수 확인
@@ -63,7 +65,9 @@ show_help() {
     $0 switch-local      # 로컬 개발 환경으로 전환
     $0 switch-remote     # 프로덕션 환경으로 전환
     $0 status            # 현재 환경 확인
-    $0 deploy-secrets    # 환경 변수를 Supabase에 배포
+    $0 preview-secrets   # 배포될 환경 변수 미리보기
+    $0 deploy-secrets    # 환경 변수를 Supabase에 배포 (확인 후)
+    $0 deploy-secrets --force  # 모든 환경 변수를 즉시 배포
 
 EOF
 }
@@ -125,44 +129,98 @@ switch_environment() {
     
     # Supabase secrets 업데이트
     log_info "Supabase secrets 업데이트 중..."
-    deploy_secrets_to_supabase
+    deploy_secrets_to_supabase "--force"
 }
 
-# Supabase에 secrets 배포
-deploy_secrets_to_supabase() {
+# 배포될 환경 변수 미리보기
+preview_secrets() {
     if [ ! -f "$PROJECT_ROOT/.env.local" ]; then
         log_error ".env.local 파일이 없습니다"
         return 1
     fi
     
-    log_info "환경 변수를 Supabase에 배포 중..."
+    echo "========================================"
+    echo "        배포될 환경 변수 미리보기"
+    echo "========================================"
+    echo
     
-    # .env.local에서 필요한 변수 추출 및 배포
-    local expo_url=$(grep "^EXPO_PUBLIC_SUPABASE_URL=" "$PROJECT_ROOT/.env.local" | cut -d'=' -f2)
-    local expo_service_key=$(grep "^EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY=" "$PROJECT_ROOT/.env.local" | cut -d'=' -f2)
-    local internal_url=$(grep "^INTERNAL_SUPABASE_URL=" "$PROJECT_ROOT/.env.local" | cut -d'=' -f2)
-    local environment=$(grep "^ENVIRONMENT=" "$PROJECT_ROOT/.env.local" | cut -d'=' -f2)
+    local count=0
+    
+    while IFS='=' read -r key value; do
+        # 빈 줄이나 주석 라인 제외
+        if [[ -n "$key" && ! "$key" =~ ^[[:space:]]*# ]]; then
+            ((count++))
+            
+            # 민감한 정보는 마스킹 처리
+            if [[ $key =~ (KEY|SECRET|PASSWORD|TOKEN) ]]; then
+                local masked_value=$(echo "$value" | sed 's/./*/g' | cut -c1-20)
+                echo "$count. $key=$masked_value..."
+            else
+                echo "$count. $key=$value"
+            fi
+        fi
+    done < <(grep -v '^[[:space:]]*$' "$PROJECT_ROOT/.env.local" | grep -v '^[[:space:]]*#')
+    
+    echo
+    log_info "총 $count개의 환경 변수가 배포 예정입니다."
+}
+
+# Supabase에 secrets 배포
+deploy_secrets_to_supabase() {
+    local force_mode=${1:-false}
+    
+    if [ ! -f "$PROJECT_ROOT/.env.local" ]; then
+        log_error ".env.local 파일이 없습니다"
+        return 1
+    fi
+    
+    # force 모드가 아닌 경우 미리보기 및 확인
+    if [ "$force_mode" != "--force" ]; then
+        preview_secrets
+        echo
+        log_warning "위의 환경 변수들이 Supabase에 배포됩니다."
+        read -p "계속하시겠습니까? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "배포가 취소되었습니다."
+            return 0
+        fi
+    fi
+    
+    log_info "환경 변수를 Supabase에 배포 중..."
     
     # Edge Function용 환경 변수 설정
     cd "$PROJECT_ROOT"
     
-    if [ -n "$expo_url" ]; then
-        supabase secrets set EXPO_PUBLIC_SUPABASE_URL="$expo_url" 2>/dev/null || log_warning "EXPO_PUBLIC_SUPABASE_URL 설정 실패"
-    fi
+    local success_count=0
+    local total_count=0
     
-    if [ -n "$expo_service_key" ]; then
-        supabase secrets set EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY="$expo_service_key" 2>/dev/null || log_warning "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY 설정 실패"
-    fi
+    # .env.local의 모든 변수를 읽어서 배포
+    while IFS='=' read -r key value; do
+        # 빈 줄이나 주석 라인 제외
+        if [[ -n "$key" && ! "$key" =~ ^[[:space:]]*# ]]; then
+            ((total_count++))
+            
+            # 값에서 따옴표 제거 (있는 경우)
+            value=$(echo "$value" | sed 's/^["'\'']//' | sed 's/["'\'']$//')
+            
+            log_info "배포 중: $key"
+            
+            if supabase secrets set "$key"="$value" 2>/dev/null; then
+                ((success_count++))
+                log_success "✓ $key 설정 완료"
+            else
+                log_warning "✗ $key 설정 실패"
+            fi
+        fi
+    done < <(grep -v '^[[:space:]]*$' "$PROJECT_ROOT/.env.local" | grep -v '^[[:space:]]*#')
     
-    if [ -n "$internal_url" ]; then
-        supabase secrets set INTERNAL_SUPABASE_URL="$internal_url" 2>/dev/null || log_warning "INTERNAL_SUPABASE_URL 설정 실패"
-    fi
+    echo
+    log_success "Supabase secrets 배포 완료: $success_count/$total_count 성공"
     
-    if [ -n "$environment" ]; then
-        supabase secrets set ENVIRONMENT="$environment" 2>/dev/null || log_warning "ENVIRONMENT 설정 실패"
+    if [ $success_count -lt $total_count ]; then
+        log_warning "일부 환경 변수 배포에 실패했습니다. 권한이나 Supabase 연결을 확인해주세요."
     fi
-    
-    log_success "Supabase secrets 배포 완료"
 }
 
 # 환경 상태 출력
@@ -303,7 +361,14 @@ main() {
             validate_environment
             ;;
         "deploy-secrets")
-            deploy_secrets_to_supabase
+            if [ "$2" = "--force" ]; then
+                deploy_secrets_to_supabase "--force"
+            else
+                deploy_secrets_to_supabase
+            fi
+            ;;
+        "preview-secrets")
+            preview_secrets
             ;;
         "list-secrets")
             list_deployed_secrets
