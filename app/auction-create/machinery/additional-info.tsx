@@ -273,31 +273,35 @@ export default function MachineryAdditionalInfoScreen() {
         title: (createdAuction as any).title,
       });
 
-      // 성공 메시지
-      Alert.alert(
-        "등록 완료",
-        `중고기계 경매가 성공적으로 등록되었습니다!\n\n${
-          getAuctionDurationInfo(transactionType).fullDescription
-        }`,
-        [
-          {
-            text: "확인",
-            onPress: () => {
-              router.push("/(tabs)/auction");
+      // 성공 시 약간의 지연 후 로딩 상태 해제 (사용자가 등록 완료를 인지할 수 있도록)
+      setTimeout(() => {
+        setIsSubmitting(false);
+
+        Alert.alert(
+          "등록 완료",
+          `중고기계 경매가 성공적으로 등록되었습니다!\n\n${
+            getAuctionDurationInfo(transactionType).fullDescription
+          }`,
+          [
+            {
+              text: "확인",
+              onPress: () => {
+                router.push("/(tabs)/auction");
+              },
             },
-          },
-        ]
-      );
+          ]
+        );
+      }, 500); // 0.5초 지연
     } catch (error) {
       console.error("❌ 경매 등록 오류:", error);
+      setIsSubmitting(false); // 오류 시에만 로딩 상태 해제
+
       Alert.alert(
         "오류",
         `경매 등록 중 문제가 발생했습니다.\n${
           error instanceof Error ? error.message : "알 수 없는 오류"
         }`
       );
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
