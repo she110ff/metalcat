@@ -4,9 +4,7 @@
       "node": "20.18.3",
       "env": {
         "EXPO_PUBLIC_UPDATE_CODE": "2",
-        "EXPO_PUBLIC_ENV": "production",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://vxdncswvbhelstpkfcvv.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMjMyMTIsImV4cCI6MjA2OTY5OTIxMn0.Sh2kGjkOON-OiD2SNeh2YeCqcgL-MlxY4YhbTCGjSOw"
+        "EXPO_PUBLIC_ENV": "production"
       },
       "android": {
         "image": "latest",
@@ -27,9 +25,7 @@
       "channel": "development",
       "developmentClient": true,
       "env": {
-        "EXPO_PUBLIC_ENV": "development",
-        "EXPO_PUBLIC_SUPABASE_URL": "http://127.0.0.1:54331",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0"
+        "EXPO_PUBLIC_ENV": "development"
       },
       "android": {
         "distribution": "internal",
@@ -43,9 +39,7 @@
       "extends": "base",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_ENV": "preview",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://vxdncswvbhelstpkfcvv.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMjMyMTIsImV4cCI6MjA2OTY5OTIxMn0.Sh2kGjkOON-OiD2SNeh2YeCqcgL-MlxY4YhbTCGjSOw"
+        "EXPO_PUBLIC_ENV": "preview"
       },
       "distribution": "internal",
       "android": {
@@ -56,9 +50,7 @@
       "extends": "base",
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_ENV": "production",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://vxdncswvbhelstpkfcvv.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxMjMyMTIsImV4cCI6MjA2OTY5OTIxMn0.Sh2kGjkOON-OiD2SNeh2YeCqcgL-MlxY4YhbTCGjSOw"
+        "EXPO_PUBLIC_ENV": "production"
       }
     }
   },
