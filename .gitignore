@@ -92,6 +92,7 @@ yarn-error.*
 .env
 .env*.local
 .env.local.remote
+.env.local.backup
 
 # typescript
 *.tsbuildinfo
