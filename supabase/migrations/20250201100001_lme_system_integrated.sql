@@ -200,9 +200,22 @@ $$ language 'plpgsql';
 CREATE OR REPLACE FUNCTION get_current_environment()
 RETURNS text AS $$
 BEGIN
+    -- 더 정확한 로컬 환경 감지 로직
+    -- 로컬 Supabase는 특정 포트(54332)를 사용하고, 특정 설정들이 있음
     RETURN CASE 
-        WHEN current_setting('listen_addresses', true) LIKE '%*%' THEN 'production'
-        ELSE 'local'
+        WHEN current_setting('port', true)::integer = 54332 
+        THEN 'local'
+        WHEN current_setting('port', true)::integer = 5432
+             AND EXISTS (
+                 SELECT 1 FROM pg_stat_activity 
+                 WHERE application_name LIKE '%supabase%' 
+                 OR client_addr::text LIKE '172.%'
+             )
+        THEN 'local'
+        WHEN current_setting('listen_addresses', true) = '*' 
+             AND current_setting('port', true)::integer IN (5432, 54332)
+        THEN 'local'  -- Supabase 로컬은 보통 이 조건
+        ELSE 'production'
     END;
 END;
 $$ LANGUAGE plpgsql;
@@ -323,13 +336,14 @@ BEGIN
     SELECT get_current_environment() INTO current_env;
     
     IF current_env = 'production' THEN
-        -- 프로덕션: 환경 변수는 Edge Function 내부에서 처리
-        -- 여기서는 임시로 플레이스홀더 사용 (실제 배포시 수정 필요)
-        crawler_url := 'https://your-project.supabase.co/functions/v1/lme-crawler';
-        RAISE NOTICE '⚠️ 프로덕션 URL을 실제 프로젝트 URL로 수정해주세요';
+        -- 프로덕션: 실제 프로젝트 URL 사용
+        -- 실제 배포시에는 이 URL을 프로젝트의 실제 URL로 변경해야 함
+        crawler_url := 'https://vxdncswvbhelstpkfcvv.supabase.co/functions/v1/lme-crawler';
+        RAISE NOTICE '🚀 프로덕션 환경에서 LME 크롤러 실행: %', crawler_url;
     ELSE
-        -- 로컬 환경: Docker 내부 URL 사용
-        crawler_url := 'http://host.docker.internal:54331/functions/v1/lme-crawler';
+        -- 로컬 환경: Docker 내부 네트워크 IP 사용 
+        crawler_url := 'http://172.18.0.5:8000/functions/v1/lme-crawler';
+        RAISE NOTICE '🔧 로컬 환경에서 LME 크롤러 실행: %', crawler_url;
     END IF;
     
     -- 실행 로그 시작 기록
@@ -349,10 +363,13 @@ BEGIN
     
     RAISE NOTICE 'LME 크롤러 시작: % (로그 ID: %, URL: %)', start_time, log_id, crawler_url;
     
-    -- Edge Function 호출
+    -- Edge Function 호출 (Authorization 헤더 추가)
     SELECT net.http_post(
         url := crawler_url,
-        headers := '{"Content-Type": "application/json"}'::jsonb,
+        headers := jsonb_build_object(
+            'Content-Type', 'application/json',
+            'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU'
+        ),
         body := '{}'::jsonb
     ) INTO request_id;
     

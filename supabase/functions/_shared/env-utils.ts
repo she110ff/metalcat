@@ -40,12 +40,10 @@ export function getEnvironmentConfig(): EnvironmentConfig {
       supabaseUrl = internalUrl;
       console.log(`🔧 로컬 환경 감지: 내부 URL 사용 (${supabaseUrl})`);
     } else {
-      // 폴백: host.docker.internal 사용
-      supabaseUrl =
-        rawSupabaseUrl?.replace("127.0.0.1", "host.docker.internal") ||
-        supabaseUrl;
+      // 로컬에서는 Docker 내부 네트워크 주소 사용
+      supabaseUrl = "http://supabase_kong_metacat2:8000";
       console.log(
-        `🔧 로컬 환경 폴백: host.docker.internal 사용 (${supabaseUrl})`
+        `🔧 로컬 환경 폴백: Docker 내부 네트워크 사용 (${supabaseUrl})`
       );
     }
   }
