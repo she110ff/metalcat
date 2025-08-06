@@ -8,16 +8,71 @@ CREATE OR REPLACE FUNCTION send_auction_end_notification(
   body TEXT,
   data JSONB
 ) RETURNS void AS $$
+DECLARE
+  current_env TEXT;
+  supabase_url TEXT;
+  function_url TEXT;
+  response_id BIGINT;
 BEGIN
-  -- 로컬 개발 환경에서는 로그만 출력
+  -- 현재 환경 확인
+  SELECT get_current_environment() INTO current_env;
+  
+  -- 토큰이 없으면 처리하지 않음
+  IF tokens IS NULL OR array_length(tokens, 1) IS NULL OR array_length(tokens, 1) = 0 THEN
+    RAISE NOTICE '📱 알림 전송 건너뜀: 유효한 토큰이 없음';
+    RETURN;
+  END IF;
+  
   RAISE NOTICE '📱 알림 발송: % - % (토큰 수: %)', title, body, array_length(tokens, 1);
   
-  -- 프로덕션에서는 Edge Function 호출
-  -- PERFORM net.http_post(
-  --   url := 'https://your-project.supabase.co/functions/v1/send-auction-notification',
-  --   headers := jsonb_build_object('Content-Type', 'application/json'),
-  --   body := jsonb_build_object('tokens', tokens, 'title', title, 'body', body, 'data', data)
-  -- );
+  -- 환경별 처리
+  IF current_env = 'local' THEN
+    -- 로컬 환경에서는 로그만 출력
+    RAISE NOTICE '🏠 로컬 환경: 실제 알림 전송 생략';
+  ELSE
+    -- 프로덕션/스테이징에서는 실제 Edge Function 호출
+    BEGIN
+      -- Supabase URL 가져오기
+      SELECT config_value INTO supabase_url 
+      FROM app_config 
+      WHERE config_key = 'supabase_url' AND environment = current_env;
+      
+      -- URL이 없으면 기본값 사용
+      IF supabase_url IS NULL THEN
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      END IF;
+      
+      function_url := supabase_url || '/functions/v1/send-auction-notification';
+      
+      RAISE NOTICE '🚀 Edge Function 호출: %', function_url;
+      
+      -- pg_net을 사용해서 Edge Function 호출
+      SELECT net.http_post(
+        url := function_url,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (
+            SELECT config_value 
+            FROM app_config 
+            WHERE config_key = 'service_role_key' AND environment = current_env
+          )
+        ),
+        body := jsonb_build_object(
+          'tokens', tokens, 
+          'title', title, 
+          'body', body, 
+          'data', data
+        ),
+        timeout_milliseconds := 30000
+      ) INTO response_id;
+      
+      RAISE NOTICE '✅ 알림 전송 요청 완료 (request_id: %)', response_id;
+      
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '❌ 알림 전송 실패: %', SQLERRM;
+      -- 알림 실패가 경매 처리를 중단시키지 않도록 예외를 흡수
+    END;
+  END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -246,10 +301,147 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- 경매 등록 시 모든 사용자에게 알림 발송 함수
+CREATE OR REPLACE FUNCTION send_auction_create_notification(
+  auction_id TEXT,
+  auction_title TEXT,
+  auction_category TEXT,
+  seller_name TEXT
+) RETURNS void AS $$
+DECLARE
+  current_env TEXT;
+  supabase_url TEXT;
+  function_url TEXT;
+  response_id BIGINT;
+  all_tokens TEXT[];
+  notification_title TEXT;
+  notification_body TEXT;
+BEGIN
+  -- 현재 환경 확인
+  SELECT get_current_environment() INTO current_env;
+  
+  -- 모든 활성 사용자의 푸시 토큰 가져오기
+  SELECT array_agg(expo_push_token) INTO all_tokens
+  FROM user_push_tokens 
+  WHERE is_active = true;
+  
+  -- 토큰이 없으면 처리하지 않음
+  IF all_tokens IS NULL OR array_length(all_tokens, 1) IS NULL OR array_length(all_tokens, 1) = 0 THEN
+    RAISE NOTICE '📱 새 경매 알림 전송 건너뜀: 활성 토큰이 없음';
+    RETURN;
+  END IF;
+  
+  -- 알림 내용 구성
+  notification_title := '새로운 경매가 등록되었습니다!';
+  notification_body := auction_title || ' 경매가 새로 등록되었습니다.';
+  
+  RAISE NOTICE '📢 새 경매 알림 발송: % - % (토큰 수: %)', notification_title, notification_body, array_length(all_tokens, 1);
+  
+  -- 환경별 처리
+  IF current_env = 'local' THEN
+    -- 로컬 환경에서는 로그만 출력
+    RAISE NOTICE '🏠 로컬 환경: 실제 새 경매 알림 전송 생략';
+  ELSE
+    -- 프로덕션/스테이징에서는 실제 Edge Function 호출
+    BEGIN
+      -- Supabase URL 가져오기
+      SELECT config_value INTO supabase_url 
+      FROM app_config 
+      WHERE config_key = 'supabase_url' AND environment = current_env;
+      
+      -- URL이 없으면 기본값 사용
+      IF supabase_url IS NULL THEN
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      END IF;
+      
+      function_url := supabase_url || '/functions/v1/send-auction-notification';
+      
+      RAISE NOTICE '🚀 새 경매 알림 Edge Function 호출: %', function_url;
+      
+      -- pg_net을 사용해서 Edge Function 호출
+      SELECT net.http_post(
+        url := function_url,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (
+            SELECT config_value 
+            FROM app_config 
+            WHERE config_key = 'service_role_key' AND environment = current_env
+          )
+        ),
+        body := jsonb_build_object(
+          'tokens', all_tokens, 
+          'title', notification_title, 
+          'body', notification_body, 
+          'data', jsonb_build_object(
+            'auction_id', auction_id,
+            'auction_title', auction_title,
+            'auction_category', auction_category,
+            'seller_name', seller_name,
+            'notification_type', 'auction_created'
+          )
+        ),
+        timeout_milliseconds := 30000
+      ) INTO response_id;
+      
+      RAISE NOTICE '✅ 새 경매 알림 전송 요청 완료 (request_id: %)', response_id;
+      
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '❌ 새 경매 알림 전송 실패: %', SQLERRM;
+      -- 알림 실패가 경매 등록을 중단시키지 않도록 예외를 흡수
+    END;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 경매 등록 시 자동 알림 발송 트리거 함수
+CREATE OR REPLACE FUNCTION trigger_auction_create_notification()
+RETURNS TRIGGER AS $$
+DECLARE
+  seller_name TEXT;
+  category_text TEXT;
+BEGIN
+  -- 판매자 이름 가져오기 (users 테이블에서)
+  SELECT COALESCE(full_name, email, 'Unknown') INTO seller_name
+  FROM users 
+  WHERE id = NEW.user_id;
+  
+  -- 카테고리 텍스트 변환
+  category_text := CASE NEW.auction_category
+    WHEN 'scrap' THEN '고철'
+    WHEN 'machinery' THEN '중고기계'
+    WHEN 'materials' THEN '중고자재'
+    WHEN 'demolition' THEN '철거'
+    ELSE NEW.auction_category::text
+  END;
+  
+  -- 새 경매 알림 발송 (비동기)
+  PERFORM send_auction_create_notification(
+    NEW.id,
+    NEW.title,
+    category_text,
+    COALESCE(seller_name, 'Unknown')
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 경매 테이블에 트리거 생성
+DROP TRIGGER IF EXISTS trigger_new_auction_notification ON auctions;
+CREATE TRIGGER trigger_new_auction_notification
+  AFTER INSERT ON auctions
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_auction_create_notification();
+
 -- 함수 권한 설정
 GRANT EXECUTE ON FUNCTION send_auction_end_notification(TEXT[], TEXT, TEXT, JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION send_auction_create_notification(TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION process_ended_auctions() TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION trigger_auction_create_notification() TO anon, authenticated;
 
 -- 함수 설명 추가
 COMMENT ON FUNCTION send_auction_end_notification IS '경매 종료 시 실시간 알림 발송 함수';
+COMMENT ON FUNCTION send_auction_create_notification IS '새 경매 등록 시 모든 사용자에게 알림 발송 함수';
+COMMENT ON FUNCTION trigger_auction_create_notification IS '경매 등록 시 자동 알림 발송 트리거 함수';
 COMMENT ON FUNCTION process_ended_auctions IS '종료된 경매들의 낙찰/유찰 처리 및 알림 발송 - 매분 실행'; 
