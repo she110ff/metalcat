@@ -248,21 +248,21 @@ export function useAppUpdates() {
   //   }));
   // }, [updateStatus, downloadProgress, isUpdateAvailable, isUpdatePending]);
 
-  // 앱 상태 변경 감지
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === "active" && state.isAutoCheckEnabled) {
-        // 앱이 포그라운드로 돌아올 때 체크
-        checkForUpdates();
-      }
-    };
+  // 앱 상태 변경 감지 - 배터리 최적화를 위해 비활성화
+  // useEffect(() => {
+  //   const handleAppStateChange = (nextAppState: string) => {
+  //     if (nextAppState === "active" && state.isAutoCheckEnabled) {
+  //       // 앱이 포그라운드로 돌아올 때 체크
+  //       checkForUpdates();
+  //     }
+  //   };
 
-    const subscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange
-    );
-    return () => subscription?.remove();
-  }, [checkForUpdates, state.isAutoCheckEnabled]);
+  //   const subscription = AppState.addEventListener(
+  //     "change",
+  //     handleAppStateChange
+  //   );
+  //   return () => subscription?.remove();
+  // }, [checkForUpdates, state.isAutoCheckEnabled]);
 
   // 초기 설정 로드 및 체크
   useEffect(() => {

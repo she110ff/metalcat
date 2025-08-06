@@ -38,17 +38,17 @@ export const Dashboard = () => {
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
   const slideAnim = React.useRef(new Animated.Value(20)).current;
 
-  // 컴포넌트 마운트 시 애니메이션 시작
+  // 컴포넌트 마운트 시 애니메이션 시작 (배터리 최적화를 위해 지속 시간 단축)
   React.useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 800,
+        duration: 300, // 800 → 300ms로 단축
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 600,
+        duration: 250, // 600 → 250ms로 단축
         useNativeDriver: true,
       }),
     ]).start();

@@ -11,6 +11,7 @@ import {
   useInfiniteQuery,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import {
   createServiceRequest,
   getServiceRequest,
@@ -315,27 +316,64 @@ export function useServiceRequestRealtime(requestId: string) {
   useEffect(() => {
     if (!requestId) return;
 
-    const subscription = subscribeToServiceRequest(
-      requestId,
-      (updatedRequest) => {
-        // 실시간으로 받은 데이터로 캐시 업데이트
-        queryClient.setQueryData(
-          serviceRequestKeys.detail(requestId),
-          updatedRequest
-        );
+    // 앱 상태 추적 (배터리 최적화)
+    let isAppActive = AppState.currentState === "active";
+    let subscription: any = null;
 
-        // 목록 쿼리도 무효화하여 최신 상태 반영
-        queryClient.invalidateQueries({
-          queryKey: serviceRequestKeys.lists(),
-        });
-      },
-      (error) => {
-        console.error("실시간 구독 오류:", error);
+    const startSubscription = () => {
+      if (subscription || !isAppActive) return;
+
+      subscription = subscribeToServiceRequest(
+        requestId,
+        (updatedRequest) => {
+          // 실시간으로 받은 데이터로 캐시 업데이트
+          queryClient.setQueryData(
+            serviceRequestKeys.detail(requestId),
+            updatedRequest
+          );
+
+          // 목록 쿼리도 무효화하여 최신 상태 반영
+          queryClient.invalidateQueries({
+            queryKey: serviceRequestKeys.lists(),
+          });
+        },
+        (error) => {
+          console.error("실시간 구독 오류:", error);
+        }
+      );
+    };
+
+    const stopSubscription = () => {
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = null;
       }
+    };
+
+    const handleAppStateChange = (nextAppState: string) => {
+      isAppActive = nextAppState === "active";
+
+      if (isAppActive) {
+        startSubscription();
+      } else {
+        stopSubscription();
+      }
+    };
+
+    // 초기 구독 시작 (앱이 활성화된 경우만)
+    if (isAppActive) {
+      startSubscription();
+    }
+
+    // 앱 상태 변경 감지
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
     );
 
     return () => {
-      subscription.unsubscribe();
+      stopSubscription();
+      appStateSubscription?.remove();
     };
   }, [requestId, queryClient]);
 }
@@ -349,27 +387,64 @@ export function useUserServiceRequestsRealtime(userId?: string) {
   useEffect(() => {
     if (!userId) return;
 
-    const subscription = subscribeToUserServiceRequests(
-      userId,
-      (updatedRequests) => {
-        // 실시간으로 받은 데이터로 캐시 업데이트
-        queryClient.setQueryData(
-          serviceRequestKeys.userRequests(userId),
-          updatedRequests
-        );
+    // 앱 상태 추적 (배터리 최적화)
+    let isAppActive = AppState.currentState === "active";
+    let subscription: any = null;
 
-        // 통계도 무효화
-        queryClient.invalidateQueries({
-          queryKey: serviceRequestKeys.statistics(),
-        });
-      },
-      (error) => {
-        console.error("사용자 요청 목록 실시간 구독 오류:", error);
+    const startSubscription = () => {
+      if (subscription || !isAppActive) return;
+
+      subscription = subscribeToUserServiceRequests(
+        userId,
+        (updatedRequests) => {
+          // 실시간으로 받은 데이터로 캐시 업데이트
+          queryClient.setQueryData(
+            serviceRequestKeys.userRequests(userId),
+            updatedRequests
+          );
+
+          // 통계도 무효화
+          queryClient.invalidateQueries({
+            queryKey: serviceRequestKeys.statistics(),
+          });
+        },
+        (error) => {
+          console.error("사용자 요청 목록 실시간 구독 오류:", error);
+        }
+      );
+    };
+
+    const stopSubscription = () => {
+      if (subscription) {
+        subscription.unsubscribe();
+        subscription = null;
       }
+    };
+
+    const handleAppStateChange = (nextAppState: string) => {
+      isAppActive = nextAppState === "active";
+
+      if (isAppActive) {
+        startSubscription();
+      } else {
+        stopSubscription();
+      }
+    };
+
+    // 초기 구독 시작 (앱이 활성화된 경우만)
+    if (isAppActive) {
+      startSubscription();
+    }
+
+    // 앱 상태 변경 감지
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
     );
 
     return () => {
-      subscription.unsubscribe();
+      stopSubscription();
+      appStateSubscription?.remove();
     };
   }, [userId, queryClient]);
 }

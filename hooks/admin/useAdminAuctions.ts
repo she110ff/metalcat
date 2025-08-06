@@ -226,8 +226,9 @@ export const useAuctionStats = () => {
   return useQuery({
     queryKey: ["admin", "auction-stats"],
     queryFn: getAuctionStats,
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
   });
 };
 
@@ -238,8 +239,9 @@ export const useCategoryStats = () => {
   return useQuery({
     queryKey: ["admin", "category-stats"],
     queryFn: getCategoryStats,
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
   });
 };
 
@@ -250,7 +252,8 @@ export const useRecentAuctions = (limit = 10) => {
   return useQuery({
     queryKey: ["admin", "recent-auctions", limit],
     queryFn: () => getRecentAuctions(limit),
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
   });
 };

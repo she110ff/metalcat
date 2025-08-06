@@ -83,7 +83,7 @@
       "enabled": true,
       "url": "https://u.expo.dev/19829544-dd83-47d5-8c48-ffcdc913c8b1",
       "fallbackToCacheTimeout": 0,
-      "checkAutomatically": "ON_LOAD"
+      "checkAutomatically": "ON_ERROR_RECOVERY"
     },
     "owner": "metalcatapp"
   }

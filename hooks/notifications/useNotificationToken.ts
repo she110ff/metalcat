@@ -32,8 +32,8 @@ export const useNotificationToken = () => {
       return await tokenService.initializeToken(user.id);
     },
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5분
-    gcTime: 30 * 60 * 1000, // 30분
+    staleTime: 15 * 60 * 1000, // 15분 (배터리 최적화)
+    gcTime: 60 * 60 * 1000, // 60분
     retry: (failureCount, error) => {
       // 권한 관련 오류는 재시도하지 않음
       if (error instanceof Error && error.message.includes("권한")) {

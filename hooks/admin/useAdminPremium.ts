@@ -150,8 +150,9 @@ export const useAdminServiceRequests = () => {
   return useQuery({
     queryKey: ["admin", "service-requests"],
     queryFn: getAllServiceRequests,
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
   });
 };
 
@@ -162,7 +163,8 @@ export const usePremiumStats = () => {
   return useQuery({
     queryKey: ["admin", "premium-stats"],
     queryFn: getPremiumStats,
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    refetchInterval: false, // 자동 갱신 비활성화 (배터리 최적화)
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: true, // 화면 포커스 시에만 갱신
   });
 };

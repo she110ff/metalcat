@@ -67,7 +67,7 @@ export function useLatestLmePrices(options?: {
     // 백그라운드 업데이트
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    refetchInterval: options?.refetchInterval || 5 * 60 * 1000, // 5분마다 자동 새로고침
+    refetchInterval: options?.refetchInterval || 15 * 60 * 1000, // 15분마다 자동 새로고침 (배터리 최적화)
 
     // 조건부 실행
     enabled: options?.enabled !== false,
@@ -170,7 +170,7 @@ export function useCrawlingStatus(options?: {
     gcTime: 2 * 60 * 1000, // 2분간 캐시 보관
 
     // 폴링으로 실시간 모니터링
-    refetchInterval: options?.refetchInterval || 60 * 1000, // 1분마다
+    refetchInterval: options?.refetchInterval || 5 * 60 * 1000, // 5분마다 (배터리 최적화)
     refetchOnWindowFocus: true,
 
     // 조건부 실행

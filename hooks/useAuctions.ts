@@ -301,8 +301,8 @@ export const useAuctionStats = () => {
   return useQuery({
     queryKey: auctionKeys.stats(),
     queryFn: () => auctionAPI.getAuctionStats(),
-    staleTime: 5 * 60 * 1000, // 5분 (통계는 자주 변경되지 않음)
-    refetchInterval: 5 * 60 * 1000, // 5분마다 자동 갱신
+    staleTime: 10 * 60 * 1000, // 10분 (통계는 자주 변경되지 않음)
+    refetchInterval: 15 * 60 * 1000, // 15분마다 자동 갱신 (배터리 최적화)
   });
 };
 
