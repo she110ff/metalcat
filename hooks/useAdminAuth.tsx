@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "./useAuth";
-
-// 관리자 전화번호 목록 (환경 변수로 관리 권장)
-const ADMIN_PHONE_NUMBERS = [
-  "01012345678", // 테스트용 관리자 번호
-  "01087654321", // 추가 관리자 번호
-];
+import { supabase } from "./service-request/supabaseClient";
 
 export interface AdminUser {
   isAdmin: boolean | undefined; // undefined = 확인 중, true/false = 확인 완료
@@ -29,29 +24,47 @@ export const useAdminAuth = (): AdminUser => {
     }
 
     // 로그인하지 않았거나 사용자 정보가 없으면 관리자 아님
-    if (!isLoggedIn || !user?.phoneNumber) {
+    if (!isLoggedIn || !user?.id) {
       setAdminInfo({ isAdmin: false });
       return;
     }
 
-    // 전화번호에서 하이픈 제거하고 비교
-    const cleanPhoneNumber = user.phoneNumber.replace(/\D/g, "");
-    const isAdmin = ADMIN_PHONE_NUMBERS.some(
-      (adminPhone) => adminPhone.replace(/\D/g, "") === cleanPhoneNumber
-    );
+    // 데이터베이스에서 관리자 권한 확인
+    const checkAdminStatus = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("is_admin")
+          .eq("id", user.id)
+          .single();
 
-    setAdminInfo({
-      isAdmin,
-      phoneNumber: user.phoneNumber,
-      adminLevel: isAdmin ? "super" : undefined, // 향후 확장용
-    });
+        if (error) {
+          console.error("관리자 권한 확인 실패:", error);
+          setAdminInfo({ isAdmin: false });
+          return;
+        }
 
-    // 디버그 로그
-    console.log("🔐 관리자 권한 확인:", {
-      userPhone: cleanPhoneNumber,
-      isAdmin,
-      adminPhones: ADMIN_PHONE_NUMBERS,
-    });
+        const isAdmin = data?.is_admin || false;
+
+        setAdminInfo({
+          isAdmin,
+          phoneNumber: user.phoneNumber,
+          adminLevel: isAdmin ? "super" : undefined, // 향후 확장용
+        });
+
+        // 디버그 로그
+        console.log("🔐 관리자 권한 확인:", {
+          userId: user.id,
+          userPhone: user.phoneNumber,
+          isAdmin,
+        });
+      } catch (error) {
+        console.error("관리자 권한 확인 중 오류:", error);
+        setAdminInfo({ isAdmin: false });
+      }
+    };
+
+    checkAdminStatus();
   }, [user, isLoggedIn]);
 
   return adminInfo;

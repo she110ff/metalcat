@@ -38,6 +38,8 @@ export interface User {
   companyName?: string;
   businessNumber?: string;
   businessType?: string;
+  // 관리자 권한
+  isAdmin?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -275,6 +277,7 @@ export async function signinWithPhone(
       companyName: user.company_name,
       businessNumber: user.business_number,
       businessType: user.business_type,
+      isAdmin: user.is_admin || false,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
     };
@@ -353,6 +356,7 @@ export async function getCurrentUser(): Promise<User | null> {
         companyName: user.company_name,
         businessNumber: user.business_number,
         businessType: user.business_type,
+        isAdmin: user.is_admin || false,
         createdAt: user.created_at,
         updatedAt: user.updated_at,
       };
@@ -373,6 +377,7 @@ export async function getCurrentUser(): Promise<User | null> {
       companyName: latestUser.company_name,
       businessNumber: latestUser.business_number,
       businessType: latestUser.business_type,
+      isAdmin: latestUser.is_admin || false,
       createdAt: latestUser.created_at,
       updatedAt: latestUser.updated_at,
     };
@@ -436,6 +441,7 @@ export async function updateUser(
       updateData.business_number = updates.businessNumber || null; // 빈 문자열은 null로 변환
     if (updates.businessType !== undefined)
       updateData.business_type = updates.businessType || null; // 빈 문자열은 null로 변환
+    if (updates.isAdmin !== undefined) updateData.is_admin = updates.isAdmin;
 
     const { data: updatedUser, error } = await supabase
       .from("users")
@@ -463,6 +469,7 @@ export async function updateUser(
       companyName: updatedUser.company_name,
       businessNumber: updatedUser.business_number,
       businessType: updatedUser.business_type,
+      isAdmin: updatedUser.is_admin || false,
       createdAt: updatedUser.created_at,
       updatedAt: updatedUser.updated_at,
     };

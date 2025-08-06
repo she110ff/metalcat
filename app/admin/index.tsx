@@ -14,6 +14,13 @@ import {
   useCategoryStats,
   useRecentAuctions,
 } from "@/hooks/admin/useAdminAuctions";
+import {
+  getAllAdminUsers,
+  grantAdminRole,
+  revokeAdminRole,
+  searchUserByPhone,
+  AdminUser,
+} from "@/hooks/admin/useAdminAuth";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
@@ -24,14 +31,14 @@ import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { ScrollView } from "@/components/ui/scroll-view";
 import { useRouter } from "expo-router";
 import { ChevronLeft, RefreshCw } from "lucide-react-native";
-import { Alert } from "react-native";
+import { Alert, TextInput } from "react-native";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
 // import { BatchTab } from "./tabs/BatchTab";
 // import { PremiumTab } from "./tabs/PremiumTab";
 // import { AuctionTab } from "./tabs/AuctionTab";
 
-type AdminTab = "batch" | "premium" | "auction";
+type AdminTab = "batch" | "premium" | "auction" | "admin";
 
 export default function AdminScreen() {
   const { isAdmin } = useAdminAuth();
@@ -83,6 +90,8 @@ export default function AdminScreen() {
         return <PremiumTabContent />;
       case "auction":
         return <AuctionTabContent />;
+      case "admin":
+        return <AdminTabContent />;
       default:
         return null;
     }
@@ -146,6 +155,21 @@ export default function AdminScreen() {
               }`}
             >
               경매
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "admin" ? "bg-white shadow-sm" : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("admin")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "admin" ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
+              관리자
             </Text>
           </Pressable>
         </HStack>
@@ -862,6 +886,235 @@ const AuctionTabContent = () => {
         ) : (
           <Text className="text-gray-500 text-center py-4">
             등록된 경매가 없습니다.
+          </Text>
+        )}
+      </Box>
+    </VStack>
+  );
+};
+
+const AdminTabContent = () => {
+  const [adminUsers, setAdminUsers] = React.useState<AdminUser[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [searchPhone, setSearchPhone] = React.useState("");
+  const [searchResult, setSearchResult] = React.useState<AdminUser | null>(
+    null
+  );
+  const [searchLoading, setSearchLoading] = React.useState(false);
+
+  // 관리자 목록 로드
+  const loadAdminUsers = async () => {
+    setLoading(true);
+    try {
+      const users = await getAllAdminUsers();
+      setAdminUsers(users);
+    } catch (error) {
+      console.error("관리자 목록 로드 실패:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 전화번호로 사용자 검색
+  const handleSearch = async () => {
+    if (!searchPhone.trim()) {
+      setSearchResult(null);
+      return;
+    }
+
+    setSearchLoading(true);
+    try {
+      const user = await searchUserByPhone(searchPhone.trim());
+      setSearchResult(user);
+    } catch (error) {
+      console.error("사용자 검색 실패:", error);
+      setSearchResult(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // 관리자 권한 부여
+  const handleGrantAdmin = async (userId: string) => {
+    try {
+      const success = await grantAdminRole(userId);
+      if (success) {
+        Alert.alert("성공", "관리자 권한을 부여했습니다.");
+        loadAdminUsers(); // 목록 새로고침
+        setSearchResult(null); // 검색 결과 초기화
+      } else {
+        Alert.alert("실패", "관리자 권한 부여에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("관리자 권한 부여 실패:", error);
+      Alert.alert("오류", "관리자 권한 부여 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 관리자 권한 해제
+  const handleRevokeAdmin = async (userId: string) => {
+    try {
+      const success = await revokeAdminRole(userId);
+      if (success) {
+        Alert.alert("성공", "관리자 권한을 해제했습니다.");
+        loadAdminUsers(); // 목록 새로고침
+        setSearchResult(null); // 검색 결과 초기화
+      } else {
+        Alert.alert("실패", "관리자 권한 해제에 실패했습니다.");
+      }
+    } catch (error) {
+      console.error("관리자 권한 해제 실패:", error);
+      Alert.alert("오류", "관리자 권한 해제 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 컴포넌트 마운트 시 관리자 목록 로드
+  React.useEffect(() => {
+    loadAdminUsers();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  return (
+    <VStack space="lg" className="p-4">
+      {/* 사용자 검색 */}
+      <Box className="bg-white rounded-xl p-4 border border-gray-200">
+        <Heading size="md" className="mb-3">
+          🔍 사용자 검색
+        </Heading>
+        <VStack space="md">
+          <HStack space="sm">
+            <Box className="flex-1">
+              <TextInput
+                placeholder="전화번호 입력 (예: 01012345678)"
+                value={searchPhone}
+                onChangeText={setSearchPhone}
+                style={{
+                  borderWidth: 1,
+                  borderColor: "#D1D5DB",
+                  borderRadius: 8,
+                  padding: 12,
+                  fontSize: 16,
+                }}
+                keyboardType="phone-pad"
+              />
+            </Box>
+            <Pressable
+              onPress={handleSearch}
+              disabled={searchLoading}
+              className="bg-blue-500 px-4 py-3 rounded-lg"
+            >
+              <Text className="text-white font-medium">
+                {searchLoading ? "검색 중..." : "검색"}
+              </Text>
+            </Pressable>
+          </HStack>
+
+          {searchResult && (
+            <Box className="p-3 bg-gray-50 rounded-lg">
+              <VStack space="sm">
+                <HStack className="justify-between items-center">
+                  <VStack>
+                    <Text className="font-semibold">{searchResult.name}</Text>
+                    <Text className="text-sm text-gray-600">
+                      {searchResult.phoneNumber}
+                    </Text>
+                    <Text className="text-xs text-gray-500">
+                      가입일: {formatDate(searchResult.createdAt)}
+                    </Text>
+                  </VStack>
+                  <VStack className="items-end">
+                    <Text
+                      className={`text-sm font-medium ${
+                        searchResult.isAdmin
+                          ? "text-green-600"
+                          : "text-gray-600"
+                      }`}
+                    >
+                      {searchResult.isAdmin ? "관리자" : "일반 사용자"}
+                    </Text>
+                    {searchResult.isAdmin ? (
+                      <Pressable
+                        onPress={() => handleRevokeAdmin(searchResult.id)}
+                        className="bg-red-500 px-3 py-1 rounded"
+                      >
+                        <Text className="text-white text-xs">권한 해제</Text>
+                      </Pressable>
+                    ) : (
+                      <Pressable
+                        onPress={() => handleGrantAdmin(searchResult.id)}
+                        className="bg-green-500 px-3 py-1 rounded"
+                      >
+                        <Text className="text-white text-xs">권한 부여</Text>
+                      </Pressable>
+                    )}
+                  </VStack>
+                </HStack>
+              </VStack>
+            </Box>
+          )}
+
+          {searchResult === null && searchPhone.trim() && !searchLoading && (
+            <Text className="text-gray-500 text-center py-2">
+              해당 전화번호의 사용자를 찾을 수 없습니다.
+            </Text>
+          )}
+        </VStack>
+      </Box>
+
+      {/* 관리자 목록 */}
+      <Box className="bg-white rounded-xl p-4 border border-gray-200">
+        <HStack className="justify-between items-center mb-3">
+          <Heading size="md">👥 관리자 목록</Heading>
+          <Pressable onPress={loadAdminUsers} disabled={loading}>
+            <RefreshCw size={20} className={loading ? "animate-spin" : ""} />
+          </Pressable>
+        </HStack>
+
+        {loading ? (
+          <Text className="text-gray-500 text-center py-4">
+            관리자 목록을 불러오는 중...
+          </Text>
+        ) : adminUsers.length > 0 ? (
+          <VStack space="md">
+            {adminUsers.map((user) => (
+              <Box key={user.id} className="p-3 bg-gray-50 rounded-lg">
+                <HStack className="justify-between items-center">
+                  <VStack>
+                    <Text className="font-semibold">{user.name}</Text>
+                    <Text className="text-sm text-gray-600">
+                      {user.phoneNumber}
+                    </Text>
+                    <Text className="text-xs text-gray-500">
+                      가입일: {formatDate(user.createdAt)}
+                    </Text>
+                  </VStack>
+                  <VStack className="items-end">
+                    <Text className="text-sm font-medium text-green-600">
+                      관리자
+                    </Text>
+                    <Pressable
+                      onPress={() => handleRevokeAdmin(user.id)}
+                      className="bg-red-500 px-3 py-1 rounded"
+                    >
+                      <Text className="text-white text-xs">권한 해제</Text>
+                    </Pressable>
+                  </VStack>
+                </HStack>
+              </Box>
+            ))}
+          </VStack>
+        ) : (
+          <Text className="text-gray-500 text-center py-4">
+            등록된 관리자가 없습니다.
           </Text>
         )}
       </Box>
