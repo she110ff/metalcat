@@ -8,7 +8,7 @@ export interface NotificationTokenState {
   isLoading: boolean;
   isError: boolean;
   error: string | null;
-  source?: "cache" | "server" | "new";
+  source?: "cached" | "server" | "new";
   lastUpdated?: Date;
 }
 
@@ -29,7 +29,7 @@ export const useNotificationToken = () => {
       if (!user?.id) {
         throw new Error("사용자 정보가 없습니다.");
       }
-      return await tokenService.initializeToken(user.id);
+      return await tokenService.getToken(user.id);
     },
     enabled: !!user?.id,
     staleTime: 15 * 60 * 1000, // 15분 (배터리 최적화)
@@ -62,13 +62,13 @@ export const useNotificationToken = () => {
     },
   });
 
-  // 토큰 강제 재등록 뮤테이션
+  // 토큰 강제 재등록 뮤테이션 (refreshToken과 동일)
   const forceRegisterMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) {
         throw new Error("사용자 정보가 없습니다.");
       }
-      return await tokenService.forceRegister(user.id);
+      return await tokenService.refreshToken(user.id);
     },
     onSuccess: (result) => {
       // 쿼리 캐시 업데이트
@@ -80,28 +80,11 @@ export const useNotificationToken = () => {
     },
   });
 
-  // 토큰 동기화 뮤테이션
-  const syncTokenMutation = useMutation({
-    mutationFn: async () => {
-      if (!user?.id) {
-        throw new Error("사용자 정보가 없습니다.");
-      }
-      return await tokenService.validateAndSync(user.id);
-    },
-    onSuccess: (result) => {
-      queryClient.setQueryData(["notification-token", user?.id], result);
-      console.log("토큰 동기화 성공:", result.source);
-    },
-    onError: (error) => {
-      console.error("토큰 동기화 실패:", error);
-    },
-  });
-
-  // 사용자 변경 시 자동 동기화
+  // 사용자 변경 시 자동 토큰 조회
   useEffect(() => {
-    if (user?.id && tokenResult?.success) {
-      // 백그라운드에서 동기화 실행 (캐시 먼저 반환하고 서버와 동기화)
-      syncTokenMutation.mutate();
+    if (user?.id && !tokenResult?.success) {
+      // 토큰이 없으면 자동으로 조회
+      refetch();
     }
   }, [user?.id]);
 
@@ -128,17 +111,14 @@ export const useNotificationToken = () => {
     // 액션
     refreshToken: refreshTokenMutation.mutate,
     forceRegister: forceRegisterMutation.mutate,
-    syncToken: syncTokenMutation.mutate,
     refetch,
 
     // 로딩 상태
     isRefreshing: refreshTokenMutation.isPending,
     isForceRegistering: forceRegisterMutation.isPending,
-    isSyncing: syncTokenMutation.isPending,
 
     // 에러 상태
     refreshError: refreshTokenMutation.error,
     forceRegisterError: forceRegisterMutation.error,
-    syncError: syncTokenMutation.error,
   };
 };

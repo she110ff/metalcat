@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import * as Notifications from "expo-notifications";
 import { supabase } from "@/hooks/auth/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -58,7 +58,7 @@ export function useSimpleNotifications() {
       }
 
       setHistory(data || []);
-      setUnreadCount(data?.filter((item: any) => !item.read_at).length || 0);
+      setUnreadCount(data?.filter((item: any) => !item.is_read).length || 0);
     } catch (error) {
       console.error("알림 히스토리 로드 오류:", error);
     }
@@ -71,7 +71,7 @@ export function useSimpleNotifications() {
     try {
       const { error } = await supabase
         .from("notification_history")
-        .update({ read_at: new Date().toISOString() })
+        .update({ is_read: true })
         .eq("id", notificationId)
         .eq("user_id", user.id);
 
@@ -83,9 +83,7 @@ export function useSimpleNotifications() {
       // 로컬 상태 업데이트
       setHistory((prev) =>
         prev.map((item) =>
-          item.id === notificationId
-            ? { ...item, read_at: new Date().toISOString() }
-            : item
+          item.id === notificationId ? { ...item, is_read: true } : item
         )
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -101,9 +99,9 @@ export function useSimpleNotifications() {
     try {
       const { error } = await supabase
         .from("notification_history")
-        .update({ read_at: new Date().toISOString() })
+        .update({ is_read: true })
         .eq("user_id", user.id)
-        .is("read_at", null);
+        .eq("is_read", false);
 
       if (error) {
         console.error("모든 알림 읽음 처리 실패:", error);
@@ -111,9 +109,7 @@ export function useSimpleNotifications() {
       }
 
       // 로컬 상태 업데이트
-      setHistory((prev) =>
-        prev.map((item) => ({ ...item, read_at: new Date().toISOString() }))
-      );
+      setHistory((prev) => prev.map((item) => ({ ...item, is_read: true })));
       setUnreadCount(0);
     } catch (error) {
       console.error("모든 알림 읽음 처리 오류:", error);
@@ -124,35 +120,25 @@ export function useSimpleNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    // 앱이 포그라운드에 있을 때 알림을 받는 리스너
+    // 알림 수신 리스너
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
-        console.log("📱 포그라운드 알림 수신:", notification);
-
-        // 서버에서 이미 저장하므로 프론트엔드에서는 저장하지 않음
-        // 대신 알림 히스토리만 새로고침
+        console.log("📱 알림 수신:", notification);
+        // 알림 히스토리 새로고침
         loadNotificationHistory();
       });
 
-    // 사용자가 알림을 탭했을 때의 리스너
+    // 알림 응답 리스너 (사용자가 알림을 탭했을 때)
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log("👆 알림 탭됨:", response);
-
-        // 알림 데이터에서 경매 ID가 있으면 해당 경매로 이동
-        const auctionId =
-          response.notification.request.content.data?.auction_id;
-        if (auctionId) {
-          // 여기서 네비게이션 처리 (useRouter 등 사용)
-          console.log("경매 상세로 이동:", auctionId);
-          // router.push(`/auction-detail/${auctionId}`);
-        }
+        console.log("👆 알림 응답:", response);
+        // 알림 히스토리 새로고침
+        loadNotificationHistory();
       });
 
     // 초기 알림 히스토리 로드
     loadNotificationHistory();
 
-    // 클린업
     return () => {
       if (notificationListener.current) {
         Notifications.removeNotificationSubscription(
@@ -167,12 +153,12 @@ export function useSimpleNotifications() {
 
   return {
     expoPushToken,
+    isLoading,
+    registerForPushNotificationsAsync,
     history,
     unreadCount,
-    isLoading,
+    loadNotificationHistory,
     markAsRead,
     markAllAsRead,
-    loadNotificationHistory,
-    registerForPushNotificationsAsync,
   };
 }

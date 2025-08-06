@@ -7,47 +7,52 @@ export interface TokenResult {
   success: boolean;
   token?: string;
   error?: string;
-  source?: "cache" | "server" | "new";
+  source?: "cached" | "server" | "new";
 }
 
 export interface TokenService {
-  initializeToken(userId: string): Promise<TokenResult>;
+  getToken(userId: string): Promise<TokenResult>;
   refreshToken(userId: string): Promise<TokenResult>;
-  validateAndSync(userId: string): Promise<TokenResult>;
-  forceRegister(userId: string): Promise<TokenResult>;
   simpleCreateToken(): Promise<TokenResult>;
 }
 
 class TokenServiceImpl implements TokenService {
   private readonly PROJECT_ID = "19829544-dd83-47d5-8c48-ffcdc913c8b1";
 
-  async initializeToken(userId: string): Promise<TokenResult> {
+  async getToken(userId: string): Promise<TokenResult> {
     try {
-      // 1. 캐시된 토큰 확인
+      console.log("🔍 Push Token 조회 시작:", { userId });
+
+      // 1. 캐시에서 토큰 확인
       const cachedToken = await tokenRepository.getCachedToken();
       if (cachedToken) {
-        // 캐시된 토큰이 서버에서도 유효한지 확인
+        console.log("✅ 캐시에서 토큰 발견");
+
+        // 캐시된 토큰이 서버에서 유효한지 확인
         const isValid = await tokenRepository.validateTokenWithServer(
           userId,
           cachedToken.token
         );
+
         if (isValid) {
           return {
             success: true,
             token: cachedToken.token,
-            source: "cache",
+            source: "cached",
           };
+        } else {
+          console.log("⚠️ 캐시된 토큰이 서버에서 유효하지 않음");
+          await tokenRepository.clearCachedToken();
         }
       }
 
-      // 2. 서버에서 기존 토큰 조회
+      // 2. 서버에서 토큰 확인
       const serverToken = await tokenRepository.getServerToken(userId);
       if (serverToken) {
+        console.log("✅ 서버에서 토큰 발견");
+
         // 서버 토큰을 캐시에 저장
-        await tokenRepository.setCachedToken({
-          ...serverToken,
-          lastValidated: new Date().toISOString(),
-        });
+        await tokenRepository.setCachedToken(serverToken);
 
         return {
           success: true,
@@ -57,75 +62,35 @@ class TokenServiceImpl implements TokenService {
       }
 
       // 3. 새 토큰 생성
+      console.log("🆕 새 토큰 생성 필요");
       return await this.createNewToken(userId);
     } catch (error) {
-      console.error("토큰 초기화 실패:", error);
+      console.error("❌ 토큰 조회 실패:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
+        error:
+          error instanceof Error ? error.message : "토큰 조회에 실패했습니다.",
       };
     }
   }
 
   async refreshToken(userId: string): Promise<TokenResult> {
     try {
-      // 캐시 클리어
-      await tokenRepository.clearCache();
+      console.log("🔄 토큰 새로고침 시작:", { userId });
+
+      // 캐시 및 서버 토큰 무효화
+      await tokenRepository.clearCachedToken();
 
       // 새 토큰 생성
       return await this.createNewToken(userId);
     } catch (error) {
-      console.error("토큰 새로고침 실패:", error);
+      console.error("❌ 토큰 새로고침 실패:", error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
-      };
-    }
-  }
-
-  async validateAndSync(userId: string): Promise<TokenResult> {
-    try {
-      const cachedToken = await tokenRepository.getCachedToken();
-      if (!cachedToken) {
-        return await this.initializeToken(userId);
-      }
-
-      // 서버와 동기화 확인
-      const isValid = await tokenRepository.validateTokenWithServer(
-        userId,
-        cachedToken.token
-      );
-      if (isValid) {
-        return {
-          success: true,
-          token: cachedToken.token,
-          source: "cache",
-        };
-      }
-
-      // 서버에 없으면 새로 등록
-      return await this.createNewToken(userId);
-    } catch (error) {
-      console.error("토큰 동기화 실패:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
-      };
-    }
-  }
-
-  async forceRegister(userId: string): Promise<TokenResult> {
-    try {
-      // 모든 캐시 클리어
-      await tokenRepository.clearCache();
-
-      // 강제로 새 토큰 생성 및 등록
-      return await this.createNewToken(userId);
-    } catch (error) {
-      console.error("토큰 강제 등록 실패:", error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "알 수 없는 오류",
+        error:
+          error instanceof Error
+            ? error.message
+            : "토큰 새로고침에 실패했습니다.",
       };
     }
   }
@@ -156,8 +121,7 @@ class TokenServiceImpl implements TokenService {
 
       const tokenInfo: TokenInfo = {
         token: tokenResponse.data,
-        platform: Platform.OS,
-        deviceId: Device.osInternalBuildId || null,
+        deviceType: Platform.OS,
         createdAt: new Date().toISOString(),
       };
 
@@ -223,5 +187,4 @@ class TokenServiceImpl implements TokenService {
   }
 }
 
-// 싱글톤 인스턴스
-export const tokenService: TokenService = new TokenServiceImpl();
+export const tokenService = new TokenServiceImpl();

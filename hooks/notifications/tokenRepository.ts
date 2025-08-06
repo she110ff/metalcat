@@ -5,8 +5,7 @@ import { supabase } from "@/hooks/auth/api";
 
 export interface TokenInfo {
   token: string;
-  platform: string;
-  deviceId: string | null;
+  deviceType: string;
   createdAt: string;
   lastValidated?: string;
 }
@@ -14,15 +13,14 @@ export interface TokenInfo {
 export interface TokenRepository {
   getCachedToken(): Promise<TokenInfo | null>;
   setCachedToken(tokenInfo: TokenInfo): Promise<void>;
+  clearCachedToken(): Promise<void>;
   getServerToken(userId: string): Promise<TokenInfo | null>;
   saveToServer(userId: string, tokenInfo: TokenInfo): Promise<void>;
   validateTokenWithServer(userId: string, token: string): Promise<boolean>;
-  clearCache(): Promise<void>;
 }
 
 class TokenRepositoryImpl implements TokenRepository {
-  private readonly CACHE_KEY = "expo_push_token_info";
-  private readonly CACHE_EXPIRY_HOURS = 24;
+  private readonly CACHE_KEY = "expo_push_token_cache";
 
   async getCachedToken(): Promise<TokenInfo | null> {
     try {
@@ -31,20 +29,21 @@ class TokenRepositoryImpl implements TokenRepository {
 
       const tokenInfo: TokenInfo = JSON.parse(cached);
 
-      // 캐시 만료 확인 (24시간)
+      // 캐시된 토큰이 7일 이상 되었으면 무효화
       const createdAt = new Date(tokenInfo.createdAt);
       const now = new Date();
-      const hoursDiff =
-        (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+      const daysDiff =
+        (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
 
-      if (hoursDiff > this.CACHE_EXPIRY_HOURS) {
-        await this.clearCache();
+      if (daysDiff > 7) {
+        console.log("📅 캐시된 토큰이 만료됨 (7일 초과)");
+        await this.clearCachedToken();
         return null;
       }
 
       return tokenInfo;
     } catch (error) {
-      console.error("캐시된 토큰 조회 실패:", error);
+      console.error("❌ 캐시된 토큰 조회 실패:", error);
       return null;
     }
   }
@@ -52,9 +51,18 @@ class TokenRepositoryImpl implements TokenRepository {
   async setCachedToken(tokenInfo: TokenInfo): Promise<void> {
     try {
       await AsyncStorage.setItem(this.CACHE_KEY, JSON.stringify(tokenInfo));
+      console.log("✅ 토큰 캐시 저장 완료");
     } catch (error) {
-      console.error("토큰 캐시 저장 실패:", error);
-      throw error;
+      console.error("❌ 토큰 캐시 저장 실패:", error);
+    }
+  }
+
+  async clearCachedToken(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(this.CACHE_KEY);
+      console.log("🗑️ 토큰 캐시 삭제 완료");
+    } catch (error) {
+      console.error("❌ 토큰 캐시 삭제 실패:", error);
     }
   }
 
@@ -62,7 +70,7 @@ class TokenRepositoryImpl implements TokenRepository {
     try {
       console.log("🔍 서버에서 Push Token 조회:", {
         userId,
-        platform: Platform.OS,
+        deviceType: Platform.OS,
       });
 
       // 사용자 존재 여부 먼저 확인
@@ -79,10 +87,10 @@ class TokenRepositoryImpl implements TokenRepository {
 
       const { data, error } = await supabase
         .from("user_push_tokens")
-        .select("expo_push_token, platform, device_id, created_at")
+        .select("token, device_type, created_at")
         .eq("user_id", userId)
         .eq("is_active", true)
-        .eq("platform", Platform.OS)
+        .eq("device_type", Platform.OS)
         .order("created_at", { ascending: false })
         .limit(1)
         .single();
@@ -94,9 +102,8 @@ class TokenRepositoryImpl implements TokenRepository {
 
       console.log("✅ 서버 토큰 조회 성공");
       return {
-        token: data.expo_push_token,
-        platform: data.platform,
-        deviceId: data.device_id,
+        token: data.token,
+        deviceType: data.device_type,
         createdAt: data.created_at,
       };
     } catch (error) {
@@ -109,7 +116,7 @@ class TokenRepositoryImpl implements TokenRepository {
     try {
       console.log("📤 Push Token 서버 저장 시작:", {
         userId,
-        platform: tokenInfo.platform,
+        deviceType: tokenInfo.deviceType,
       });
 
       // 사용자 존재 여부 확인 (custom 인증 시스템용)
@@ -131,7 +138,7 @@ class TokenRepositoryImpl implements TokenRepository {
         .from("user_push_tokens")
         .update({ is_active: false })
         .eq("user_id", userId)
-        .eq("platform", Platform.OS);
+        .eq("device_type", Platform.OS);
 
       if (updateError) {
         console.warn("⚠️ 기존 토큰 비활성화 실패 (무시):", updateError);
@@ -143,9 +150,8 @@ class TokenRepositoryImpl implements TokenRepository {
         .from("user_push_tokens")
         .insert({
           user_id: userId,
-          expo_push_token: tokenInfo.token,
-          platform: tokenInfo.platform,
-          device_id: tokenInfo.deviceId,
+          token: tokenInfo.token,
+          device_type: tokenInfo.deviceType,
           is_active: true,
         });
 
@@ -184,7 +190,7 @@ class TokenRepositoryImpl implements TokenRepository {
         .from("user_push_tokens")
         .select("id")
         .eq("user_id", userId)
-        .eq("expo_push_token", token)
+        .eq("token", token)
         .eq("is_active", true)
         .single();
 
@@ -198,15 +204,6 @@ class TokenRepositoryImpl implements TokenRepository {
       return false;
     }
   }
-
-  async clearCache(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem(this.CACHE_KEY);
-    } catch (error) {
-      console.error("토큰 캐시 삭제 실패:", error);
-    }
-  }
 }
 
-// 싱글톤 인스턴스
-export const tokenRepository: TokenRepository = new TokenRepositoryImpl();
+export const tokenRepository = new TokenRepositoryImpl();
