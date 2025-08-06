@@ -1,28 +1,30 @@
-'use client';
-import React from 'react';
-import { config } from './config';
-import { OverlayProvider } from '@gluestack-ui/overlay';
-import { ToastProvider } from '@gluestack-ui/toast';
-import { setFlushStyles } from '@gluestack-ui/nativewind-utils/flush';
+"use client";
+import React from "react";
+import { config } from "./config";
+import { OverlayProvider } from "@gluestack-ui/overlay";
+import { ToastProvider } from "@gluestack-ui/toast";
+import { setFlushStyles } from "@gluestack-ui/nativewind-utils/flush";
 
 export function GluestackUIProvider({
-  mode = 'light',
+  mode = "light",
   ...props
 }: {
-  mode?: 'light' | 'dark';
+  mode?: "light" | "dark";
   children?: any;
 }) {
-  const stringcssvars = Object.keys(config[mode]).reduce((acc, cur) => {
-    acc += `${cur}:${config[mode][cur]};`;
+  // 🎨 UX Expert: 마이 화면과 관리자 화면에서 다크테마 비활성화
+  const forcedMode = "light";
+  const stringcssvars = Object.keys(config[forcedMode]).reduce((acc, cur) => {
+    acc += `${cur}:${config[forcedMode][cur]};`;
     return acc;
-  }, '');
+  }, "");
   setFlushStyles(`:root {${stringcssvars}} `);
 
-  if (config[mode] && typeof document !== 'undefined') {
+  if (config[forcedMode] && typeof document !== "undefined") {
     const element = document.documentElement;
     if (element) {
-      const head = element.querySelector('head');
-      const style = document.createElement('style');
+      const head = element.querySelector("head");
+      const style = document.createElement("style");
       style.innerHTML = `:root {${stringcssvars}} `;
       if (head) head.appendChild(style);
     }
