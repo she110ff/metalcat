@@ -310,15 +310,11 @@ export const Dashboard = () => {
                         <HStack className="items-center mb-2">
                           <Ionicons
                             name="checkmark-circle"
-                            size={20}
-                            color="#4CAF50"
+                            size={18}
+                            color="#FFD700"
                           />
-                          <Text className="text-white text-lg font-black ml-2 tracking-wide">
-                            무료 서비스
-                          </Text>
-                          <Ionicons name="person" size={20} color="#4CAF50" />
-                          <Text className="text-white text-sm font-bold ml-1">
-                            비회원 가능
+                          <Text className="text-white text-base font-black ml-2 tracking-wide">
+                            무료 서비스 • 비회원 가능
                           </Text>
                         </HStack>
                         <Text className="text-white text-2xl font-black tracking-wide mb-1 drop-shadow-lg">

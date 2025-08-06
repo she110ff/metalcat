@@ -35,8 +35,8 @@ export default function TabLayout() {
           left: 0,
           right: 0,
           height: 90,
-          paddingBottom: 30,
-          paddingTop: 15,
+          paddingBottom: 25,
+          paddingTop: 12,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           borderWidth: 1,
@@ -50,7 +50,7 @@ export default function TabLayout() {
           fontWeight: "600",
         },
         tabBarIconStyle: {
-          marginBottom: -5,
+          marginBottom: 2,
         },
       }}
     >
