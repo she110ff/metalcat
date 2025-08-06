@@ -689,7 +689,76 @@ LEFT JOIN demolition_auctions d ON a.id = d.auction_id AND a.auction_category = 
 -- 14. 경매 처리 자동화 시스템
 -- ============================================
 
--- 경매 종료 처리 메인 함수
+-- 실시간 알림 발송 함수
+CREATE OR REPLACE FUNCTION send_auction_end_notification(
+  tokens TEXT[],
+  title TEXT,
+  body TEXT,
+  data JSONB
+) RETURNS void AS $$
+DECLARE
+  current_env TEXT;
+  supabase_url TEXT;
+  function_url TEXT;
+  response_id BIGINT;
+BEGIN
+  -- 현재 환경 확인
+  SELECT get_current_environment() INTO current_env;
+  
+  -- 토큰이 없으면 처리하지 않음
+  IF tokens IS NULL OR array_length(tokens, 1) IS NULL OR array_length(tokens, 1) = 0 THEN
+    RAISE NOTICE '📱 알림 전송 건너뜀: 유효한 토큰이 없음';
+    RETURN;
+  END IF;
+  
+  RAISE NOTICE '📱 알림 발송: % - % (토큰 수: %)', title, body, array_length(tokens, 1);
+  
+  -- 환경별 처리
+  IF current_env = 'local' THEN
+    -- 로컬 환경에서는 로그만 출력
+    RAISE NOTICE '🏠 로컬 환경: 실제 알림 전송 생략';
+  ELSE
+    -- 프로덕션/스테이징에서는 실제 Edge Function 호출
+    BEGIN
+      -- 환경별 Supabase URL 설정
+      IF current_env = 'production' THEN
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      ELSE
+        -- 스테이징이나 기타 환경
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      END IF;
+      
+      function_url := supabase_url || '/functions/v1/send-auction-notification';
+      
+      RAISE NOTICE '🚀 Edge Function 호출: %', function_url;
+      
+      -- pg_net을 사용해서 Edge Function 호출
+      SELECT net.http_post(
+        url := function_url,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDEyMzIxMiwiZXhwIjoyMDY5Njk5MjEyfQ.oAOAE-0vaU0ph5bkX9DBWfCwFEJha9wo8W1kATeAHTI'
+        ),
+        body := jsonb_build_object(
+          'tokens', tokens, 
+          'title', title, 
+          'body', body, 
+          'data', data
+        ),
+        timeout_milliseconds := 30000
+      ) INTO response_id;
+      
+      RAISE NOTICE '✅ 알림 전송 요청 완료 (request_id: %)', response_id;
+      
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '❌ 알림 전송 실패: %', SQLERRM;
+      -- 알림 실패가 경매 처리를 중단시키지 않도록 예외를 흡수
+    END;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 경매 종료 처리 메인 함수 (알림 기능 통합)
 CREATE OR REPLACE FUNCTION process_ended_auctions()
 RETURNS TABLE(
   processed_count INTEGER,
@@ -704,6 +773,11 @@ DECLARE
   total_failed INTEGER := 0;
   total_errors INTEGER := 0;
   auction_error TEXT;
+  
+  -- 알림 관련 변수
+  seller_tokens TEXT[];
+  winner_tokens TEXT[];
+  auction_title TEXT;
 BEGIN
   -- 로그 시작
   INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
@@ -732,12 +806,26 @@ BEGIN
   LOOP
     BEGIN
       total_processed := total_processed + 1;
+      auction_title := ended_auction.title;
+      
+      -- 알림을 위한 토큰 조회
+      -- 경매 등록자 토큰
+      SELECT array_agg(expo_push_token) INTO seller_tokens
+      FROM user_push_tokens 
+      WHERE user_id = ended_auction.seller_id AND is_active = true;
+      
+      -- 낙찰자 토큰 (낙찰된 경우)
+      IF ended_auction.winning_user_id IS NOT NULL THEN
+        SELECT array_agg(expo_push_token) INTO winner_tokens
+        FROM user_push_tokens 
+        WHERE user_id = ended_auction.winning_user_id AND is_active = true;
+      END IF;
       
       -- 낙찰/유찰 결정
       IF ended_auction.winning_amount IS NOT NULL 
          AND ended_auction.winning_amount >= ended_auction.starting_price THEN
         
-        -- 낙찰 처리
+        -- 낙찰 처리 (기존 로직)
         INSERT INTO auction_results (
           auction_id, 
           result_type, 
@@ -758,12 +846,56 @@ BEGIN
           )
         );
         
+        -- 알림 발송
+        -- 경매 등록자에게 알림
+        IF array_length(seller_tokens, 1) > 0 THEN
+          PERFORM send_auction_end_notification(
+            seller_tokens,
+            '경매가 종료되었습니다',
+            auction_title || ' 경매가 종료되었습니다.',
+            jsonb_build_object(
+              'auction_id', ended_auction.id,
+              'auction_title', auction_title,
+              'user_type', 'seller',
+              'result', 'successful'
+            )
+          );
+          
+          -- 히스토리 저장
+          INSERT INTO notification_history (user_id, type, title, body, data)
+          VALUES (ended_auction.seller_id, 'auction_ended', '경매가 종료되었습니다', 
+                  auction_title || ' 경매가 종료되었습니다.',
+                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+        END IF;
+        
+        -- 낙찰자에게 알림
+        IF array_length(winner_tokens, 1) > 0 THEN
+          PERFORM send_auction_end_notification(
+            winner_tokens,
+            '경매에 낙찰되었습니다!',
+            auction_title || ' 경매에 낙찰되었습니다!',
+            jsonb_build_object(
+              'auction_id', ended_auction.id,
+              'auction_title', auction_title,
+              'user_type', 'winner',
+              'result', 'successful',
+              'winning_amount', ended_auction.winning_amount
+            )
+          );
+          
+          -- 히스토리 저장
+          INSERT INTO notification_history (user_id, type, title, body, data)
+          VALUES (ended_auction.winning_user_id, 'auction_won', '경매에 낙찰되었습니다!', 
+                  auction_title || ' 경매에 낙찰되었습니다!',
+                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+        END IF;
+        
         total_successful := total_successful + 1;
         
-        RAISE NOTICE '✅ 낙찰 처리: % (₩%)', ended_auction.title, ended_auction.winning_amount;
+        RAISE NOTICE '✅ 낙찰 처리: % (₩%) - 알림 발송 완료', ended_auction.title, ended_auction.winning_amount;
         
       ELSE
-        -- 유찰 처리
+        -- 유찰 처리 (기존 로직)
         INSERT INTO auction_results (
           auction_id, 
           result_type,
@@ -784,83 +916,72 @@ BEGIN
           )
         );
         
+        -- 경매 등록자에게 유찰 알림
+        IF array_length(seller_tokens, 1) > 0 THEN
+          PERFORM send_auction_end_notification(
+            seller_tokens,
+            '경매가 유찰되었습니다',
+            auction_title || ' 경매가 유찰되었습니다.',
+            jsonb_build_object(
+              'auction_id', ended_auction.id,
+              'auction_title', auction_title,
+              'user_type', 'seller',
+              'result', 'failed',
+              'highest_bid', ended_auction.winning_amount
+            )
+          );
+          
+          -- 히스토리 저장
+          INSERT INTO notification_history (user_id, type, title, body, data)
+          VALUES (ended_auction.seller_id, 'auction_failed', '경매가 유찰되었습니다', 
+                  auction_title || ' 경매가 유찰되었습니다.',
+                  jsonb_build_object('auction_id', ended_auction.id, 'auction_title', auction_title));
+        END IF;
+        
         total_failed := total_failed + 1;
         
-        RAISE NOTICE '❌ 유찰 처리: % (최고가: ₩%, 시작가: ₩%)', 
+        RAISE NOTICE '❌ 유찰 처리: % (최고가: ₩%, 시작가: ₩%) - 알림 발송 완료', 
           ended_auction.title, 
           COALESCE(ended_auction.winning_amount, 0), 
           ended_auction.starting_price;
       END IF;
       
-      -- 경매 상태 업데이트
+      -- 경매 상태를 ended로 업데이트
       UPDATE auctions 
-      SET 
-        status = 'ended',
-        updated_at = NOW()
+      SET status = 'ended', updated_at = NOW()
       WHERE id = ended_auction.id;
       
-    EXCEPTION
-      WHEN OTHERS THEN
-        -- 개별 경매 처리 오류 로깅
-        total_errors := total_errors + 1;
-        auction_error := SQLERRM;
-        
-        RAISE WARNING '⚠️ 경매 처리 오류 [%]: %', ended_auction.id, auction_error;
-        
-        -- 오류 로그 저장
-        INSERT INTO cron_execution_logs (job_type, job_name, status, error_message, metadata)
-        VALUES ('auction', 'auction-end-processor-error', 'failed', auction_error,
-                jsonb_build_object(
-                  'auction_id', ended_auction.id,
-                  'auction_title', ended_auction.title,
-                  'error_time', NOW()
-                ));
+    EXCEPTION WHEN OTHERS THEN
+      total_errors := total_errors + 1;
+      auction_error := SQLERRM;
+      
+      RAISE NOTICE '❌ 경매 처리 오류: % - %', ended_auction.title, auction_error;
+      
+      -- 오류 로그 저장
+      INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
+      VALUES ('auction', 'auction-end-processor', 'failed', 
+              jsonb_build_object(
+                'auction_id', ended_auction.id,
+                'error', auction_error,
+                'timestamp', NOW()
+              ));
     END;
   END LOOP;
 
-  -- 성공 로그 기록
-  UPDATE cron_execution_logs 
-  SET 
-    status = 'success',
-    completed_at = NOW(),
-    duration_ms = EXTRACT(EPOCH FROM (NOW() - started_at)) * 1000,
-    success_count = total_processed,
-    metadata = metadata || jsonb_build_object(
-      'processed_count', total_processed,
-      'successful_count', total_successful,
-      'failed_count', total_failed,
-      'error_count', total_errors,
-      'completed_at', NOW()
-    )
-  WHERE job_type = 'auction' 
-    AND job_name = 'auction-end-processor' 
-    AND status = 'running'
-    AND started_at = (
-      SELECT MAX(started_at) 
-      FROM cron_execution_logs 
-      WHERE job_type = 'auction' AND job_name = 'auction-end-processor'
-    );
+  -- 로그 완료
+  INSERT INTO cron_execution_logs (job_type, job_name, status, metadata)
+  VALUES ('auction', 'auction-end-processor', 'success', 
+          jsonb_build_object(
+            'processed', total_processed,
+            'successful', total_successful,
+            'failed', total_failed,
+            'errors', total_errors,
+            'completed_at', NOW()
+          ));
 
-  -- 결과 반환
   RETURN QUERY SELECT total_processed, total_successful, total_failed, total_errors;
-  
-  RAISE NOTICE '🏁 경매 종료 처리 완료: 처리(%)/낙찰(%)/유찰(%)/오류(%)', 
-    total_processed, total_successful, total_failed, total_errors;
-
-EXCEPTION
-  WHEN OTHERS THEN
-    -- 전체 함수 실행 오류
-    INSERT INTO cron_execution_logs (job_type, job_name, status, error_message, metadata)
-    VALUES ('auction', 'auction-end-processor', 'failed', SQLERRM,
-            jsonb_build_object(
-              'total_processed', total_processed,
-              'error_time', NOW(),
-              'function_error', true
-            ));
-    
-    RAISE;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 -- 경매 상태 실시간 업데이트 함수 (ending 상태 관리)
 CREATE OR REPLACE FUNCTION update_auction_status_realtime()
@@ -1093,6 +1214,133 @@ GRANT SELECT ON auction_transactions TO authenticated, anon;
 -- 뷰 접근 권한
 GRANT SELECT ON auction_list_view TO authenticated, anon;
 
+-- 경매 등록 시 모든 사용자에게 알림 발송 함수
+CREATE OR REPLACE FUNCTION send_auction_create_notification(
+  auction_id TEXT,
+  auction_title TEXT,
+  auction_category TEXT,
+  seller_name TEXT
+) RETURNS void AS $$
+DECLARE
+  current_env TEXT;
+  supabase_url TEXT;
+  function_url TEXT;
+  response_id BIGINT;
+  all_tokens TEXT[];
+  notification_title TEXT;
+  notification_body TEXT;
+BEGIN
+  -- 현재 환경 확인
+  SELECT get_current_environment() INTO current_env;
+  
+  -- 모든 활성 사용자의 푸시 토큰 가져오기
+  SELECT array_agg(expo_push_token) INTO all_tokens
+  FROM user_push_tokens 
+  WHERE is_active = true;
+  
+  -- 토큰이 없으면 처리하지 않음
+  IF all_tokens IS NULL OR array_length(all_tokens, 1) IS NULL OR array_length(all_tokens, 1) = 0 THEN
+    RAISE NOTICE '📱 새 경매 알림 전송 건너뜀: 활성 토큰이 없음';
+    RETURN;
+  END IF;
+  
+  -- 알림 내용 구성
+  notification_title := '새로운 경매가 등록되었습니다!';
+  notification_body := auction_title || ' 경매가 새로 등록되었습니다.';
+  
+  RAISE NOTICE '📢 새 경매 알림 발송: % - % (토큰 수: %)', notification_title, notification_body, array_length(all_tokens, 1);
+  
+  -- 환경별 처리
+  IF current_env = 'local' THEN
+    -- 로컬 환경에서는 로그만 출력
+    RAISE NOTICE '🏠 로컬 환경: 실제 새 경매 알림 전송 생략';
+  ELSE
+    -- 프로덕션/스테이징에서는 실제 Edge Function 호출
+    BEGIN
+      -- 환경별 Supabase URL 설정
+      IF current_env = 'production' THEN
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      ELSE
+        -- 스테이징이나 기타 환경
+        supabase_url := 'https://vxdncswvbhelstpkfcvv.supabase.co';
+      END IF;
+      
+      function_url := supabase_url || '/functions/v1/send-auction-notification';
+      
+      RAISE NOTICE '🚀 새 경매 알림 Edge Function 호출: %', function_url;
+      
+      -- pg_net을 사용해서 Edge Function 호출
+      SELECT net.http_post(
+        url := function_url,
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4ZG5jc3d2YmhlbHN0cGtmY3Z2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NDEyMzIxMiwiZXhwIjoyMDY5Njk5MjEyfQ.oAOAE-0vaU0ph5bkX9DBWfCwFEJha9wo8W1kATeAHTI'
+        ),
+        body := jsonb_build_object(
+          'tokens', all_tokens, 
+          'title', notification_title, 
+          'body', notification_body, 
+          'data', jsonb_build_object(
+            'auction_id', auction_id,
+            'auction_title', auction_title,
+            'auction_category', auction_category,
+            'seller_name', seller_name,
+            'notification_type', 'auction_created'
+          )
+        ),
+        timeout_milliseconds := 30000
+      ) INTO response_id;
+      
+      RAISE NOTICE '✅ 새 경매 알림 전송 요청 완료 (request_id: %)', response_id;
+      
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING '❌ 새 경매 알림 전송 실패: %', SQLERRM;
+      -- 알림 실패가 경매 등록을 중단시키지 않도록 예외를 흡수
+    END;
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 경매 등록 시 자동 알림 발송 트리거 함수
+CREATE OR REPLACE FUNCTION trigger_auction_create_notification()
+RETURNS TRIGGER AS $$
+DECLARE
+  seller_name TEXT;
+  category_text TEXT;
+BEGIN
+  -- 판매자 이름 가져오기 (users 테이블에서)
+  SELECT COALESCE(name, phone_number, 'Unknown') INTO seller_name
+  FROM users 
+  WHERE id = NEW.user_id;
+  
+  -- 카테고리 텍스트 변환
+  category_text := CASE NEW.auction_category
+    WHEN 'scrap' THEN '고철'
+    WHEN 'machinery' THEN '중고기계'
+    WHEN 'materials' THEN '중고자재'
+    WHEN 'demolition' THEN '철거'
+    ELSE NEW.auction_category::text
+  END;
+  
+  -- 새 경매 알림 발송 (비동기)
+  PERFORM send_auction_create_notification(
+    NEW.id,
+    NEW.title,
+    category_text,
+    COALESCE(seller_name, 'Unknown')
+  );
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 경매 테이블에 트리거 생성
+DROP TRIGGER IF EXISTS trigger_new_auction_notification ON auctions;
+CREATE TRIGGER trigger_new_auction_notification
+  AFTER INSERT ON auctions
+  FOR EACH ROW
+  EXECUTE FUNCTION trigger_auction_create_notification();
+
 -- 함수 실행 권한
 GRANT EXECUTE ON FUNCTION process_ended_auctions() TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION update_auction_status_realtime() TO anon, authenticated;
@@ -1102,6 +1350,9 @@ GRANT EXECUTE ON FUNCTION get_auction_representative_photo TO anon, authenticate
 GRANT EXECUTE ON FUNCTION check_self_bidding_violations TO authenticated;
 GRANT EXECUTE ON FUNCTION set_current_user_id TO authenticated;
 GRANT EXECUTE ON FUNCTION get_current_user_id TO authenticated;
+GRANT EXECUTE ON FUNCTION send_auction_end_notification(TEXT[], TEXT, TEXT, JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION send_auction_create_notification(TEXT, TEXT, TEXT, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION trigger_auction_create_notification() TO anon, authenticated;
 
 -- storage 버킷 사용 권한 부여
 GRANT ALL ON storage.objects TO anon;
@@ -1132,11 +1383,14 @@ COMMENT ON COLUMN auction_results.result_type IS '결과 타입: successful(낙�
 COMMENT ON COLUMN auction_results.payment_deadline IS '결제 기한 (낙찰시 자동 설정: 처리일 + 3일)';
 COMMENT ON COLUMN auction_transactions.transaction_status IS '거래 상태: pending → paid → delivered → completed';
 
-COMMENT ON FUNCTION process_ended_auctions IS '종료된 경매들의 낙찰/유찰 처리 - 매분 실행';
+COMMENT ON FUNCTION process_ended_auctions IS '종료된 경매들의 낙찰/유찰 처리 및 알림 발송 - 매분 실행';
 COMMENT ON FUNCTION update_auction_status_realtime IS '경매 상태 실시간 업데이트 (ending 전환) - 5분마다 실행';
 COMMENT ON FUNCTION process_payment_deadlines IS '결제 기한 관리 및 초과 처리 - 매시간 실행';
 COMMENT ON FUNCTION get_auction_processing_stats IS '경매 처리 통계 조회 함수';
 COMMENT ON FUNCTION check_self_bidding_violations IS '기존 데이터에서 자신의 경매에 입찰한 위반 사례를 확인하는 함수';
+COMMENT ON FUNCTION send_auction_end_notification IS '경매 종료 시 실시간 알림 발송 함수';
+COMMENT ON FUNCTION send_auction_create_notification IS '새 경매 등록 시 모든 사용자에게 알림 발송 함수';
+COMMENT ON FUNCTION trigger_auction_create_notification IS '경매 등록 시 자동 알림 발송 트리거 함수';
 
 COMMENT ON POLICY "basic_bid_policy" ON auction_bids IS 
 '기본 입찰 정책: 데이터 무결성 체크. 자신의 경매 입찰 방지는 애플리케이션 레벨에서 처리';
@@ -1156,4 +1410,5 @@ BEGIN
   RAISE NOTICE '🔗 호환성: auction_list_view 통합 뷰로 기존 API 지원';
   RAISE NOTICE '⏰ 크론: 매분/5분/매시간 자동 실행';
   RAISE NOTICE '🚀 완전한 경매 시스템 준비 완료!';
+  RAISE NOTICE '📱 알림 시스템: 경매 종료/등록 시 자동 푸시 알림 발송';
 END $$;
