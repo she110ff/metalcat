@@ -2,12 +2,14 @@ import React, { useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
+import { Icon } from "@/components/ui/icon";
 import {
   ChevronLeftIcon,
   CloseIcon,
   EditIcon,
-  Icon,
-} from "@/components/ui/icon";
+  ChevronDownIcon,
+  AlertCircleIcon,
+} from "@/components/ui/icon/index.web";
 import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { Pressable } from "@/components/ui/pressable";
@@ -31,6 +33,7 @@ import {
   AvatarFallbackText,
   AvatarImage,
 } from "@/components/ui/avatar";
+import { Center } from "@/components/ui/center";
 // ✅ expo-router 사용으로 일관성 맞춤
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -44,6 +47,7 @@ import { HomeIcon } from "./assets/icons/home";
 import { GlobeIcon } from "./assets/icons/globe";
 import { InboxIcon } from "./assets/icons/inbox";
 import { HeartIcon } from "./assets/icons/heart";
+import { ProfileIcon } from "./assets/icons/profile";
 import { CameraSparklesIcon } from "./assets/icons/camera-sparkles";
 import {
   FormControl,
@@ -71,6 +75,20 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { EditPhotoIcon } from "./assets/icons/edit-photo";
+
+// 사용자 스키마 정의
+const userSchema = z.object({
+  firstName: z.string().min(1, "이름을 입력해주세요"),
+  lastName: z.string().min(1, "성을 입력해주세요"),
+  gender: z.string().min(1, "성별을 선택해주세요"),
+  phoneNumber: z.string().min(1, "전화번호를 입력해주세요"),
+  city: z.string().min(1, "도시를 선택해주세요"),
+  state: z.string().min(1, "주/도를 선택해주세요"),
+  country: z.string().min(1, "국가를 선택해주세요"),
+  zipcode: z.string().min(1, "우편번호를 입력해주세요"),
+});
+
+type userSchemaDetails = z.infer<typeof userSchema>;
 
 const bottomTabsList = [
   {
@@ -129,7 +147,7 @@ const MainContent = () => {
 
   const handleLogout = () => {
     logout();
-    router.replace("/(tabs)/");
+    router.replace("/");
   };
 
   // 샘플 데이터 - 실제로는 API에서 가져올 데이터
@@ -486,8 +504,6 @@ const MainContent = () => {
               <Avatar size="lg" className="bg-primary-600">
                 <AvatarImage
                   alt="Profile Image"
-                  height={"100%"}
-                  width={"100%"}
                   source={require("@/assets/profile-screens/profile/image.png")}
                 />
                 <AvatarBadge />
@@ -599,12 +615,12 @@ const ModalComponent = ({
   };
 
   return (
+    // @ts-ignore
     <Modal
       isOpen={showModal}
       onClose={() => {
         setShowModal(false);
       }}
-      finalFocusRef={ref}
       size="lg"
     >
       <ModalBackdrop />
@@ -612,24 +628,18 @@ const ModalComponent = ({
         <Box className={"w-full h-[215px] "}>
           <Image
             source={require("@/assets/profile-screens/profile/image2.png")}
-            height={"100%"}
-            width={"100%"}
-            alt="Banner Image"
+            style={{ height: "100%", width: "100%" }}
           />
         </Box>
         <Pressable className="absolute bg-background-500 rounded-full items-center justify-center h-8 w-8 right-6 top-44">
-          <Icon as={CameraSparklesIcon} />
+          <CameraSparklesIcon />
         </Pressable>
         <ModalHeader className="absolute w-full">
           <Heading size="2xl" className="text-typography-800 pt-4 pl-4">
             Edit Profile
           </Heading>
           <ModalCloseButton>
-            <Icon
-              as={CloseIcon}
-              size="md"
-              className="stroke-background-400 group-[:hover]/modal-close-button:stroke-background-700 group-[:active]/modal-close-button:stroke-background-900 group-[:focus-visible]/modal-close-button:stroke-background-900"
-            />
+            <CloseIcon />
           </ModalCloseButton>
         </ModalHeader>
         <Center className="w-full absolute top-16">
@@ -638,7 +648,7 @@ const ModalComponent = ({
               source={require("@/assets/profile-screens/profile/image.png")}
             />
             <AvatarBadge className="justify-center items-center bg-background-500">
-              <Icon as={EditPhotoIcon} />
+              <EditPhotoIcon />
             </AvatarBadge>
           </Avatar>
         </Center>
@@ -682,7 +692,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircleIcon} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.firstName?.message}
                   </FormControlErrorText>
@@ -725,7 +735,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircleIcon} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.lastName?.message}
                   </FormControlErrorText>
@@ -771,7 +781,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.gender?.message}
                   </FormControlErrorText>
@@ -830,7 +840,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.phoneNumber?.message}
                   </FormControlErrorText>
@@ -879,7 +889,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.city?.message}
                   </FormControlErrorText>
@@ -927,7 +937,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.state?.message}
                   </FormControlErrorText>
@@ -978,7 +988,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.country?.message}
                   </FormControlErrorText>
@@ -998,7 +1008,7 @@ const ModalComponent = ({
                     validate: async (value) => {
                       try {
                         await userSchema.parseAsync({
-                          zipCode: value,
+                          zipcode: value,
                         });
                         return true;
                       } catch (error: any) {
@@ -1021,7 +1031,7 @@ const ModalComponent = ({
                   )}
                 />
                 <FormControlError>
-                  <FormControlErrorIcon as={AlertCircle} size="md" />
+                  <FormControlErrorIcon as={AlertCircleIcon} />
                   <FormControlErrorText>
                     {errors?.zipcode?.message}
                   </FormControlErrorText>
@@ -1061,13 +1071,9 @@ function MobileFooter({ footerIcons }: { footerIcons: any }) {
             <Pressable
               className="px-0.5 flex-1 flex-col items-center"
               key={index}
-              onPress={() => router.push("/(tabs)/")}
+              onPress={() => router.push("/")}
             >
-              <Icon
-                as={item.iconName}
-                size="md"
-                className="h-[32px] w-[65px]"
-              />
+              <item.iconName />
               <Text className="text-xs text-center text-typography-600">
                 {item.iconText}
               </Text>
@@ -1140,7 +1146,7 @@ export const Profile = () => {
               router.back();
             }}
           >
-            <Icon as={ChevronLeftIcon} />
+            <ChevronLeftIcon />
           </Pressable>
         </HStack>
       </Box>
