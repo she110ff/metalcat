@@ -185,7 +185,6 @@ CREATE TABLE auction_results (
   
   -- 처리 정보
   processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  payment_deadline TIMESTAMP WITH TIME ZONE,
   
   -- 메타데이터
   metadata JSONB DEFAULT '{}',
@@ -258,8 +257,7 @@ CREATE INDEX idx_auction_results_winning_user ON auction_results(winning_user_id
 
 CREATE INDEX idx_auction_transactions_result_id ON auction_transactions(auction_result_id);
 CREATE INDEX idx_auction_transactions_status ON auction_transactions(transaction_status);
-CREATE INDEX idx_auction_transactions_payment_deadline ON auction_transactions(auction_result_id) 
-  WHERE transaction_status = 'pending';
+
 
 -- ============================================
 -- 8. Storage 버킷 설정 (auction-photos)
@@ -510,17 +508,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 결제 기한 자동 설정 트리거
-CREATE OR REPLACE FUNCTION set_payment_deadline()
-RETURNS TRIGGER AS $$
-BEGIN
-  -- 낙찰된 경우 3일 후로 결제 기한 설정
-  IF NEW.result_type = 'successful' THEN
-    NEW.payment_deadline = NEW.processed_at + INTERVAL '3 days';
-  END IF;
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+
 
 -- 거래 레코드 자동 생성 트리거
 CREATE OR REPLACE FUNCTION create_transaction_record()
@@ -566,10 +554,7 @@ CREATE TRIGGER trigger_update_auction_transaction_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION update_auction_transaction_updated_at();
 
-CREATE TRIGGER trigger_set_payment_deadline
-  BEFORE INSERT ON auction_results
-  FOR EACH ROW
-  EXECUTE FUNCTION set_payment_deadline();
+
 
 CREATE TRIGGER trigger_create_transaction_record
   AFTER INSERT ON auction_results
@@ -1009,55 +994,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 결제 기한 관리 함수
-CREATE OR REPLACE FUNCTION process_payment_deadlines()
-RETURNS TABLE(
-  overdue_count INTEGER,
-  warning_count INTEGER
-) AS $$
-DECLARE
-  total_overdue INTEGER := 0;
-  total_warnings INTEGER := 0;
-BEGIN
-  -- 결제 기한 초과된 거래 처리
-  UPDATE auction_transactions 
-  SET 
-    transaction_status = 'failed',
-    updated_at = NOW(),
-    notes = COALESCE(notes, '') || '[' || NOW() || '] 결제 기한 초과로 자동 취소됨. '
-  FROM auction_results ar
-  WHERE 
-    auction_transactions.auction_result_id = ar.id
-    AND auction_transactions.transaction_status = 'pending'
-    AND ar.payment_deadline < NOW();
-    
-  GET DIAGNOSTICS total_overdue = ROW_COUNT;
-  
-  -- 결제 기한 24시간 전 경고 대상 카운트
-  SELECT COUNT(*) INTO total_warnings
-  FROM auction_transactions at
-  JOIN auction_results ar ON at.auction_result_id = ar.id
-  WHERE 
-    at.transaction_status = 'pending'
-    AND ar.payment_deadline BETWEEN NOW() AND NOW() + INTERVAL '24 hours';
-  
-  -- 로그 기록
-  INSERT INTO cron_execution_logs (job_type, job_name, status, success_count, metadata)
-  VALUES ('auction', 'payment-deadline-checker', 'success', total_overdue,
-          jsonb_build_object(
-            'overdue_processed', total_overdue,
-            'warnings_pending', total_warnings,
-            'processed_at', NOW()
-          ));
-  
-  RETURN QUERY SELECT total_overdue, total_warnings;
-  
-  IF total_overdue > 0 THEN
-    RAISE NOTICE '💳 결제 기한 초과 처리: % 건', total_overdue;
-  END IF;
-  
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 
 -- ============================================
 -- 15. 통계 및 유틸리티 함수
@@ -1160,11 +1097,7 @@ BEGIN
     NULL;
   END;
   
-  BEGIN
-    PERFORM cron.unschedule('payment-deadline-checker');
-  EXCEPTION WHEN OTHERS THEN
-    NULL;
-  END;
+
   
   -- 새로운 크론 작업 등록
   
@@ -1182,17 +1115,11 @@ BEGIN
     'SELECT update_auction_status_realtime();'
   );
   
-  -- 매시간마다 결제 기한 체크
-  PERFORM cron.schedule(
-    'payment-deadline-checker',
-    '0 * * * *', 
-    'SELECT process_payment_deadlines();'
-  );
+
   
   RAISE NOTICE '⏰ 경매 시스템 크론 작업 스케줄 설정 완료';
   RAISE NOTICE '   • auction-end-processor: 매분 실행';
   RAISE NOTICE '   • auction-status-updater: 5분마다 실행';
-  RAISE NOTICE '   • payment-deadline-checker: 매시간 실행';
 END
 $$;
 
@@ -1380,12 +1307,12 @@ COMMENT ON TABLE auction_transactions IS '거래 추적 정보 - 결제 및 배�
 COMMENT ON VIEW auction_list_view IS '통합 뷰 - 기존 API 완전 호환성 보장';
 
 COMMENT ON COLUMN auction_results.result_type IS '결과 타입: successful(낙찰), failed(유찰), cancelled(취소)';
-COMMENT ON COLUMN auction_results.payment_deadline IS '결제 기한 (낙찰시 자동 설정: 처리일 + 3일)';
+
 COMMENT ON COLUMN auction_transactions.transaction_status IS '거래 상태: pending → paid → delivered → completed';
 
 COMMENT ON FUNCTION process_ended_auctions IS '종료된 경매들의 낙찰/유찰 처리 및 알림 발송 - 매분 실행';
 COMMENT ON FUNCTION update_auction_status_realtime IS '경매 상태 실시간 업데이트 (ending 전환) - 5분마다 실행';
-COMMENT ON FUNCTION process_payment_deadlines IS '결제 기한 관리 및 초과 처리 - 매시간 실행';
+
 COMMENT ON FUNCTION get_auction_processing_stats IS '경매 처리 통계 조회 함수';
 COMMENT ON FUNCTION check_self_bidding_violations IS '기존 데이터에서 자신의 경매에 입찰한 위반 사례를 확인하는 함수';
 COMMENT ON FUNCTION send_auction_end_notification IS '경매 종료 시 실시간 알림 발송 함수';
@@ -1405,10 +1332,10 @@ BEGIN
   RAISE NOTICE '📊 테이블: auctions + 카테고리별 테이블 + 입찰/사진/결과';
   RAISE NOTICE '🔒 RLS 정책: 사용자별 접근 제어 + 자기 입찰 방지';
   RAISE NOTICE '📁 Storage: auction-photos 버킷 설정';
-  RAISE NOTICE '🤖 자동화: 경매 종료, 상태 업데이트, 결제 기한 관리';
+  RAISE NOTICE '🤖 자동화: 경매 종료, 상태 업데이트';
   RAISE NOTICE '📈 통계: 처리 현황, 성공률, 위반 사례 확인';
   RAISE NOTICE '🔗 호환성: auction_list_view 통합 뷰로 기존 API 지원';
-  RAISE NOTICE '⏰ 크론: 매분/5분/매시간 자동 실행';
+  RAISE NOTICE '⏰ 크론: 매분/5분 자동 실행';
   RAISE NOTICE '🚀 완전한 경매 시스템 준비 완료!';
   RAISE NOTICE '📱 알림 시스템: 경매 종료/등록 시 자동 푸시 알림 발송';
 END $$;
