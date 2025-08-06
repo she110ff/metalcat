@@ -262,6 +262,11 @@ export const AuctionDetail = () => {
   // 현재 사용자가 경매 소유자인지 확인
   const isAuctionOwner = user?.id === auction?.userId;
 
+  // 현재 사용자가 이미 입찰했는지 확인
+  const hasUserBid = user?.id
+    ? bids.some((bid) => bid.userId === user.id)
+    : false;
+
   const handleBack = () => {
     router.back();
   };
@@ -1048,6 +1053,7 @@ export const AuctionDetail = () => {
                     auctionDetail.status === "ending"
                   }
                   isOwner={isAuctionOwner}
+                  hasBid={hasUserBid}
                 />
               )}
 

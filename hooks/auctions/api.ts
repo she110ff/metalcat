@@ -890,6 +890,23 @@ export async function createBid(
       throw new Error("자신이 등록한 경매에는 입찰할 수 없습니다.");
     }
 
+    // 🚫 이미 입찰한 사용자는 중복 입찰 불가
+    const { data: existingBid, error: existingBidError } = await auctionTables
+      .bids()
+      .select("id")
+      .eq("auction_id", auctionId)
+      .eq("user_id", bidData.userId)
+      .single();
+
+    if (existingBidError && existingBidError.code !== "PGRST116") {
+      // PGRST116는 데이터가 없는 경우이므로 무시
+      handleSupabaseError(existingBidError, "기존 입찰 확인");
+    }
+
+    if (existingBid) {
+      throw new Error("이미 입찰한 경매입니다. 한 번만 입찰할 수 있습니다.");
+    }
+
     // 2. 현재 최고 입찰가 확인
     const currentBidAmount = (auction as any).current_bid || 0;
 
