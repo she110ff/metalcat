@@ -199,8 +199,9 @@ export const useBatchStatus = () => {
   return useQuery({
     queryKey: ["admin", "batch-status"],
     queryFn: getBatchStatus,
-    refetchInterval: 30 * 1000, // 30초마다 갱신
-    staleTime: 15 * 1000, // 15초
+    // 자동 갱신 제거 - 화면 열때만 호출
+    refetchInterval: false,
+    staleTime: 5 * 60 * 1000, // 5분
   });
 };
 
@@ -211,8 +212,9 @@ export const useExecutionLogs = (limit = 20) => {
   return useQuery({
     queryKey: ["admin", "execution-logs", limit],
     queryFn: () => getRecentExecutionLogs(limit),
-    refetchInterval: 30 * 1000, // 30초마다 갱신
-    staleTime: 15 * 1000, // 15초
+    // 자동 갱신 제거 - 화면 열때만 호출
+    refetchInterval: false,
+    staleTime: 5 * 60 * 1000, // 5분
   });
 };
 
@@ -223,7 +225,8 @@ export const useSystemHealth = () => {
   return useQuery({
     queryKey: ["admin", "system-health"],
     queryFn: getSystemHealth,
-    refetchInterval: 60 * 1000, // 1분마다 갱신
-    staleTime: 30 * 1000, // 30초
+    // 자동 갱신 제거 - 화면 열때만 호출
+    refetchInterval: false,
+    staleTime: 5 * 60 * 1000, // 5분
   });
 };

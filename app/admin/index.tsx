@@ -23,7 +23,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { ScrollView } from "@/components/ui/scroll-view";
 import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
+import { ChevronLeft, RefreshCw } from "lucide-react-native";
 import { Alert } from "react-native";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
@@ -172,9 +172,27 @@ const BatchTabContent = () => {
     data: batchJobs,
     isLoading: jobsLoading,
     error: jobsError,
+    refetch: refetchBatchJobs,
   } = useBatchStatus();
-  const { data: executionLogs, isLoading: logsLoading } = useExecutionLogs(10);
-  const { data: systemHealth, isLoading: healthLoading } = useSystemHealth();
+  const {
+    data: executionLogs,
+    isLoading: logsLoading,
+    refetch: refetchExecutionLogs,
+  } = useExecutionLogs(10);
+  const {
+    data: systemHealth,
+    isLoading: healthLoading,
+    refetch: refetchSystemHealth,
+  } = useSystemHealth();
+
+  // 모든 데이터 새로고침 함수
+  const handleRefreshAll = async () => {
+    await Promise.all([
+      refetchBatchJobs(),
+      refetchExecutionLogs(),
+      refetchSystemHealth(),
+    ]);
+  };
 
   console.log("executionLogs :", executionLogs);
   // 시간 포맷 헬퍼
@@ -241,8 +259,36 @@ const BatchTabContent = () => {
     );
   }
 
+  const isRefreshing = jobsLoading || logsLoading || healthLoading;
+
   return (
     <VStack space="lg">
+      {/* 새로고침 버튼 */}
+      <Box className="flex-row justify-end">
+        <Pressable
+          onPress={handleRefreshAll}
+          disabled={isRefreshing}
+          className={`flex-row items-center px-4 py-2 rounded-lg ${
+            isRefreshing ? "bg-gray-100" : "bg-blue-50 active:bg-blue-100"
+          }`}
+        >
+          <RefreshCw
+            size={16}
+            color={isRefreshing ? "#9CA3AF" : "#3B82F6"}
+            style={{
+              transform: [{ rotate: isRefreshing ? "360deg" : "0deg" }],
+            }}
+          />
+          <Text
+            className={`ml-2 text-sm font-medium ${
+              isRefreshing ? "text-gray-500" : "text-blue-600"
+            }`}
+          >
+            {isRefreshing ? "새로고침 중..." : "새로고침"}
+          </Text>
+        </Pressable>
+      </Box>
+
       {/* 시스템 상태 정보 */}
       {systemHealth && (
         <Box className="bg-white rounded-xl p-4 border border-gray-200">
