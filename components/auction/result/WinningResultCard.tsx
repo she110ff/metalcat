@@ -5,15 +5,7 @@ import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Button, ButtonText } from "@/components/ui/button";
-import {
-  Trophy,
-  CheckCircle,
-  CreditCard,
-  MapPin,
-  Phone,
-  AlertTriangle,
-  Info,
-} from "lucide-react-native";
+import { Trophy, CheckCircle, MapPin, Phone, Info } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatAuctionPrice } from "@/data";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,38 +58,12 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
     winningUserId: result.winningUserId,
     currentUserId,
   });
+
   const handleContactSeller = () => {
-    // 판매자에게 연락하기 (향후 구현)
-    console.log("판매자에게 연락하기:", auction.userId);
+    // 판매자 전화번호로 전화 걸기
+    const sellerPhone = auction.sellerPhone || "010-0000-0000";
+    Linking.openURL(`tel:${sellerPhone}`);
   };
-
-  const handlePayment = () => {
-    // 결제 진행하기 (향후 구현)
-    console.log("결제 진행하기:", result.winningAmount);
-  };
-
-  const formatPaymentDeadline = (deadline?: Date) => {
-    if (!deadline) return "미정";
-
-    const now = new Date();
-    const diff = deadline.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(hours / 24);
-
-    if (days > 0) {
-      return `${days}일 ${hours % 24}시간 후`;
-    } else if (hours > 0) {
-      return `${hours}시간 후`;
-    } else if (diff > 0) {
-      const minutes = Math.floor(diff / (1000 * 60));
-      return `${minutes}분 후`;
-    } else {
-      return "기한 만료";
-    }
-  };
-
-  const isPaymentOverdue =
-    result.paymentDeadline && new Date() > result.paymentDeadline;
 
   return (
     <VStack space="lg" className="px-6">
@@ -131,42 +97,11 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
             </Text>
           </HStack>
 
-          {result.paymentDeadline && (
-            <HStack className="justify-between items-center">
-              <Text
-                className={`text-lg font-bold ${
-                  isPaymentOverdue ? "text-red-300" : "text-yellow-300"
-                }`}
-              >
-                ⏰ 결제 기한
-              </Text>
-              <VStack className="items-end">
-                <Text
-                  className={`text-sm font-bold ${
-                    isPaymentOverdue ? "text-red-300" : "text-white"
-                  }`}
-                >
-                  {result.paymentDeadline.toLocaleDateString()}{" "}
-                  {result.paymentDeadline.toLocaleTimeString()}
-                </Text>
-                <Text
-                  className={`text-xs ${
-                    isPaymentOverdue ? "text-red-400" : "text-white/60"
-                  }`}
-                >
-                  {isPaymentOverdue
-                    ? "⚠️ 기한 만료됨"
-                    : formatPaymentDeadline(result.paymentDeadline)}
-                </Text>
-              </VStack>
-            </HStack>
-          )}
-
           <HStack className="justify-between items-center">
             <Text className="text-blue-300 text-lg font-bold">
               📅 낙찰 일시
             </Text>
-            <Text className="text-white/80 text-sm">
+            <Text className="text-white text-sm">
               {result.processedAt.toLocaleDateString()}{" "}
               {result.processedAt.toLocaleTimeString()}
             </Text>
@@ -184,67 +119,39 @@ export const WinningResultCard: React.FC<WinningResultCardProps> = ({
           <VStack space="sm">
             <HStack className="items-center">
               <CheckCircle size={20} color="#10B981" />
-              <Text className="text-white/80 text-sm ml-2">
+              <Text className="text-white text-sm ml-2">
                 1. 판매자와 연락하여 거래 조건 확인
               </Text>
             </HStack>
             <HStack className="items-center">
-              <CreditCard size={20} color="#F59E0B" />
-              <Text className="text-white/80 text-sm ml-2">
-                2. 결제 기한 내 대금 결제
-              </Text>
-            </HStack>
-            <HStack className="items-center">
               <MapPin size={20} color="#3B82F6" />
-              <Text className="text-white/80 text-sm ml-2">
-                3. 물품 수령 장소 및 일정 조율
+              <Text className="text-white text-sm ml-2">
+                2. 물품 수령 장소 및 일정 조율
               </Text>
             </HStack>
           </VStack>
         </VStack>
       </Box>
 
-      {/* 액션 버튼들 */}
+      {/* 판매자 연락하기 버튼 */}
       <VStack space="md">
-        <Button
+        <TouchableOpacity
           onPress={handleContactSeller}
-          className="bg-green-600 hover:bg-green-700 rounded-xl py-4"
+          className="bg-green-700 rounded-xl py-6"
+          activeOpacity={0.8}
         >
-          <HStack className="items-center justify-center space-x-2">
-            <Phone size={20} color="white" />
-            <ButtonText className="text-white font-bold text-lg">
-              판매자에게 연락하기
-            </ButtonText>
-          </HStack>
-        </Button>
-
-        {!isPaymentOverdue && (
-          <Button
-            onPress={handlePayment}
-            className="bg-blue-600 hover:bg-blue-700 rounded-xl py-4"
-          >
-            <HStack className="items-center justify-center space-x-2">
-              <CreditCard size={20} color="white" />
-              <ButtonText className="text-white font-bold text-lg">
-                결제 진행하기
-              </ButtonText>
+          <VStack className="items-center space-y-2">
+            <HStack className="items-center justify-center space-x-4">
+              <Phone size={24} color="white" />
+              <Text className="text-white font-black text-2xl">
+                판매자에게 연락하기
+              </Text>
             </HStack>
-          </Button>
-        )}
-
-        {isPaymentOverdue && (
-          <Box className="rounded-xl p-4 bg-red-500/10 border border-red-500/30">
-            <VStack space="sm" className="items-center">
-              <AlertTriangle size={24} color="#EF4444" />
-              <Text className="text-red-300 font-bold text-center">
-                결제 기한이 만료되었습니다
-              </Text>
-              <Text className="text-red-400 text-sm text-center">
-                판매자와 연락하여 거래 가능 여부를 확인해주세요
-              </Text>
-            </VStack>
-          </Box>
-        )}
+            <Text className="text-white font-bold text-lg">
+              {auction.sellerPhone || "010-0000-0000"}
+            </Text>
+          </VStack>
+        </TouchableOpacity>
       </VStack>
 
       {/* 주의사항 */}

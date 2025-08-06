@@ -231,12 +231,6 @@ export const AuctionDetail = () => {
         })
       : "정보 없음",
     bidders: auction.bidders || 0,
-    location:
-      typeof (auction as any).address === "object" && (auction as any).address
-        ? `${(auction as any).address.address || ""} ${
-            (auction as any).address.detailAddress || ""
-          }`.trim() || "위치 정보 없음"
-        : (auction as any).address || "위치 정보 없음",
     desiredPrice: (auction as any).desiredPrice || 0,
     description: (auction as any).description || "설명이 없습니다.",
     // 추가 속성들
@@ -254,7 +248,6 @@ export const AuctionDetail = () => {
     salesEnvironment: (auction as any).salesEnvironment,
     // 누락된 속성들 추가
     purity: "99.5%", // 기본값
-    seller: "메탈코리아", // 기본값
     transactionType:
       (auction as any).auctionCategory === "demolition" &&
       (auction as any).demolitionInfo
@@ -986,24 +979,6 @@ export const AuctionDetail = () => {
                           </VStack>
                         </>
                       )}
-
-                    <VStack space="sm">
-                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                        판매자
-                      </Text>
-                      <Text className="text-white font-semibold text-base">
-                        {auctionDetail.seller}
-                      </Text>
-                    </VStack>
-
-                    <VStack space="sm">
-                      <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                        위치
-                      </Text>
-                      <Text className="text-white font-semibold text-base">
-                        {auctionDetail.location}
-                      </Text>
-                    </VStack>
 
                     <VStack space="sm">
                       <Text className="text-white/60 text-xs uppercase tracking-[1px]">

@@ -220,6 +220,8 @@ export interface ScrapAuctionItem {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  sellerName?: string;
+  sellerPhone?: string;
 }
 
 // 중고 기계 경매 아이템
@@ -250,6 +252,8 @@ export interface MachineryAuctionItem {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  sellerName?: string;
+  sellerPhone?: string;
 }
 
 // 중고 자재 경매 아이템
@@ -276,6 +280,8 @@ export interface MaterialAuctionItem {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  sellerName?: string;
+  sellerPhone?: string;
 }
 
 // 철거 경매 아이템
@@ -300,6 +306,8 @@ export interface DemolitionAuctionItem {
   createdAt: Date;
   updatedAt: Date;
   userId: string;
+  sellerName?: string;
+  sellerPhone?: string;
 }
 
 // 경매 아이템 통합 타입

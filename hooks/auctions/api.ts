@@ -237,6 +237,8 @@ function transformDatabaseRowToAuctionItem(row: any): AuctionItem {
 
     // 사용자 정보
     userId: row.user_id,
+    sellerName: row.seller_name,
+    sellerPhone: row.seller_phone,
 
     // 기타 카테고리별 특화 필드들 (조건부 포함)
     ...(row.auction_category === "scrap" && {
@@ -326,6 +328,8 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
     createdAt: new Date(row.created_at),
     updatedAt: new Date(row.updated_at || row.created_at),
     userId: row.user_id,
+    sellerName: row.seller_name,
+    sellerPhone: row.seller_phone,
 
     // 입찰 정보 변환
     bids: (row.auction_bids || []).map((bid: any) => ({
