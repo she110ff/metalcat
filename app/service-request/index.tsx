@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, View, Alert, TextInput, Platform } from "react-native";
+import { View, Alert, TextInput, Platform } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -28,6 +29,8 @@ import { ServiceType, ServiceRequestFormData } from "@/types/service-request";
 import { useAuth } from "@/hooks/useAuth";
 import { Image } from "react-native";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { Input, InputField } from "@/components/ui/input";
+import { Textarea, TextareaInput } from "@/components/ui/textarea";
 
 export default function ServiceRequest() {
   const router = useRouter();
@@ -244,10 +247,14 @@ export default function ServiceRequest() {
           />
         )}
 
-        <ScrollView
+        <KeyboardAwareScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={20}
         >
           <VStack className="p-6" space="lg">
             {/* ✅ 개선된 헤더 */}
@@ -328,23 +335,16 @@ export default function ServiceRequest() {
                 </Text>
                 <Text className="text-red-400 text-lg font-bold">*</Text>
               </HStack>
-              <TextInput
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="010-0000-0000"
-                placeholderTextColor="#9CA3AF"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: 16,
-                  padding: 16,
-                  color: "#FFFFFF",
-                  fontFamily: "NanumGothic",
-                  fontSize: 16,
-                }}
-                keyboardType="phone-pad"
-              />
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  value={phoneNumber}
+                  onChangeText={setPhoneNumber}
+                  placeholder="010-0000-0000"
+                  keyboardType="phone-pad"
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
             </VStack>
 
             {/* 주소 */}
@@ -382,22 +382,15 @@ export default function ServiceRequest() {
                 </Text>
               </Pressable>
               {address && (
-                <TextInput
-                  value={addressDetail}
-                  onChangeText={setAddressDetail}
-                  placeholder="상세 주소를 입력하세요 (건물명, 층수 등)"
-                  placeholderTextColor="#9CA3AF"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.05)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.1)",
-                    borderRadius: 16,
-                    padding: 16,
-                    color: "#FFFFFF",
-                    fontFamily: "NanumGothic",
-                    fontSize: 16,
-                  }}
-                />
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                  <InputField
+                    value={addressDetail}
+                    onChangeText={setAddressDetail}
+                    placeholder="상세 주소를 입력하세요 (건물명, 층수 등)"
+                    className="text-white text-base px-5 py-4"
+                    style={{ fontFamily: "NanumGothic" }}
+                  />
+                </Input>
               )}
             </VStack>
 
@@ -413,29 +406,24 @@ export default function ServiceRequest() {
                 </Text>
                 <Text className="text-red-400 text-lg font-bold">*</Text>
               </HStack>
-              <TextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="금속 종류, 수량, 상태 등을 자세히 설명해주세요"
-                placeholderTextColor="#9CA3AF"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.05)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.1)",
-                  borderRadius: 16,
-                  padding: 16,
-                  color: "#FFFFFF",
-                  fontFamily: "NanumGothic",
-                  fontSize: 16,
-                  height: 120,
-                  textAlignVertical: "top",
-                }}
-                multiline
-                numberOfLines={6}
-              />
+              <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-32">
+                <TextareaInput
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="금속 종류, 수량, 상태 등을 자세히 설명해주세요"
+                  className="text-white text-base px-5 py-4"
+                  style={{
+                    fontFamily: "NanumGothic",
+                    textAlignVertical: "top",
+                    color: "#FFFFFF",
+                  }}
+                  multiline
+                  numberOfLines={6}
+                />
+              </Textarea>
             </VStack>
           </VStack>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* ✅ 하단 고정 버튼 */}
         <View
