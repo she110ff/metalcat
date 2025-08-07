@@ -543,7 +543,7 @@ export default function ProfileEditScreen() {
           </Box>
 
           {/* 폼 */}
-          <VStack className="px-6" space="lg">
+          <VStack className="px-6" space="4xl">
             {/* 이름 */}
             <VStack space="md">
               <Text className="text-typography-900 text-lg font-medium">
@@ -583,12 +583,12 @@ export default function ProfileEditScreen() {
                 전화번호
               </Text>
               <VStack space="sm">
-                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <Input className="bg-gray-100 border-gray-300 rounded-2xl min-h-14">
                   <InputField
                     placeholder="전화번호 없음"
                     value={user?.phoneNumber || "전화번호 없음"}
                     editable={false}
-                    className="text-typography-400 text-base px-5 py-4"
+                    className="text-gray-500 text-base px-5 py-4"
                     style={{ fontFamily: "NanumGothic" }}
                   />
                 </Input>
@@ -607,14 +607,14 @@ export default function ProfileEditScreen() {
               {/* 주소 입력 필드 (클릭시 주소 검색) */}
               <Pressable onPress={openAddressModal}>
                 <Input
-                  className="bg-white/5 border-white/10 rounded-2xl min-h-14"
+                  className="bg-white border-gray-300 rounded-2xl min-h-14"
                   pointerEvents="none"
                 >
                   <InputField
                     placeholder="주소를 검색하세요"
                     value={address}
                     editable={false}
-                    className="text-white text-base px-5 py-4"
+                    className="text-gray-900 text-base px-5 py-4"
                     style={{ fontFamily: "NanumGothic" }}
                   />
                 </Input>
@@ -622,16 +622,16 @@ export default function ProfileEditScreen() {
 
               {/* 상세 주소 입력 */}
               {address && (
-                <VStack space="sm">
+                <VStack space="sm" className="mt-2">
                   <Text className="text-typography-600 text-sm">상세 주소</Text>
-                  <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                  <Input className="bg-white border-gray-300 rounded-2xl min-h-14">
                     <InputField
                       value={addressDetail}
                       onChangeText={setAddressDetail}
                       placeholder="상세 주소를 입력하세요 (건물명, 층수 등)"
                       returnKeyType="done"
                       onSubmitEditing={handleKeyPress}
-                      className="text-white text-base px-5 py-4"
+                      className="text-gray-900 text-base px-5 py-4"
                       style={{ fontFamily: "NanumGothic" }}
                     />
                   </Input>
@@ -640,7 +640,7 @@ export default function ProfileEditScreen() {
             </VStack>
 
             {/* 사업자 체크박스 */}
-            <VStack space="md">
+            <VStack space="md" className="mt-2">
               <Pressable
                 onPress={() => {
                   const newBusinessState = !isBusiness;
@@ -680,7 +680,7 @@ export default function ProfileEditScreen() {
                 </Text>
 
                 {/* 업체명 */}
-                <VStack space="sm">
+                <VStack space="sm" className="mt-2">
                   <Text className="text-typography-600 text-sm">
                     업체명 <Text className="text-error-500">*</Text>
                   </Text>
@@ -688,14 +688,14 @@ export default function ProfileEditScreen() {
                     name="companyName"
                     control={control}
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                      <Input className="bg-white border-gray-300 rounded-2xl min-h-14">
                         <InputField
                           placeholder="업체명을 입력하세요"
                           value={value}
                           onChangeText={onChange}
                           onBlur={onBlur}
                           returnKeyType="next"
-                          className="text-white text-base px-5 py-4"
+                          className="text-gray-900 text-base px-5 py-4"
                           style={{ fontFamily: "NanumGothic" }}
                         />
                       </Input>
@@ -709,7 +709,7 @@ export default function ProfileEditScreen() {
                 </VStack>
 
                 {/* 사업자등록번호 */}
-                <VStack space="sm">
+                <VStack space="sm" className="mt-2">
                   <Text className="text-typography-600 text-sm">
                     사업자등록번호 <Text className="text-error-500">*</Text>
                   </Text>
@@ -717,7 +717,7 @@ export default function ProfileEditScreen() {
                     name="businessNumber"
                     control={control}
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                      <Input className="bg-white border-gray-300 rounded-2xl min-h-14">
                         <InputField
                           placeholder="000-00-00000"
                           value={value}
@@ -729,7 +729,7 @@ export default function ProfileEditScreen() {
                           keyboardType="numeric"
                           returnKeyType="next"
                           maxLength={12} // 000-00-00000 형태 최대 길이
-                          className="text-white text-base px-5 py-4"
+                          className="text-gray-900 text-base px-5 py-4"
                           style={{ fontFamily: "NanumGothic" }}
                         />
                       </Input>
@@ -743,7 +743,7 @@ export default function ProfileEditScreen() {
                 </VStack>
 
                 {/* 업종 */}
-                <VStack space="sm">
+                <VStack space="sm" className="mt-2">
                   <Text className="text-typography-600 text-sm">
                     업종 <Text className="text-error-500">*</Text>
                   </Text>
@@ -751,14 +751,14 @@ export default function ProfileEditScreen() {
                     name="businessType"
                     control={control}
                     render={({ field: { onChange, onBlur, value } }) => (
-                      <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                      <Input className="bg-white border-gray-300 rounded-2xl min-h-14">
                         <InputField
                           placeholder="예: 금속 재활용업, 건설업 등"
                           value={value}
                           onChangeText={onChange}
                           onBlur={onBlur}
                           returnKeyType="next"
-                          className="text-white text-base px-5 py-4"
+                          className="text-gray-900 text-base px-5 py-4"
                           style={{ fontFamily: "NanumGothic" }}
                         />
                       </Input>
