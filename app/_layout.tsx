@@ -26,6 +26,7 @@ import { PermissionRequestScreen } from "@/components/PermissionRequestScreen";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { useColorScheme } from "@/components/useColorScheme";
 import { useSimpleNotifications } from "@/hooks/notifications/useSimpleNotifications";
+import { BatteryOptimizationProvider } from "@/contexts/BatteryOptimizationContext";
 import "../global.css";
 
 // Reanimated 로거 설정 - strict 모드 비활성화
@@ -219,108 +220,104 @@ function RootLayoutNav() {
   return (
     <QueryClientProvider client={queryClient}>
       <GluestackUIProvider mode={(colorScheme ?? "light") as "light" | "dark"}>
-        {/* 알림 시스템 초기화 (QueryClientProvider 안에서 사용) */}
-        <NotificationProvider />
+        <BatteryOptimizationProvider>
+          {/* 알림 시스템 초기화 (QueryClientProvider 안에서 사용) */}
+          <NotificationProvider />
 
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: {
-              justifyContent: "flex-start",
-              alignItems: "stretch",
-              flex: 1,
-            },
-          }}
-        >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="profile-edit" />
-          <Stack.Screen name="auction-detail/[id]" />
-          <Stack.Screen name="auction-create" />
-          {/* Removed manual Stack.Screen declarations for file-based routes:
-              - auction-create/scrap and its sub-routes
-              - auction-create/machinery and its sub-routes  
-              - auction-create/materials and its sub-routes
-              - auction-create/demolition and its sub-routes
-              These are automatically handled by Expo Router */}
-        </Stack>
-
-        {/* 업데이트 모달들 */}
-        <UpdateAvailableModal
-          visible={showUpdateModal}
-          updateState={{
-            isUpdateAvailable,
-            isDownloading,
-            isDownloaded,
-            error,
-            updateStatus: "idle",
-            downloadProgress: null,
-            isUpdatePending: false,
-            lastChecked: null,
-            updateInfo: null,
-            isAutoCheckEnabled: true,
-            currentVersion: Constants.expoConfig?.version || "알 수 없음",
-            buildNumber: String(
-              Constants.expoConfig?.ios?.buildNumber ||
-                Constants.expoConfig?.android?.versionCode ||
-                "알 수 없음"
-            ),
-            updateMessage: null,
-          }}
-          onDownload={handleDownload}
-          onDismiss={() => setShowUpdateModal(false)}
-          onCheckAgain={() => checkForUpdates(true)}
-        />
-
-        <UpdateProgressModal
-          visible={showProgressModal}
-          updateState={{
-            isUpdateAvailable,
-            isDownloading,
-            isDownloaded,
-            error,
-            updateStatus: "idle",
-            downloadProgress: null,
-            isUpdatePending: false,
-            lastChecked: null,
-            updateInfo: null,
-            isAutoCheckEnabled: true,
-            currentVersion: Constants.expoConfig?.version || "알 수 없음",
-            buildNumber: String(
-              Constants.expoConfig?.ios?.buildNumber ||
-                Constants.expoConfig?.android?.versionCode ||
-                "알 수 없음"
-            ),
-            updateMessage: null,
-          }}
-          onApplyUpdate={handleApplyUpdate}
-          onDismiss={handleDismissProgress}
-        />
-
-        {/* 디버거 토글 (개발 모드에서만) */}
-        {__DEV__ && (
-          <TouchableOpacity
-            style={{
-              position: "absolute",
-              top: 50,
-              right: 20,
-              backgroundColor: "rgba(0,0,0,0.7)",
-              padding: 10,
-              borderRadius: 5,
-              zIndex: 1000,
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: {
+                justifyContent: "flex-start",
+                alignItems: "stretch",
+                flex: 1,
+              },
             }}
-            onPress={() => setShowDebugger(!showDebugger)}
           >
-            <Text style={{ color: "white", fontSize: 12 }}>Debug</Text>
-          </TouchableOpacity>
-        )}
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="profile-edit" />
+            <Stack.Screen name="auction-detail/[id]" />
+            <Stack.Screen name="auction-create" />
+            {/* Removed manual Stack.Screen declarations for file-based routes:
+                - auction-create/scrap and its sub-routes
+                - auction-create/machinery and its sub-routes  
+                - auction-create/materials and its sub-routes
+                - auction-create/demolition and its sub-routes
+                These are automatically handled by Expo Router */}
+          </Stack>
 
-        {/* 쿼리 디버거 */}
-        {showDebugger && (
-          <QueryDebugger
-            visible={showDebugger}
-            onClose={() => setShowDebugger(false)}
+          {/* 업데이트 모달들 */}
+          <UpdateAvailableModal
+            visible={showUpdateModal}
+            updateState={{
+              isUpdateAvailable,
+              isDownloading,
+              isDownloaded,
+              error,
+              updateStatus: "idle",
+              downloadProgress: null,
+              isUpdatePending: false,
+              lastChecked: null,
+              updateInfo: null,
+              isAutoCheckEnabled: true,
+              currentVersion: Constants.expoConfig?.version || "알 수 없음",
+              buildNumber: String(
+                Constants.expoConfig?.ios?.buildNumber ||
+                  Constants.expoConfig?.android?.versionCode ||
+                  "알 수 없음"
+              ),
+              updateMessage: null,
+            }}
+            onDownload={handleDownload}
+            onDismiss={() => setShowUpdateModal(false)}
+            onCheckAgain={() => checkForUpdates(true)}
           />
-        )}
+
+          <UpdateProgressModal
+            visible={showProgressModal}
+            updateState={{
+              isUpdateAvailable,
+              isDownloading,
+              isDownloaded,
+              error,
+              updateStatus: "idle",
+              downloadProgress: null,
+              isUpdatePending: false,
+              lastChecked: null,
+              updateInfo: null,
+              isAutoCheckEnabled: true,
+              currentVersion: Constants.expoConfig?.version || "알 수 없음",
+              buildNumber: String(
+                Constants.expoConfig?.ios?.buildNumber ||
+                  Constants.expoConfig?.android?.versionCode ||
+                  "알 수 없음"
+              ),
+              updateMessage: null,
+            }}
+            onApply={handleApplyUpdate}
+            onDismiss={handleDismissProgress}
+          />
+
+          {/* 개발 모드에서만 디버거 표시 */}
+          {__DEV__ && (
+            <TouchableOpacity
+              onPress={() => setShowDebugger(!showDebugger)}
+              style={{
+                position: "absolute",
+                top: Platform.OS === "ios" ? 60 : 40,
+                right: 20,
+                backgroundColor: "rgba(0, 0, 0, 0.7)",
+                padding: 8,
+                borderRadius: 20,
+                zIndex: 1000,
+              }}
+            >
+              <Text style={{ color: "white", fontSize: 12 }}>🐛</Text>
+            </TouchableOpacity>
+          )}
+
+          {__DEV__ && showDebugger && <QueryDebugger />}
+        </BatteryOptimizationProvider>
       </GluestackUIProvider>
     </QueryClientProvider>
   );

@@ -40,6 +40,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { AllPermissionsStatus } from "@/components/PermissionStatus";
 import { NotificationTokenManager } from "@/components/notifications/NotificationTokenManager";
 import { NotificationHistory } from "@/components/notifications/NotificationHistory";
+import { useBatteryOptimizationContext } from "@/contexts/BatteryOptimizationContext";
 
 // 업데이트 설정 컴포넌트
 const UpdateSettings = () => {
@@ -267,6 +268,113 @@ const NotificationSettings = () => {
   );
 };
 
+// 배터리 최적화 설정 컴포넌트
+const BatteryOptimizationSettings = () => {
+  const router = useRouter();
+  const { settings } = useBatteryOptimizationContext();
+
+  const formatTime = (milliseconds: number) => {
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60));
+    const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (hours > 0) {
+      return `${hours}시간 ${minutes > 0 ? `${minutes}분` : ""}`;
+    }
+    return `${minutes}분`;
+  };
+
+  return (
+    <VStack space="lg">
+      <Text className="text-lg font-bold text-gray-900">🔋 배터리 최적화</Text>
+
+      <Text className="text-sm text-gray-600 mb-4">
+        앱의 배터리 사용량을 최적화하여 더 오래 사용할 수 있습니다.
+      </Text>
+
+      {/* 현재 설정 요약 */}
+      <Box className="bg-green-50 rounded-lg p-4 border border-green-200">
+        <VStack space="md">
+          <HStack className="items-center space-x-2">
+            <Text style={{ fontSize: 20 }}>⚡</Text>
+            <Text className="text-green-900 font-semibold">현재 설정</Text>
+          </HStack>
+
+          <VStack space="sm">
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">LME 크롤링</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {formatTime(settings.lmeCrawlingInterval)}
+              </Text>
+            </HStack>
+
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">LME 가격</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {formatTime(settings.lmePriceInterval)}
+              </Text>
+            </HStack>
+
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">경매 갱신</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {formatTime(settings.auctionRefreshInterval)}
+              </Text>
+            </HStack>
+
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">이미지 품질</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {settings.imageQuality}%
+              </Text>
+            </HStack>
+
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">캐시 StaleTime</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {settings.cacheStaleTimeMultiplier.toFixed(1)}x
+              </Text>
+            </HStack>
+
+            <HStack className="justify-between">
+              <Text className="text-gray-700 text-sm">공격적 캐싱</Text>
+              <Text className="text-green-900 font-medium text-sm">
+                {settings.enableAggressiveCaching ? "활성화" : "비활성화"}
+              </Text>
+            </HStack>
+          </VStack>
+        </VStack>
+      </Box>
+
+      {/* 설정 버튼 */}
+      <Button
+        onPress={() => router.push("/battery-optimization")}
+        className="bg-green-500"
+      >
+        <ButtonText>배터리 최적화 설정</ButtonText>
+      </Button>
+
+      {/* 팁 */}
+      <Box className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+        <VStack space="sm">
+          <Text className="text-blue-900 font-semibold">💡 배터리 절약 팁</Text>
+          <Text className="text-blue-800 text-sm">
+            • 백그라운드 폴링을 비활성화하면 배터리를 절약할 수 있습니다.
+          </Text>
+          <Text className="text-blue-800 text-sm">
+            • 이미지 품질을 낮추면 데이터 사용량과 배터리를 절약할 수 있습니다.
+          </Text>
+          <Text className="text-blue-800 text-sm">
+            • 애니메이션을 비활성화하면 CPU 사용량을 줄일 수 있습니다.
+          </Text>
+          <Text className="text-blue-800 text-sm">
+            • 공격적인 캐싱을 활성화하면 네트워크 요청을 줄일 수 있습니다.
+          </Text>
+        </VStack>
+      </Box>
+    </VStack>
+  );
+};
+
 // 🧪 개발용: 이미지 최적화 테스트 함수
 const testImageOptimization = () => {
   if (__DEV__) {
@@ -324,17 +432,8 @@ const MainContent = () => {
     | "notifications"
     | "permissions"
     | "updates"
+    | "battery"
   >("auction");
-
-  // 탭 데이터 정의
-  const tabs = [
-    { id: "auction", title: "경매", icon: "🏷️" },
-    { id: "bidding", title: "입찰", icon: "💰" },
-    { id: "premium", title: "프리미엄", icon: "⭐" },
-    { id: "notifications", title: "알림", icon: "🔔" },
-    { id: "permissions", title: "권한", icon: "🔐" },
-    { id: "updates", title: "업데이트", icon: "🔄" },
-  ] as const;
 
   // 현재 사용자 정보 확인용
   const { user, isLoggedIn, logout, isLoggingOut } = useAuth();
@@ -344,6 +443,20 @@ const MainContent = () => {
   console.log("🔍 My 화면 - 사용자 정보:", user);
   console.log("🔍 My 화면 - 사용자 ID:", user?.id);
   console.log("🔐 My 화면 - 관리자 권한:", isAdmin);
+
+  // 탭 데이터 정의 (관리자에게만 배터리 탭 표시)
+  const tabs = [
+    { id: "auction", title: "경매", icon: "🏷️" },
+    { id: "bidding", title: "입찰", icon: "💰" },
+    { id: "premium", title: "프리미엄", icon: "⭐" },
+    { id: "notifications", title: "알림", icon: "🔔" },
+    { id: "permissions", title: "권한", icon: "🔐" },
+    { id: "updates", title: "업데이트", icon: "🔄" },
+    // 관리자에게만 배터리 탭 표시
+    ...(isAdmin
+      ? [{ id: "battery", title: "배터리", icon: "🔋" } as const]
+      : []),
+  ] as const;
 
   // 아바타 생성 테스트 (한 번만 실행)
   React.useEffect(() => {
@@ -463,6 +576,10 @@ const MainContent = () => {
           />
         </VStack>
       );
+    }
+
+    if (activeTab === "battery") {
+      return <BatteryOptimizationSettings />;
     }
 
     if (activeTab === "premium") {

@@ -1,15 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  type AuctionItem,
-  type AuctionCategory,
-  type ScrapAuctionFormData,
-  type BidInfo,
-  type AuctionResultInfo,
-  type TransactionInfo,
-  type MyAuctionResult,
-  type AuctionStats,
-} from "@/data/types/auction";
+import { AppState } from "react-native";
+import { useEffect, useState } from "react";
+import { type AuctionItem, type AuctionCategory } from "@/data/types/auction";
 import { auctionAPI } from "./auctions/api";
+import { useBatteryOptimizationContext } from "@/contexts/BatteryOptimizationContext";
+import {
+  getAuctionRefreshInterval,
+  getCacheStaleTime,
+  getCacheGcTime,
+} from "@/utils/batteryOptimizationUtils";
 
 // 쿼리 키 패턴
 export const auctionKeys = {
@@ -44,22 +43,59 @@ export const useAuctions = (filters?: {
   status?: string;
   sortBy?: "createdAt" | "endTime";
 }) => {
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+  const { settings } = useBatteryOptimizationContext();
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
+
+  // 배터리 최적화 설정에 따른 간격 계산
+  const effectiveInterval = getAuctionRefreshInterval(settings);
+  const shouldPoll = isAppActive && !settings.disableBackgroundPolling;
+
+  // 캐시 설정 동적 계산
+  const staleTime = getCacheStaleTime(settings, effectiveInterval);
+  const gcTime = getCacheGcTime(settings, effectiveInterval);
+
   return useQuery({
     queryKey: auctionKeys.list(filters),
     queryFn: () => auctionAPI.getAuctions(filters),
-    staleTime: 30 * 1000, // 30초 (크론 테스트를 위해 더 빠른 갱신)
-    refetchOnWindowFocus: true, // 앱 포커스 시 자동 새로고침
-    refetchOnReconnect: true, // 네트워크 재연결 시 자동 새로고침
+    staleTime: staleTime, // 동적 캐시 설정
+    gcTime: gcTime, // 동적 캐시 보관 시간
+    refetchOnWindowFocus: false, // 앱 포커스 시 자동 새로고침 비활성화
+    refetchOnReconnect: true, // 네트워크 재연결 시에만 자동 새로고침
+    refetchInterval: shouldPoll ? effectiveInterval : false, // 설정에 따른 간격 (앱 활성화 시에만)
+    enabled: isAppActive, // 앱이 활성화된 경우에만 실행
   });
 };
 
-// 경매 상세 조회 훅
+// 경매 상세 조회 훅 (캐시 최적화 적용)
 export const useAuction = (id: string) => {
+  const { settings } = useBatteryOptimizationContext();
+
+  // 경매 상세는 더 오래 캐시 (변경이 적음)
+  const baseInterval = 5 * 60 * 1000; // 5분 기준
+  const staleTime = getCacheStaleTime(settings, baseInterval);
+  const gcTime = getCacheGcTime(settings, baseInterval);
+
   return useQuery({
     queryKey: auctionKeys.detail(id),
     queryFn: () => auctionAPI.getAuctionById(id),
     enabled: !!id,
-    staleTime: 1 * 60 * 1000, // 1분
+    staleTime: staleTime, // 동적 캐시 설정
+    gcTime: gcTime, // 동적 캐시 보관 시간
   });
 };
 

@@ -10,7 +10,7 @@ import {
   useQueryClient,
   useInfiniteQuery,
 } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import {
   createServiceRequest,
@@ -312,16 +312,30 @@ export function useServiceRequestStats(startDate?: string, endDate?: string) {
  */
 export function useServiceRequestRealtime(requestId: string) {
   const queryClient = useQueryClient();
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
 
   useEffect(() => {
-    if (!requestId) return;
+    if (!requestId || !isAppActive) return; // 앱이 활성화된 경우에만 구독
 
-    // 앱 상태 추적 (배터리 최적화)
-    let isAppActive = AppState.currentState === "active";
     let subscription: any = null;
 
     const startSubscription = () => {
-      if (subscription || !isAppActive) return;
+      if (subscription) return;
 
       subscription = subscribeToServiceRequest(
         requestId,
@@ -350,32 +364,15 @@ export function useServiceRequestRealtime(requestId: string) {
       }
     };
 
-    const handleAppStateChange = (nextAppState: string) => {
-      isAppActive = nextAppState === "active";
-
-      if (isAppActive) {
-        startSubscription();
-      } else {
-        stopSubscription();
-      }
-    };
-
-    // 초기 구독 시작 (앱이 활성화된 경우만)
+    // 앱이 활성화된 경우에만 구독 시작
     if (isAppActive) {
       startSubscription();
     }
 
-    // 앱 상태 변경 감지
-    const appStateSubscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange
-    );
-
     return () => {
       stopSubscription();
-      appStateSubscription?.remove();
     };
-  }, [requestId, queryClient]);
+  }, [requestId, queryClient, isAppActive]); // isAppActive 의존성 추가
 }
 
 /**
@@ -383,16 +380,30 @@ export function useServiceRequestRealtime(requestId: string) {
  */
 export function useUserServiceRequestsRealtime(userId?: string) {
   const queryClient = useQueryClient();
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !isAppActive) return; // 앱이 활성화된 경우에만 구독
 
-    // 앱 상태 추적 (배터리 최적화)
-    let isAppActive = AppState.currentState === "active";
     let subscription: any = null;
 
     const startSubscription = () => {
-      if (subscription || !isAppActive) return;
+      if (subscription) return;
 
       subscription = subscribeToUserServiceRequests(
         userId,
@@ -421,32 +432,15 @@ export function useUserServiceRequestsRealtime(userId?: string) {
       }
     };
 
-    const handleAppStateChange = (nextAppState: string) => {
-      isAppActive = nextAppState === "active";
-
-      if (isAppActive) {
-        startSubscription();
-      } else {
-        stopSubscription();
-      }
-    };
-
-    // 초기 구독 시작 (앱이 활성화된 경우만)
+    // 앱이 활성화된 경우에만 구독 시작
     if (isAppActive) {
       startSubscription();
     }
 
-    // 앱 상태 변경 감지
-    const appStateSubscription = AppState.addEventListener(
-      "change",
-      handleAppStateChange
-    );
-
     return () => {
       stopSubscription();
-      appStateSubscription?.remove();
     };
-  }, [userId, queryClient]);
+  }, [userId, queryClient, isAppActive]); // isAppActive 의존성 추가
 }
 
 // ============================================

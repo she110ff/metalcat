@@ -1,4 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AppState } from "react-native";
+import { useEffect, useState } from "react";
+import { supabase } from "./supabaseClient";
 import { lmeKeys } from "./queryKeys";
 import {
   fetchLatestLmePrices,
@@ -12,6 +15,13 @@ import type {
   CrawlingStatus,
 } from "../../types/lme";
 import type { MetalPriceData } from "../../data/types/metal-price";
+import { useBatteryOptimizationContext } from "@/contexts/BatteryOptimizationContext";
+import {
+  getLmeCrawlingInterval,
+  getLmePriceInterval,
+  getCacheStaleTime,
+  getCacheGcTime,
+} from "@/utils/batteryOptimizationUtils";
 
 /**
  * LME 데이터 관련 TanStack Query Hooks
@@ -52,25 +62,51 @@ export function useLatestLmePrices(options?: {
   refetchInterval?: number;
 }) {
   const queryClient = useQueryClient();
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+  const { settings } = useBatteryOptimizationContext();
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
+
+  // 배터리 최적화 설정에 따른 간격 계산
+  const effectiveInterval =
+    options?.refetchInterval || getLmePriceInterval(settings);
+  const shouldPoll = isAppActive && !settings.disableBackgroundPolling;
+
+  // 캐시 설정 동적 계산
+  const staleTime = getCacheStaleTime(settings, effectiveInterval);
+  const gcTime = getCacheGcTime(settings, effectiveInterval);
 
   return useQuery({
     queryKey: lmeKeys.latestPrices(),
     queryFn: fetchLatestLmePrices,
 
-    // 캐시 전략
-    staleTime: 2 * 60 * 1000, // 2분간 fresh
-    gcTime: 10 * 60 * 1000, // 10분간 캐시 보관
+    // 동적 캐시 전략 (배터리 최적화)
+    staleTime: staleTime,
+    gcTime: gcTime,
 
     // 재시도 설정
     ...retryConfig,
 
-    // 백그라운드 업데이트
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: options?.refetchInterval || 15 * 60 * 1000, // 15분마다 자동 새로고침 (배터리 최적화)
+    // 백그라운드 업데이트 (배터리 최적화)
+    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
+    refetchOnReconnect: true, // 네트워크 재연결 시에만 갱신
+    refetchInterval: shouldPoll ? effectiveInterval : false, // 설정에 따른 간격 (앱 활성화 시에만)
 
-    // 조건부 실행
-    enabled: options?.enabled !== false,
+    // 조건부 실행 (앱이 활성화된 경우에만)
+    enabled: isAppActive && options?.enabled !== false,
 
     // 에러 시 이전 데이터 유지
     placeholderData: (previousData) => {
@@ -161,20 +197,53 @@ export function useCrawlingStatus(options?: {
   enabled?: boolean;
   refetchInterval?: number;
 }) {
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+  const { settings } = useBatteryOptimizationContext();
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
+
+  // 배터리 최적화 설정에 따른 간격 계산
+  const effectiveInterval =
+    options?.refetchInterval || getLmeCrawlingInterval(settings);
+  const shouldPoll = isAppActive && !settings.disableBackgroundPolling;
+
+  // 캐시 설정 동적 계산 (크롤링 상태는 더 짧게)
+  const staleTime = Math.min(
+    getCacheStaleTime(settings, effectiveInterval),
+    5 * 60 * 1000 // 최대 5분
+  );
+  const gcTime = Math.min(
+    getCacheGcTime(settings, effectiveInterval),
+    15 * 60 * 1000 // 최대 15분
+  );
+
   return useQuery({
     queryKey: lmeKeys.crawlingStatus(),
     queryFn: fetchCrawlingStatus,
 
-    // 짧은 캐시 (상태는 자주 변경됨)
-    staleTime: 30 * 1000, // 30초간 fresh
-    gcTime: 2 * 60 * 1000, // 2분간 캐시 보관
+    // 동적 캐시 전략 (배터리 최적화)
+    staleTime: staleTime,
+    gcTime: gcTime,
 
-    // 폴링으로 실시간 모니터링
-    refetchInterval: options?.refetchInterval || 5 * 60 * 1000, // 5분마다 (배터리 최적화)
-    refetchOnWindowFocus: true,
+    // 폴링으로 실시간 모니터링 (배터리 최적화)
+    refetchInterval: shouldPoll ? effectiveInterval : false, // 설정에 따른 간격 (앱 활성화 시에만)
+    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
 
-    // 조건부 실행
-    enabled: options?.enabled !== false,
+    // 조건부 실행 (앱이 활성화된 경우에만)
+    enabled: isAppActive && options?.enabled !== false,
 
     // 기본값 제공
     placeholderData: {
