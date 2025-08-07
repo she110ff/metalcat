@@ -16,6 +16,8 @@ export interface TokenRepository {
   clearCachedToken(): Promise<void>;
   getServerToken(userId: string): Promise<TokenInfo | null>;
   saveToServer(userId: string, tokenInfo: TokenInfo): Promise<void>;
+  upsertToken(userId: string, tokenInfo: TokenInfo): Promise<void>;
+  updateTokenActivity(userId: string, token: string): Promise<void>;
   validateTokenWithServer(userId: string, token: string): Promise<boolean>;
 }
 
@@ -202,6 +204,80 @@ class TokenRepositoryImpl implements TokenRepository {
     } catch (error) {
       console.error("❌ 토큰 유효성 검증 실패:", error);
       return false;
+    }
+  }
+
+  async upsertToken(userId: string, tokenInfo: TokenInfo): Promise<void> {
+    try {
+      console.log("🔄 Push Token UPSERT 시작:", {
+        userId,
+        deviceType: tokenInfo.deviceType,
+      });
+
+      // 사용자 존재 여부 확인
+      const { data: user, error: userError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", userId)
+        .single();
+
+      if (userError || !user) {
+        console.error("❌ 사용자 확인 실패:", userError);
+        throw new Error("유효하지 않은 사용자입니다.");
+      }
+
+      console.log("✅ 사용자 확인 완료:", user.id);
+
+      // UPSERT 실행
+      const { error: upsertError } = await supabase
+        .from("user_push_tokens")
+        .upsert(
+          {
+            user_id: userId,
+            token: tokenInfo.token,
+            device_type: tokenInfo.deviceType,
+            is_active: true,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: "user_id,device_type",
+          }
+        );
+
+      if (upsertError) {
+        console.error("❌ 토큰 UPSERT 실패:", upsertError);
+        throw upsertError;
+      }
+
+      console.log("✅ Push Token UPSERT 완료");
+    } catch (error) {
+      console.error("❌ 토큰 UPSERT 실패:", error);
+      throw error;
+    }
+  }
+
+  async updateTokenActivity(userId: string, token: string): Promise<void> {
+    try {
+      console.log("🔄 토큰 활동 상태 업데이트:", { userId });
+
+      const { error } = await supabase
+        .from("user_push_tokens")
+        .update({
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .eq("token", token);
+
+      if (error) {
+        console.error("❌ 토큰 활동 상태 업데이트 실패:", error);
+        throw error;
+      }
+
+      console.log("✅ 토큰 활동 상태 업데이트 완료");
+    } catch (error) {
+      console.error("❌ 토큰 활동 상태 업데이트 실패:", error);
+      throw error;
     }
   }
 }

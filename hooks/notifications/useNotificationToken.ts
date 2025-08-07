@@ -8,7 +8,7 @@ export interface NotificationTokenState {
   isLoading: boolean;
   isError: boolean;
   error: string | null;
-  source?: "cached" | "server" | "new";
+  source?: "cached" | "server" | "new" | "existing" | "updated";
   lastUpdated?: Date;
 }
 

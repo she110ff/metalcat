@@ -32,6 +32,7 @@
       },
       "package": "com.metalcatapp.metalcat",
       "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",

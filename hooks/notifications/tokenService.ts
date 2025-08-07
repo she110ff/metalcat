@@ -7,12 +7,13 @@ export interface TokenResult {
   success: boolean;
   token?: string;
   error?: string;
-  source?: "cached" | "server" | "new";
+  source?: "cached" | "server" | "new" | "existing" | "updated";
 }
 
 export interface TokenService {
   getToken(userId: string): Promise<TokenResult>;
   refreshToken(userId: string): Promise<TokenResult>;
+  upsertToken(userId: string, tokenInfo: TokenInfo): Promise<TokenResult>;
   simpleCreateToken(): Promise<TokenResult>;
 }
 
@@ -78,11 +79,19 @@ class TokenServiceImpl implements TokenService {
     try {
       console.log("🔄 토큰 새로고침 시작:", { userId });
 
-      // 캐시 및 서버 토큰 무효화
-      await tokenRepository.clearCachedToken();
+      // 기존 토큰 확인
+      const currentToken = await this.getToken(userId);
 
-      // 새 토큰 생성
-      return await this.createNewToken(userId);
+      // 토큰이 있으면 UPSERT, 없으면 새로 생성
+      if (currentToken.success && currentToken.token) {
+        return await this.upsertToken(userId, {
+          token: currentToken.token,
+          deviceType: Platform.OS,
+          createdAt: new Date().toISOString(),
+        });
+      } else {
+        return await this.createNewToken(userId);
+      }
     } catch (error) {
       console.error("❌ 토큰 새로고침 실패:", error);
       return {
@@ -91,6 +100,70 @@ class TokenServiceImpl implements TokenService {
           error instanceof Error
             ? error.message
             : "토큰 새로고침에 실패했습니다.",
+      };
+    }
+  }
+
+  async upsertToken(
+    userId: string,
+    tokenInfo: TokenInfo
+  ): Promise<TokenResult> {
+    try {
+      console.log("🔄 토큰 UPSERT 시작:", { userId });
+
+      // 권한 확인 (재요청 없이)
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== "granted") {
+        return {
+          success: false,
+          error: "알림 권한이 필요합니다. 설정에서 권한을 허용해주세요.",
+        };
+      }
+
+      // 기존 토큰 확인
+      const existingToken = await tokenRepository.getServerToken(userId);
+
+      // 토큰이 동일하면 업데이트만
+      if (existingToken && existingToken.token === tokenInfo.token) {
+        await tokenRepository.updateTokenActivity(userId, tokenInfo.token);
+        return {
+          success: true,
+          token: tokenInfo.token,
+          source: "existing",
+        };
+      }
+
+      // UPSERT로 토큰 저장
+      await tokenRepository.upsertToken(userId, tokenInfo);
+
+      // 캐시에 저장
+      await tokenRepository.setCachedToken(tokenInfo);
+
+      return {
+        success: true,
+        token: tokenInfo.token,
+        source: "updated",
+      };
+    } catch (error) {
+      console.error("토큰 UPSERT 실패:", error);
+
+      // UPSERT 실패 시 기존 토큰 유지
+      try {
+        const existingToken = await tokenRepository.getServerToken(userId);
+        if (existingToken) {
+          return {
+            success: true,
+            token: existingToken.token,
+            source: "existing",
+          };
+        }
+      } catch (fallbackError) {
+        console.error("기존 토큰 복구 실패:", fallbackError);
+      }
+
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "토큰 저장 실패",
       };
     }
   }
