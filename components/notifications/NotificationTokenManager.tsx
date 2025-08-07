@@ -121,7 +121,8 @@ export const NotificationTokenManager: React.FC = () => {
 
   return (
     <VStack space="md">
-      {/* 토큰 상태 표시 */}
+      {/* 토큰 상태 표시 - 숨김 처리 */}
+      {/* 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <VStack space="sm">
           <HStack className="justify-between items-center">
@@ -154,6 +155,7 @@ export const NotificationTokenManager: React.FC = () => {
           )}
         </VStack>
       </Box>
+      */}
 
       {/* 에러 상태 */}
       {isError && error && (
@@ -190,7 +192,7 @@ export const NotificationTokenManager: React.FC = () => {
                 className="flex-1"
               >
                 <ButtonText>
-                  {isForceRegistering ? "재등록 중..." : "강제 재등록"}
+                  {isForceRegistering ? "재등록 중..." : "토큰 재등록"}
                 </ButtonText>
               </Button>
 

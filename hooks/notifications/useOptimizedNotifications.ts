@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import * as Notifications from "expo-notifications";
 import { supabase } from "@/hooks/auth/api";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,15 @@ Notifications.setNotificationHandler({
   }),
 });
 
-export function useSimpleNotifications() {
+interface NotificationStats {
+  total_count: number;
+  unread_count: number;
+  read_count: number;
+  oldest_notification: string | null;
+  newest_notification: string | null;
+}
+
+export function useOptimizedNotifications() {
   const { user } = useAuth();
   const router = useRouter();
   const notificationListener = useRef<Notifications.Subscription | null>(null);
@@ -28,6 +36,17 @@ export function useSimpleNotifications() {
     forceRegister,
   } = useNotificationToken();
 
+  // 알림 히스토리 상태
+  const [history, setHistory] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [stats, setStats] = useState<NotificationStats | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+
+  // 페이지 크기
+  const PAGE_SIZE = 20;
+
   // 레거시 호환성을 위한 래퍼 함수
   const registerForPushNotificationsAsync = async () => {
     if (!user) return;
@@ -39,42 +58,104 @@ export function useSimpleNotifications() {
     }
   };
 
-  // 알림 히스토리 조회
-  const [history, setHistory] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  const loadNotificationHistory = async () => {
+  // 성능 최적화된 알림 히스토리 조회
+  const loadNotificationHistory = useCallback(async (reset = false) => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from("notification_history")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      setIsLoadingHistory(true);
+      
+      if (reset) {
+        setCurrentPage(0);
+        setHistory([]);
+        setHasMore(true);
+      }
+
+      const offset = reset ? 0 : currentPage * PAGE_SIZE;
+      
+      // 최적화된 함수 사용
+      const { data, error } = await supabase.rpc('get_user_notifications', {
+        p_user_id: user.id,
+        p_limit: PAGE_SIZE,
+        p_offset: offset,
+        p_unread_only: false
+      });
 
       if (error) {
         console.error("알림 히스토리 로드 실패:", error);
         return;
       }
 
-      setHistory(data || []);
-      setUnreadCount(data?.filter((item: any) => !item.is_read).length || 0);
+      if (reset) {
+        setHistory(data || []);
+      } else {
+        setHistory(prev => [...prev, ...(data || [])]);
+      }
+
+      setHasMore((data || []).length === PAGE_SIZE);
+      setCurrentPage(prev => prev + 1);
+
+      // 미읽 알림 개수 업데이트
+      await loadUnreadCount();
+      
     } catch (error) {
       console.error("알림 히스토리 로드 오류:", error);
+    } finally {
+      setIsLoadingHistory(false);
     }
-  };
+  }, [user, currentPage]);
 
-  // 알림 읽음 처리
-  const markAsRead = async (notificationId: string) => {
+  // 미읽 알림 개수 조회 (최적화)
+  const loadUnreadCount = useCallback(async () => {
     if (!user) return;
 
     try {
+      const { data, error } = await supabase.rpc('get_user_unread_count', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error("미읽 알림 개수 조회 실패:", error);
+        return;
+      }
+
+      setUnreadCount(data || 0);
+    } catch (error) {
+      console.error("미읽 알림 개수 조회 오류:", error);
+    }
+  }, [user]);
+
+  // 알림 통계 조회
+  const loadNotificationStats = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_user_notification_stats', {
+        p_user_id: user.id
+      });
+
+      if (error) {
+        console.error("알림 통계 조회 실패:", error);
+        return;
+      }
+
+      setStats(data?.[0] || null);
+    } catch (error) {
+      console.error("알림 통계 조회 오류:", error);
+    }
+  }, [user]);
+
+  // 알림 읽음 처리 (배치 처리 지원)
+  const markAsRead = useCallback(async (notificationIds: string | string[]) => {
+    if (!user) return;
+
+    try {
+      const ids = Array.isArray(notificationIds) ? notificationIds : [notificationIds];
+      
       const { error } = await supabase
         .from("notification_history")
         .update({ is_read: true })
-        .eq("id", notificationId)
+        .in("id", ids)
         .eq("user_id", user.id);
 
       if (error) {
@@ -85,17 +166,19 @@ export function useSimpleNotifications() {
       // 로컬 상태 업데이트
       setHistory((prev) =>
         prev.map((item) =>
-          item.id === notificationId ? { ...item, is_read: true } : item
+          ids.includes(item.id) ? { ...item, is_read: true } : item
         )
       );
-      setUnreadCount((prev) => Math.max(0, prev - 1));
+      
+      // 미읽 개수 업데이트
+      await loadUnreadCount();
     } catch (error) {
       console.error("알림 읽음 처리 오류:", error);
     }
-  };
+  }, [user, loadUnreadCount]);
 
-  // 모든 알림 읽음 처리
-  const markAllAsRead = async () => {
+  // 모든 알림 읽음 처리 (최적화)
+  const markAllAsRead = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -116,13 +199,13 @@ export function useSimpleNotifications() {
     } catch (error) {
       console.error("모든 알림 읽음 처리 오류:", error);
     }
-  };
+  }, [user]);
 
   // 경매 관련 알림 처리 함수
-  const handleAuctionNotification = (notificationData: any) => {
+  const handleAuctionNotification = useCallback((notificationData: any) => {
     try {
       console.log("🏷️ 경매 알림 처리:", notificationData);
-
+      
       // 경매 ID가 있는지 확인
       const auctionId = notificationData?.auction_id;
       if (!auctionId) {
@@ -140,7 +223,14 @@ export function useSimpleNotifications() {
     } catch (error) {
       console.error("❌ 경매 알림 처리 실패:", error);
     }
-  };
+  }, [router]);
+
+  // 더 많은 알림 로드 (무한 스크롤)
+  const loadMoreNotifications = useCallback(() => {
+    if (!isLoadingHistory && hasMore) {
+      loadNotificationHistory(false);
+    }
+  }, [isLoadingHistory, hasMore, loadNotificationHistory]);
 
   // 알림 리스너 설정
   useEffect(() => {
@@ -150,20 +240,20 @@ export function useSimpleNotifications() {
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
         console.log("📱 알림 수신:", notification);
-        // 알림 히스토리 새로고침
-        loadNotificationHistory();
+        // 알림 히스토리 새로고침 (첫 페이지만)
+        loadNotificationHistory(true);
       });
 
     // 알림 응답 리스너 (사용자가 알림을 탭했을 때)
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
         console.log("👆 알림 응답:", response);
-
+        
         try {
           // 알림 데이터 추출
           const notificationData = response.notification.request.content.data;
           console.log("📊 알림 데이터:", notificationData);
-
+          
           // 경매 관련 알림인지 확인
           if (
             notificationData?.auction_id ||
@@ -175,13 +265,14 @@ export function useSimpleNotifications() {
         } catch (error) {
           console.error("❌ 알림 응답 처리 실패:", error);
         }
-
+        
         // 알림 히스토리 새로고침
-        loadNotificationHistory();
+        loadNotificationHistory(true);
       });
 
-    // 초기 알림 히스토리 로드
-    loadNotificationHistory();
+    // 초기 데이터 로드
+    loadNotificationHistory(true);
+    loadNotificationStats();
 
     return () => {
       if (notificationListener.current) {
@@ -193,7 +284,7 @@ export function useSimpleNotifications() {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
-  }, [user]);
+  }, [user, loadNotificationHistory, loadNotificationStats, handleAuctionNotification]);
 
   return {
     expoPushToken,
@@ -201,8 +292,13 @@ export function useSimpleNotifications() {
     registerForPushNotificationsAsync,
     history,
     unreadCount,
+    stats,
+    isLoadingHistory,
+    hasMore,
     loadNotificationHistory,
+    loadMoreNotifications,
     markAsRead,
     markAllAsRead,
+    loadNotificationStats,
   };
 }
