@@ -192,43 +192,30 @@ export default function DemolitionAuctionCreate() {
               >
                 철거 면적 ({areaUnit === "sqm" ? "㎡" : "평"})
               </Text>
-              <Box
-                className="rounded-xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <Input>
-                  <InputField
-                    placeholder={`철거 면적을 입력하세요 (최소 10${
-                      areaUnit === "sqm" ? "㎡" : "평"
-                    })`}
-                    value={demolitionArea}
-                    onChangeText={(text) => {
-                      // 숫자와 소수점만 허용
-                      const numericText = text.replace(/[^0-9.]/g, "");
-                      const numValue = parseFloat(numericText);
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  placeholder={`철거 면적을 입력하세요 (최소 10${
+                    areaUnit === "sqm" ? "㎡" : "평"
+                  })`}
+                  value={demolitionArea}
+                  onChangeText={(text) => {
+                    // 숫자와 소수점만 허용
+                    const numericText = text.replace(/[^0-9.]/g, "");
+                    const numValue = parseFloat(numericText);
 
-                      // 빈 문자열이거나 유효한 숫자인 경우에만 업데이트
-                      if (
-                        numericText === "" ||
-                        (!isNaN(numValue) && numValue >= 0)
-                      ) {
-                        setDemolitionArea(numericText);
-                      }
-                    }}
-                    keyboardType="numeric"
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: "NanumGothic",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
-                  />
-                </Input>
-              </Box>
+                    // 빈 문자열이거나 유효한 숫자인 경우에만 업데이트
+                    if (
+                      numericText === "" ||
+                      (!isNaN(numValue) && numValue >= 0)
+                    ) {
+                      setDemolitionArea(numericText);
+                    }
+                  }}
+                  keyboardType="numeric"
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
             </VStack>
 
             {/* 사진 등록 */}

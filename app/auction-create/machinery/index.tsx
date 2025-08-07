@@ -276,28 +276,15 @@ export default function MachineryAuctionCreate() {
               >
                 제품명 *
               </Text>
-              <Box
-                className="rounded-xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <Input>
-                  <InputField
-                    placeholder="예: CNC 선반, 밀링머신, 프레스 등"
-                    value={productName}
-                    onChangeText={setProductName}
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: "NanumGothic",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
-                  />
-                </Input>
-              </Box>
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  placeholder="예: CNC 선반, 밀링머신, 프레스 등"
+                  value={productName}
+                  onChangeText={setProductName}
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
             </VStack>
 
             {/* 제조사 입력 */}
@@ -308,28 +295,15 @@ export default function MachineryAuctionCreate() {
               >
                 제조사 *
               </Text>
-              <Box
-                className="rounded-xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <Input>
-                  <InputField
-                    placeholder="제조사를 입력하세요 (예: 두산공작기계, 현대위아)"
-                    value={manufacturer}
-                    onChangeText={setManufacturer}
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: "NanumGothic",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
-                  />
-                </Input>
-              </Box>
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  placeholder="제조사를 입력하세요 (예: 두산공작기계, 현대위아)"
+                  value={manufacturer}
+                  onChangeText={setManufacturer}
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
             </VStack>
 
             {/* 모델명 입력 */}
@@ -340,28 +314,15 @@ export default function MachineryAuctionCreate() {
               >
                 모델명 *
               </Text>
-              <Box
-                className="rounded-xl p-4"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.08)",
-                }}
-              >
-                <Input>
-                  <InputField
-                    placeholder="모델명을 입력하세요 (예: PUMA 2000, VF-2)"
-                    value={modelName}
-                    onChangeText={setModelName}
-                    style={{
-                      color: "#FFFFFF",
-                      fontFamily: "NanumGothic",
-                      backgroundColor: "rgba(255, 255, 255, 0.04)",
-                      borderColor: "rgba(255, 255, 255, 0.08)",
-                    }}
-                  />
-                </Input>
-              </Box>
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  placeholder="모델명을 입력하세요 (예: PUMA 2000, VF-2)"
+                  value={modelName}
+                  onChangeText={setModelName}
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
             </VStack>
 
             {/* 수량 및 단위 입력 */}
@@ -373,39 +334,26 @@ export default function MachineryAuctionCreate() {
                 수량 *
               </Text>
               <HStack space="md" className="items-end">
-                <Box
-                  className="rounded-xl p-4 flex-1"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                  }}
-                >
-                  <Input>
-                    <InputField
-                      placeholder="수량을 입력하세요"
-                      value={quantity}
-                      onChangeText={(text) => {
-                        const numericText = text.replace(/[^0-9]/g, "");
-                        const numValue = parseFloat(numericText);
+                <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14 flex-1">
+                  <InputField
+                    placeholder="수량을 입력하세요"
+                    value={quantity}
+                    onChangeText={(text) => {
+                      const numericText = text.replace(/[^0-9]/g, "");
+                      const numValue = parseFloat(numericText);
 
-                        if (
-                          numericText === "" ||
-                          (!isNaN(numValue) && numValue >= 0)
-                        ) {
-                          setQuantity(numericText);
-                        }
-                      }}
-                      keyboardType="numeric"
-                      style={{
-                        color: "#FFFFFF",
-                        fontFamily: "NanumGothic",
-                        backgroundColor: "rgba(255, 255, 255, 0.04)",
-                        borderColor: "rgba(255, 255, 255, 0.08)",
-                      }}
-                    />
-                  </Input>
-                </Box>
+                      if (
+                        numericText === "" ||
+                        (!isNaN(numValue) && numValue >= 0)
+                      ) {
+                        setQuantity(numericText);
+                      }
+                    }}
+                    keyboardType="numeric"
+                    className="text-white text-base px-5 py-4"
+                    style={{ fontFamily: "NanumGothic" }}
+                  />
+                </Input>
 
                 {/* 고정된 단위 표시 */}
                 <Box className="pb-4">
