@@ -486,6 +486,7 @@ const PremiumTabContent = () => {
   const { data: requests, isLoading: requestsLoading } =
     useAdminServiceRequests();
   const updateStatusMutation = useUpdateServiceRequestStatus();
+  const router = useRouter();
 
   // 서비스 타입 텍스트 변환
   const getServiceTypeText = (type: string) => {
@@ -687,7 +688,13 @@ const PremiumTabContent = () => {
         ) : requests && requests.length > 0 ? (
           <VStack space="md">
             {requests.map((request) => (
-              <Box key={request.id} className="p-3 bg-gray-50 rounded-lg">
+              <Pressable
+                key={request.id}
+                onPress={() =>
+                  router.push(`/service-request-detail/${request.id}`)
+                }
+                className="p-3 bg-gray-50 rounded-lg active:bg-gray-100"
+              >
                 <VStack space="sm">
                   <HStack className="justify-between items-start">
                     <VStack className="flex-1">
@@ -706,6 +713,14 @@ const PremiumTabContent = () => {
                           {request.description}
                         </Text>
                       )}
+                      {/* 이미지 표시 */}
+                      {request.photos && request.photos.length > 0 && (
+                        <HStack className="items-center mt-1">
+                          <Text className="text-xs text-gray-500">
+                            📸 이미지 {request.photos.length}장
+                          </Text>
+                        </HStack>
+                      )}
                     </VStack>
                     <VStack className="items-end">
                       <Text
@@ -719,7 +734,10 @@ const PremiumTabContent = () => {
                         {formatDate(request.createdAt)}
                       </Text>
                       <Pressable
-                        onPress={() => handleStatusUpdate(request)}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleStatusUpdate(request);
+                        }}
                         className="mt-2 p-2 bg-blue-100 rounded-lg"
                       >
                         <Edit3 size={16} color="#3B82F6" />
@@ -735,7 +753,7 @@ const PremiumTabContent = () => {
                     </HStack>
                   )}
                 </VStack>
-              </Box>
+              </Pressable>
             ))}
           </VStack>
         ) : (

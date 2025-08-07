@@ -16,6 +16,13 @@ export interface AdminServiceRequest {
   updatedAt: string;
   completedAt?: string;
   userName?: string; // 사용자 이름 (조인해서 가져올 예정)
+  photos?: Array<{
+    id: string;
+    photo_url: string;
+    photo_order: number;
+    is_representative: boolean;
+    created_at: string;
+  }>;
 }
 
 export interface PremiumStats {
@@ -67,6 +74,32 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
       }
     }
 
+    // 사진 정보를 별도로 조회하여 매핑
+    const requestIds = (data || []).map((item) => item.id);
+    const photoMap = new Map<string, any[]>();
+
+    if (requestIds.length > 0) {
+      try {
+        const { data: photosData } = await supabase
+          .from("service_request_photos")
+          .select("*")
+          .in("service_request_id", requestIds)
+          .order("photo_order", { ascending: true });
+
+        if (photosData) {
+          photosData.forEach((photo) => {
+            const requestId = photo.service_request_id;
+            if (!photoMap.has(requestId)) {
+              photoMap.set(requestId, []);
+            }
+            photoMap.get(requestId)!.push(photo);
+          });
+        }
+      } catch (photoError) {
+        console.warn("사진 정보 조회 실패:", photoError);
+      }
+    }
+
     return (data || []).map((item: any) => ({
       id: item.id,
       serviceType: item.service_type,
@@ -85,6 +118,7 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
         ? userMap.get(item.user_id) ||
           `회원 (${item.user_id.substring(0, 8)}...)`
         : "비회원",
+      photos: photoMap.get(item.id) || [],
     }));
   } catch (error) {
     console.error("서비스 요청 조회 중 오류:", error);
