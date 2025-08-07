@@ -46,11 +46,11 @@ export default function AuthScreen() {
   const [authMode, setAuthMode] = useState<"signup" | "login">("signup");
 
   // 회원가입 데이터
-  const [name, setName] = useState("정개발");
-  const [phoneNumber, setPhoneNumber] = useState("01012345678");
-  const [address, setAddress] = useState("서울시 강남구 역삼동");
-  const [addressDetail, setAddressDetail] = useState("123-456");
-  const [verificationCode, setVerificationCode] = useState("123456");
+  const [name, setName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [address, setAddress] = useState("");
+  const [addressDetail, setAddressDetail] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
 
   // 단계 관리 (새로운 인증 플로우)
   const [step, setStep] = useState<
