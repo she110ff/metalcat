@@ -576,64 +576,103 @@ export async function createAuction(
     // 3. 카테고리별 특화 데이터 저장
     await saveCategory();
 
-    // 4. 사진 업로드 및 데이터 저장
+    // 4. 사진 업로드 및 데이터 저장 (병렬 처리로 최적화)
     if (auctionData.photos && auctionData.photos.length > 0) {
-      console.log("📸 사진 업로드 시작:", auctionData.photos.length + "장");
+      console.log(
+        "📸 사진 병렬 업로드 시작:",
+        auctionData.photos.length + "장"
+      );
 
-      const uploadedPhotos = [];
-
-      // 각 사진을 순차적으로 업로드
-      for (let index = 0; index < auctionData.photos.length; index++) {
-        const photo = auctionData.photos[index];
-
+      // 🚀 병렬 업로드로 성능 개선 (Promise.allSettled 사용)
+      const uploadPromises = auctionData.photos.map(async (photo, index) => {
         try {
-          // 이미지를 Supabase Storage에 업로드하고 공개 URL 받기
+          console.log(
+            `📸 사진 ${index + 1}/${
+              auctionData.photos.length
+            } 업로드 중... (병렬)`
+          );
+
           const uploadedUrl = await uploadImageToStorage(
             photo.uri,
             auctionId,
             index
           );
 
-          if (uploadedUrl) {
-            uploadedPhotos.push({
-              auction_id: auctionId,
-              photo_url: uploadedUrl, // 업로드된 공개 URL 사용
-              photo_type: photo.type || "full",
-              photo_order: index,
-              is_representative: photo.isRepresentative || false,
-            });
+          const photoData = {
+            auction_id: auctionId,
+            photo_url: uploadedUrl || photo.uri, // 실패시 원본 URI 사용
+            photo_type: photo.type || "full",
+            photo_order: index,
+            is_representative: photo.isRepresentative || false,
+          };
 
+          if (uploadedUrl) {
             console.log(
-              `✅ 사진 ${index + 1}/${auctionData.photos.length} 업로드 완료`
+              `✅ 사진 ${index + 1}/${
+                auctionData.photos.length
+              } 병렬 업로드 완료`
             );
+            return { success: true, data: photoData };
           } else {
             console.warn(
               `⚠️ 사진 ${index + 1} 업로드 실패, 원본 URI 사용:`,
               photo.uri
             );
-            // 업로드 실패 시 원본 URI 사용 (로컬에서는 표시됨)
-            uploadedPhotos.push({
+            return { success: false, data: photoData };
+          }
+        } catch (uploadError) {
+          console.error(`❌ 사진 ${index + 1} 업로드 중 오류:`, uploadError);
+
+          // 오류 발생 시에도 원본 URI로 저장하여 정상 진행
+          return {
+            success: false,
+            error: uploadError.message,
+            data: {
               auction_id: auctionId,
               photo_url: photo.uri,
               photo_type: photo.type || "full",
               photo_order: index,
               is_representative: photo.isRepresentative || false,
-            });
+            },
+          };
+        }
+      });
+
+      // 모든 업로드 완료 대기 (병렬 처리로 시간 단축)
+      const uploadResults = await Promise.allSettled(uploadPromises);
+      const uploadedPhotos: any[] = [];
+      let successCount = 0;
+      let failureCount = 0;
+
+      uploadResults.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          uploadedPhotos.push(result.value.data);
+          if (result.value.success) {
+            successCount++;
+          } else {
+            failureCount++;
           }
-        } catch (uploadError) {
-          console.error(`❌ 사진 ${index + 1} 업로드 중 오류:`, uploadError);
-          // 오류 발생 시에도 원본 URI로 저장
+        } else {
+          failureCount++;
+          console.error(`❌ 사진 ${index + 1} 처리 실패:`, result.reason);
+
+          // 실패한 경우도 원본 URI로 저장
           uploadedPhotos.push({
             auction_id: auctionId,
-            photo_url: photo.uri,
-            photo_type: photo.type || "full",
+            photo_url: auctionData.photos[index].uri,
+            photo_type: auctionData.photos[index].type || "full",
             photo_order: index,
-            is_representative: photo.isRepresentative || false,
+            is_representative:
+              auctionData.photos[index].isRepresentative || false,
           });
         }
-      }
+      });
 
-      // 업로드된 사진 정보를 데이터베이스에 저장
+      console.log(
+        `📸 병렬 사진 업로드 완료: 성공 ${successCount}개, 실패 ${failureCount}개`
+      );
+
+      // 🚀 배치 INSERT로 성능 개선
       if (uploadedPhotos.length > 0) {
         const { error: photoError } = await supabase
           .from("auction_photos")
@@ -642,7 +681,7 @@ export async function createAuction(
         if (photoError) {
           console.warn("사진 메타데이터 저장 중 오류:", photoError);
         } else {
-          console.log("✅ 모든 사진 메타데이터 저장 완료");
+          console.log("✅ 모든 사진 메타데이터 배치 저장 완료");
         }
       }
     }
