@@ -132,7 +132,7 @@ export const Dashboard = () => {
             </Animated.View>
 
             {/* Environment Variables Debug Section - Development only */}
-
+            {/* 
             <VStack className="mt-8 animate-slide-up">
               <EnvironmentDebugger
                 visible={true}
@@ -140,6 +140,7 @@ export const Dashboard = () => {
                 defaultExpanded={false}
               />
             </VStack>
+            */}
 
             {/* LME PRICES Section - Enhanced with animations and proper fonts */}
             <VStack space="lg" className="mt-12 animate-slide-up">
