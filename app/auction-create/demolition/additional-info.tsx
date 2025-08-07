@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { ScrollView, Alert, Platform, View } from "react-native";
+import { Alert, Platform, View } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -330,10 +331,14 @@ export default function DemolitionAdditionalInfoScreen() {
       style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 100 }}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={20}
         >
           <View className="flex-1 px-6 py-6">
             {/* Header */}
@@ -890,7 +895,7 @@ export default function DemolitionAdditionalInfoScreen() {
               </VStack>
             </VStack>
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* 하단 완성도 및 등록 버튼 */}
         <Box className="px-6 py-4 bg-black/20 border-t border-white/10">

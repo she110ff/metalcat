@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { ScrollView, View, Alert, TextInput } from "react-native";
+import { View, Alert, TextInput } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
@@ -282,10 +283,14 @@ export default function AuthScreen() {
         style={{ flex: 1 }}
       >
         <SafeAreaView className="flex-1">
-          <ScrollView
+          <KeyboardAwareScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 50 }}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            enableAutomaticScroll={true}
+            extraScrollHeight={20}
           >
             {/* Header */}
             <VStack className="px-6 pt-4 pb-6">
@@ -677,7 +682,7 @@ export default function AuthScreen() {
                 </Box>
               )}
             </VStack>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         </SafeAreaView>
       </LinearGradient>
 

@@ -9,7 +9,7 @@ import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonIcon, ButtonText } from "@/components/ui/button";
 import { Heading } from "@/components/ui/heading";
 import { Image } from "react-native";
-import { ScrollView } from "@/components/ui/scroll-view";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Avatar, AvatarBadge, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
@@ -452,9 +452,13 @@ export default function ProfileEditScreen() {
         </HStack>
       </Box>
 
-      <ScrollView
+      <KeyboardAwareScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
+        keyboardShouldPersistTaps="handled"
+        enableOnAndroid={true}
+        enableAutomaticScroll={true}
+        extraScrollHeight={20}
       >
         <VStack className="w-full">
           {/* 배너 이미지 */}
@@ -798,7 +802,7 @@ export default function ProfileEditScreen() {
             </VStack>
           </VStack>
         </VStack>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

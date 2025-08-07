@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Alert, ScrollView, Platform } from "react-native";
+import { Alert, Platform } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { VStack } from "@/components/ui/vstack";
@@ -124,10 +125,14 @@ export default function MachineryAuctionCreate() {
       style={{ flex: 1 }}
     >
       <SafeAreaView className="flex-1">
-        <ScrollView
+        <KeyboardAwareScrollView
           className="flex-1"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+          enableOnAndroid={true}
+          enableAutomaticScroll={true}
+          extraScrollHeight={20}
         >
           <VStack className="flex-1 p-6" space="xl">
             {/* Header */}
@@ -386,7 +391,7 @@ export default function MachineryAuctionCreate() {
               사진 추가 버튼을 눌러 카메라 또는 갤러리에서 선택하세요
             </Text>
           </VStack>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
         {/* 하단 진행 버튼 */}
         <Box className="p-6">
