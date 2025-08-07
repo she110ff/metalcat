@@ -44,9 +44,7 @@
     "production": {
       "extends": "base",
       "channel": "production",
-      "env": {
-        "EXPO_PUBLIC_ENV": "production"
-      }
+      "environment": "production"
     }
   },
   "submit": {
