@@ -386,8 +386,39 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
     );
   }, [showCategoryFilter, selectedCategory, categoryStats]);
 
-  // 표시할 알림 목록 (최대 개수 제한)
-  const displayHistory = maxItems ? filteredHistory.slice(0, maxItems) : filteredHistory;
+  // 표시할 알림 목록 (페이징 처리) - 무한 루프 방지
+  const displayHistory = React.useMemo(() => {
+    if (!filteredHistory || filteredHistory.length === 0) return [];
+    
+    if (maxItems !== undefined) {
+      // maxItems가 설정된 경우 해당 개수만큼만 표시
+      return filteredHistory.slice(0, maxItems);
+    }
+    
+    // 페이징 처리: 현재 페이지까지의 알림만 표시
+    const currentPageSize = 10; // 한 페이지당 10개
+    const currentPageCount = Math.ceil(filteredHistory.length / currentPageSize);
+    const displayCount = currentPageCount * currentPageSize;
+    
+    return filteredHistory.slice(0, displayCount);
+  }, [filteredHistory?.length, maxItems]);
+
+  // 더보기 버튼 표시 여부 - 무한 루프 방지
+  const showLoadMoreButton = React.useMemo(() => {
+    if (!filteredHistory || filteredHistory.length === 0) return false;
+    
+    if (maxItems !== undefined) {
+      // maxItems가 설정된 경우 전체 알림 개수와 비교
+      return filteredHistory.length > maxItems;
+    }
+    
+    // 페이징 처리: 더 불러올 알림이 있는지 확인
+    const currentPageSize = 10;
+    const currentPageCount = Math.ceil(filteredHistory.length / currentPageSize);
+    const totalPages = Math.ceil((stats?.total_count || 0) / currentPageSize);
+    
+    return currentPageCount < totalPages;
+  }, [filteredHistory?.length, maxItems, stats?.total_count]);
 
   // 무한 스크롤 처리
   const handleLoadMore = useCallback(() => {
@@ -402,7 +433,7 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
       <HStack className="justify-between items-center">
         <VStack>
           <Text className="text-lg font-bold text-gray-900">
-            🔔 알림 ({filteredHistory.length})
+            🔔 알림 ({displayHistory.length}/{stats?.total_count || filteredHistory.length})
           </Text>
           {unreadCount > 0 && (
             <Text className="text-sm text-blue-600">
@@ -412,6 +443,11 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
           {selectedCategory !== 'all' && (
             <Text className="text-xs text-gray-500">
               {selectedCategory === 'registration' ? '경매 등록' : '내 경매'} 알림만 표시
+            </Text>
+          )}
+          {!maxItems && displayHistory.length < (stats?.total_count || 0) && (
+            <Text className="text-xs text-gray-500">
+              한 페이지당 10개씩 표시
             </Text>
           )}
         </VStack>
@@ -460,27 +496,35 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
         renderEmptyState()
       )}
 
-      {/* 더보기 버튼 (최대 개수 제한이 있을 때) */}
-      {maxItems && history.length > maxItems && (
+      {/* 더보기 버튼 */}
+      {showLoadMoreButton && (
         <Button
           variant="outline"
           onPress={() => {
-            // TODO: 전체 알림 화면으로 이동
-            console.log("전체 알림 화면으로 이동");
+            if (maxItems) {
+              // TODO: 전체 알림 화면으로 이동
+              console.log("전체 알림 화면으로 이동");
+            } else {
+              // 페이징 처리: 더 많은 알림 로드
+              loadMoreNotifications();
+            }
           }}
-          className="border-gray-300"
+          className="border-blue-300"
+          disabled={isLoadingHistory}
         >
-          <ButtonText className="text-gray-600">
-            모든 알림 보기 ({history.length}개)
+          <ButtonText className="text-blue-600">
+            {isLoadingHistory ? "불러오는 중..." : 
+             maxItems ? `모든 알림 보기 (${stats?.total_count || 0}개)` : 
+             "더보기 (10개씩)"}
           </ButtonText>
         </Button>
       )}
 
-      {/* 무한 스크롤 안내 */}
-      {enableInfiniteScroll && hasMore && !isLoadingHistory && (
+      {/* 페이징 안내 */}
+      {!maxItems && enableInfiniteScroll && hasMore && !isLoadingHistory && (
         <Box className="items-center py-2">
           <Text className="text-xs text-gray-500">
-            아래로 스크롤하여 더 많은 알림을 불러오세요
+            더보기 버튼을 눌러 추가 알림을 불러오세요
           </Text>
           <ChevronDown size={12} color="#6B7280" />
         </Box>

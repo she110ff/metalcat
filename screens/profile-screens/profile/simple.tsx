@@ -39,7 +39,7 @@ import Constants from "expo-constants";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AllPermissionsStatus } from "@/components/PermissionStatus";
 import { NotificationTokenManager } from "@/components/notifications/NotificationTokenManager";
-import { NotificationHistory } from "@/components/notifications/NotificationHistory";
+import { MyPageNotificationHistory } from "@/components/notifications/MyPageNotificationHistory";
 import { useBatteryOptimizationContext } from "@/contexts/BatteryOptimizationContext";
 
 // 업데이트 설정 컴포넌트
@@ -652,7 +652,7 @@ const MainContent = () => {
         <VStack space="lg">
           <NotificationTokenManager />
           <NotificationSettings />
-          <NotificationHistory maxItems={5} showActions={true} />
+          <MyPageNotificationHistory showActions={true} />
         </VStack>
       );
     }

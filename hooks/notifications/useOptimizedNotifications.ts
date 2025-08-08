@@ -63,8 +63,8 @@ export function useOptimizedNotifications() {
   const [hasMore, setHasMore] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
 
-  // 페이지 크기
-  const PAGE_SIZE = 20;
+  // 페이지 크기 (한 페이지당 10개)
+  const PAGE_SIZE = 10;
 
   // 레거시 호환성을 위한 래퍼 함수
   const registerForPushNotificationsAsync = async () => {
@@ -264,7 +264,106 @@ export function useOptimizedNotifications() {
     }
   }, [isLoadingHistory, hasMore, loadNotificationHistory]);
 
-  // 알림 리스너 설정
+  // useQuery용 알림 히스토리 조회 함수 (무한 루프 방지)
+  const fetchNotificationHistory = useCallback(async () => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase.rpc("get_user_notifications", {
+        p_user_id: user.id,
+        p_limit: PAGE_SIZE,
+        p_offset: 0,
+        p_unread_only: false,
+      });
+
+      if (error) {
+        console.error("알림 히스토리 조회 실패:", error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error("알림 히스토리 조회 오류:", error);
+      return [];
+    }
+  }, [user]);
+
+  // useQuery용 알림 통계 조회 함수 (무한 루프 방지)
+  const fetchNotificationStats = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase.rpc(
+        "get_user_notification_stats",
+        {
+          p_user_id: user.id,
+        }
+      );
+
+      if (error) {
+        console.error("알림 통계 조회 실패:", error);
+        return null;
+      }
+
+      return data?.[0] || null;
+    } catch (error) {
+      console.error("알림 통계 조회 오류:", error);
+      return null;
+    }
+  }, [user]);
+
+  // 알림 히스토리 조회 (배터리 최적화) - 무한 루프 방지
+  const {
+    data: notificationHistory = [],
+    isLoading: isHistoryLoading,
+    refetch: refetchHistory,
+  } = useQuery({
+    queryKey: ["notifications", "history", user?.id],
+    queryFn: fetchNotificationHistory,
+    enabled: !!user?.id && isAppActive, // 앱이 활성화된 경우에만 실행
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
+    refetchInterval: false, // 자동 갱신 비활성화 (무한 루프 방지)
+  });
+
+  // 알림 통계 조회 (배터리 최적화) - 무한 루프 방지
+  const {
+    data: notificationStats = null,
+    isLoading: isStatsLoading,
+    refetch: refetchStats,
+  } = useQuery({
+    queryKey: ["notifications", "stats", user?.id],
+    queryFn: fetchNotificationStats,
+    enabled: !!user?.id && isAppActive, // 앱이 활성화된 경우에만 실행
+    staleTime: 5 * 60 * 1000, // 5분
+    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
+    refetchInterval: false, // 자동 갱신 비활성화 (무한 루프 방지)
+  });
+
+  // useQuery 데이터를 로컬 상태와 동기화
+  useEffect(() => {
+    console.log("🔄 [useOptimizedNotifications] notificationHistory 변경:", {
+      length: notificationHistory?.length,
+      hasData: !!notificationHistory && notificationHistory.length > 0,
+    });
+
+    if (notificationHistory && notificationHistory.length > 0) {
+      setHistory(notificationHistory);
+    }
+  }, [notificationHistory]);
+
+  useEffect(() => {
+    console.log("📊 [useOptimizedNotifications] notificationStats 변경:", {
+      hasStats: !!notificationStats,
+      totalCount: notificationStats?.total_count,
+    });
+
+    if (notificationStats) {
+      setStats(notificationStats);
+    }
+  }, [notificationStats]);
+
+  // 알림 리스너 설정 (무한 루프 방지)
   useEffect(() => {
     if (!user) return;
 
@@ -272,8 +371,9 @@ export function useOptimizedNotifications() {
     notificationListener.current =
       Notifications.addNotificationReceivedListener((notification) => {
         console.log("📱 알림 수신:", notification);
-        // 알림 히스토리 새로고침 (첫 페이지만)
-        loadNotificationHistory(true);
+        // useQuery 데이터 새로고침
+        refetchHistory();
+        refetchStats();
       });
 
     // 알림 응답 리스너 (사용자가 알림을 탭했을 때)
@@ -298,13 +398,10 @@ export function useOptimizedNotifications() {
           console.error("❌ 알림 응답 처리 실패:", error);
         }
 
-        // 알림 히스토리 새로고침
-        loadNotificationHistory(true);
+        // useQuery 데이터 새로고침
+        refetchHistory();
+        refetchStats();
       });
-
-    // 초기 데이터 로드
-    loadNotificationHistory(true);
-    loadNotificationStats();
 
     return () => {
       if (notificationListener.current) {
@@ -316,44 +413,7 @@ export function useOptimizedNotifications() {
         Notifications.removeNotificationSubscription(responseListener.current);
       }
     };
-  }, [
-    user,
-    loadNotificationHistory,
-    loadNotificationStats,
-    handleAuctionNotification,
-  ]);
-
-  // 알림 히스토리 조회 (배터리 최적화)
-  const {
-    data: notificationHistory = [],
-    isLoading: isHistoryLoading,
-    refetch: refetchHistory,
-  } = useQuery({
-    queryKey: ["notifications", "history", user?.id],
-    queryFn: () => loadNotificationHistory(), // Use loadNotificationHistory directly
-    enabled: !!user?.id && isAppActive, // 앱이 활성화된 경우에만 실행
-    staleTime: 5 * 60 * 1000, // 5분
-    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
-    refetchInterval: isAppActive ? 10 * 60 * 1000 : false, // 10분마다 (앱 활성화 시에만)
-  });
-
-  // 알림 통계 조회 (배터리 최적화)
-  const {
-    data: notificationStats = {
-      total: 0,
-      unread: 0,
-      read: 0,
-    },
-    isLoading: isStatsLoading,
-    refetch: refetchStats,
-  } = useQuery({
-    queryKey: ["notifications", "stats", user?.id],
-    queryFn: () => loadNotificationStats(), // Use loadNotificationStats directly
-    enabled: !!user?.id && isAppActive, // 앱이 활성화된 경우에만 실행
-    staleTime: 5 * 60 * 1000, // 5분
-    refetchOnWindowFocus: false, // 앱 포커스 시 갱신 비활성화
-    refetchInterval: isAppActive ? 10 * 60 * 1000 : false, // 10분마다 (앱 활성화 시에만)
-  });
+  }, [user, refetchHistory, refetchStats, handleAuctionNotification]);
 
   return {
     expoPushToken,
