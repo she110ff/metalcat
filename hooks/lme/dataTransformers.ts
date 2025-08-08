@@ -41,9 +41,9 @@ export function transformHistoryToDetailData(
   const dailyData: DailyPriceData[] = sortedData.map((item, index) => {
     const prevItem = sortedData[index + 1];
 
-    // 변화율 계산 (이전 날과 비교)
-    let changePercent = item.change_percent || 0;
-    if (!changePercent && prevItem) {
+    // 실제 가격 기반 변동률 계산 (이전 날과 비교)
+    let changePercent = 0;
+    if (prevItem) {
       const prevPrice = prevItem.price_krw_per_kg;
       const currentPrice = item.price_krw_per_kg;
       changePercent =
@@ -58,9 +58,12 @@ export function transformHistoryToDetailData(
       cashPrice: cashPriceKrw,
       threeMonthPrice: cashPriceKrw, // 실제 데이터에 3M 가격이 없으므로 현물가격과 동일
       changePercent: Number(changePercent.toFixed(2)),
-      changeType: (item.change_type === "positive"
-        ? "positive"
-        : "negative") as "positive" | "negative",
+      changeType:
+        changePercent > 0.01
+          ? "positive"
+          : changePercent < -0.01
+          ? "negative"
+          : ("positive" as "positive" | "negative"),
       spread: 0, // 3개월 선물가격이 없으므로 스프레드 0
     };
   });
@@ -69,14 +72,25 @@ export function transformHistoryToDetailData(
   const krwPrices = sortedData.map((item) => item.price_krw_per_kg);
   const statistics = calculateStatistics(krwPrices, sortedData);
 
+  // 최신 데이터의 실제 변동률 계산
+  const latestChangePercent =
+    sortedData.length > 1
+      ? ((latestData.price_krw_per_kg - sortedData[1].price_krw_per_kg) /
+          sortedData[1].price_krw_per_kg) *
+        100
+      : 0;
+
   return {
     metalName: metalNameKr,
     currentPrice: latestData.price_krw_per_kg, // 원/KG 가격 사용
     unit: "원/KG", // USD/톤 대신 원/KG 사용
-    changePercent: Number((latestData.change_percent || 0).toFixed(2)),
-    changeType: (latestData.change_type === "positive"
-      ? "positive"
-      : "negative") as "positive" | "negative",
+    changePercent: Number(latestChangePercent.toFixed(2)),
+    changeType:
+      latestChangePercent > 0.01
+        ? "positive"
+        : latestChangePercent < -0.01
+        ? "negative"
+        : ("positive" as "positive" | "negative"),
     dailyData: dailyData.reverse(), // 과거부터 최신 순으로 정렬
     statistics,
   };

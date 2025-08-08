@@ -47,6 +47,7 @@ interface LmeData {
 
 // 실제 LME 데이터 크롤링 함수
 async function crawlLmeData(
+  supabaseClient: any,
   exchangeRate?: number,
   config?: any
 ): Promise<LmeData[]> {
@@ -167,13 +168,37 @@ async function crawlLmeData(
           );
 
           const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
-          const changePercent = (Math.random() - 0.5) * 2;
-          const changeType: "positive" | "negative" | "unchanged" =
-            changePercent > 0.1
-              ? "positive"
-              : changePercent < -0.1
-              ? "negative"
-              : "unchanged";
+
+          // 실제 가격 기반 변동률 계산을 위해 이전 날짜 데이터 조회
+          let changePercent = 0;
+          let changeType: "positive" | "negative" | "unchanged" = "unchanged";
+
+          try {
+            const { data: prevData } = await supabaseClient
+              .from("lme_processed_prices")
+              .select("price_krw_per_kg")
+              .eq("metal_code", metalCode)
+              .lt("price_date", tradeDate)
+              .order("price_date", { ascending: false })
+              .limit(1);
+
+            if (prevData && prevData.length > 0) {
+              const prevPrice = prevData[0].price_krw_per_kg;
+              if (prevPrice > 0) {
+                changePercent = ((priceKrwPerKg - prevPrice) / prevPrice) * 100;
+                changeType =
+                  changePercent > 0.01
+                    ? "positive"
+                    : changePercent < -0.01
+                    ? "negative"
+                    : "unchanged";
+              }
+            }
+          } catch (error) {
+            console.log(
+              `   ⚠️ ${metalNameKr}: 이전 가격 조회 실패, 변동률 0으로 설정`
+            );
+          }
 
           const changeAmountKrw = (priceKrwPerKg * changePercent) / 100;
 
@@ -266,7 +291,7 @@ Deno.serve(async (req) => {
       const exchangeRate = await getExchangeRate();
 
       // 3. 실제 LME 데이터 크롤링 (환경별 설정 전달)
-      const lmeData = await crawlLmeData(exchangeRate, appConfig);
+      const lmeData = await crawlLmeData(supabase, exchangeRate, appConfig);
 
       if (lmeData.length === 0) {
         throw new Error("크롤링된 데이터가 없습니다");

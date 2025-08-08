@@ -158,14 +158,10 @@ async function crawlSinglePage(
       // KRW/kg 변환 (USD/ton -> KRW/kg)
       const priceKrwPerKg = (priceUsd * currentExchangeRate) / 1000;
 
-      // 간단한 변화량 계산
-      const changePercent = (Math.random() - 0.5) * 2; // -1% ~ +1% 랜덤
-      const changeType: "positive" | "negative" | "unchanged" =
-        changePercent > 0.1
-          ? "positive"
-          : changePercent < -0.1
-          ? "negative"
-          : "unchanged";
+      // 실제 가격 기반 변동률 계산 (bulk crawler에서는 이전 데이터가 없을 수 있으므로 0으로 설정)
+      // 실제 운영에서는 이전 데이터를 조회하여 계산해야 함
+      const changePercent = 0; // 초기 데이터이므로 변동률 0
+      const changeType: "positive" | "negative" | "unchanged" = "unchanged";
 
       const changeAmountKrw = (priceKrwPerKg * changePercent) / 100;
 
