@@ -176,25 +176,38 @@ export function useAppUpdates() {
         ...prev,
         isDownloading: true,
         error: null,
+        updateMessage: "업데이트를 다운로드하고 있습니다...",
       }));
 
       console.log("업데이트 다운로드 시작...");
 
-      await Updates.fetchUpdateAsync();
+      // 개발 환경에서는 다운로드 시뮬레이션
+      if (__DEV__) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        console.log("개발 환경: 업데이트 다운로드 시뮬레이션 완료");
+      } else {
+        await Updates.fetchUpdateAsync();
+        console.log("업데이트 다운로드 완료");
+      }
 
+      // 다운로드 완료 후 상태 확인
+      const isUpdatePending = await Updates.checkForUpdateAsync();
+      
       setState((prev) => ({
         ...prev,
         isDownloading: false,
         isDownloaded: true,
+        isUpdatePending: isUpdatePending.isAvailable,
+        updateMessage: "다운로드 완료! 업데이트를 적용할 수 있습니다.",
       }));
 
-      console.log("업데이트 다운로드 완료");
     } catch (error) {
       console.error("업데이트 다운로드 실패:", error);
       setState((prev) => ({
         ...prev,
         isDownloading: false,
         error: error instanceof Error ? error.message : "다운로드 실패",
+        updateMessage: null,
       }));
     }
   }, [state.isUpdateAvailable, state.isDownloading]);
@@ -208,12 +221,50 @@ export function useAppUpdates() {
 
     try {
       console.log("업데이트 적용 중...");
-      await Updates.reloadAsync();
-    } catch (error) {
-      console.error("업데이트 적용 실패:", error);
+
+      // 개발 환경에서는 업데이트 적용 불가 알림
+      if (__DEV__) {
+        setState((prev) => ({
+          ...prev,
+          error: "개발 환경에서는 업데이트를 적용할 수 없습니다",
+          updateMessage: null,
+        }));
+        return;
+      }
+
+      // 사용자에게 안내 후 약간의 지연을 두어 UI가 업데이트되도록 함
       setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : "업데이트 적용 실패",
+        updateMessage: "앱을 재시작하고 있습니다...",
+      }));
+
+      // UI 업데이트를 위한 짧은 지연
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // 업데이트 적용 가능 여부 재확인
+      const updateInfo = await Updates.checkForUpdateAsync();
+      
+      if (!updateInfo.isAvailable) {
+        console.log("적용할 업데이트가 없습니다. 앱을 재시작합니다.");
+      }
+
+      // 앱 재시작 - 타임아웃 추가
+      const reloadPromise = Updates.reloadAsync();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("재시작 타임아웃")), 5000)
+      );
+
+      await Promise.race([reloadPromise, timeoutPromise]);
+      
+    } catch (error) {
+      console.error("업데이트 적용 실패:", error);
+      const errorMessage = error instanceof Error ? error.message : "업데이트 적용 실패";
+      
+      setState((prev) => ({
+        ...prev,
+        error: errorMessage,
+        updateMessage: null,
+        isDownloaded: false, // 실패 시 다운로드 상태 초기화
       }));
     }
   }, [state.isDownloaded, state.isUpdatePending]);

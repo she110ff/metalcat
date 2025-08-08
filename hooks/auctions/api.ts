@@ -262,6 +262,22 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
   // category_details에서 카테고리별 특화 정보 추출
   const details = row.category_details || {};
 
+  // address_info 검증 및 기본값 설정
+  const addressInfo = row.address_info || {};
+  const safeAddress = {
+    postalCode: addressInfo.postalCode || "",
+    addressType: addressInfo.addressType || "road",
+    address: addressInfo.address || "",
+    detailAddress: addressInfo.detailAddress || "",
+  };
+
+  // quantity 검증 및 기본값 설정
+  const quantity = details.quantity || {};
+  const safeQuantity = {
+    quantity: quantity.quantity || 0,
+    unit: quantity.unit || "개",
+  };
+
   return {
     id: row.id,
     title: row.title,
@@ -284,10 +300,10 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
     bidders: row.bidder_count,
     viewCount: row.view_count,
 
-    // 공통 필드
+    // 공통 필드 (안전하게 변환)
     productType: details.productType,
-    quantity: details.quantity,
-    address: row.address_info,
+    quantity: safeQuantity,
+    address: safeAddress,
 
     // 카테고리별 특화 정보
     salesEnvironment: details.salesEnvironment,

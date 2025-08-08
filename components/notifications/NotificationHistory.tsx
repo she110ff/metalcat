@@ -78,12 +78,13 @@ export const NotificationHistory: React.FC<NotificationHistoryProps> = ({
 
     switch (type) {
       case "auction_created":
-        return "새로운 경매";
+        return "새로운 경매 등록";
       case "auction_ended":
         return "경매 종료";
       case "auction_won":
         return "경매 낙찰";
       case "auction_lost":
+      case "auction_failed":
         return "경매 유찰";
       default:
         return "알림";

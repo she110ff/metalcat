@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { FlatList, RefreshControl, ActivityIndicator } from "react-native";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -15,7 +15,8 @@ import {
   Clock, 
   AlertCircle,
   ChevronDown,
-  BarChart3
+  BarChart3,
+  Filter
 } from "lucide-react-native";
 
 // 시간 포맷팅 함수
@@ -37,11 +38,15 @@ const formatTimeAgo = (date: Date) => {
   }
 };
 
+// 알림 카테고리 타입 정의
+type NotificationCategory = 'all' | 'registration' | 'my_auction';
+
 interface OptimizedNotificationHistoryProps {
   maxItems?: number;
   showActions?: boolean;
   showStats?: boolean;
   enableInfiniteScroll?: boolean;
+  showCategoryFilter?: boolean;
 }
 
 export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistoryProps> = ({
@@ -49,8 +54,11 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
   showActions = true,
   showStats = true,
   enableInfiniteScroll = true,
+  showCategoryFilter = true,
 }) => {
   const router = useRouter();
+  const [selectedCategory, setSelectedCategory] = useState<NotificationCategory>('all');
+  
   const {
     history,
     unreadCount,
@@ -62,6 +70,51 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
     markAsRead,
     markAllAsRead,
   } = useOptimizedNotifications();
+
+  // 알림 카테고리별 분류 함수
+  const getCategoryFromNotificationType = (type: string): NotificationCategory => {
+    switch (type) {
+      case 'auction_created':
+        return 'registration';
+      case 'auction_ended':
+      case 'auction_won':
+      case 'auction_lost':
+      case 'auction_failed':
+        return 'my_auction';
+      default:
+        return 'my_auction'; // 기본값은 내 경매 알림으로 분류
+    }
+  };
+
+  // 카테고리별 필터링된 알림 목록
+  const filteredHistory = React.useMemo(() => {
+    if (selectedCategory === 'all') {
+      return history;
+    }
+    
+    return history.filter(notification => {
+      const type = notification.notification_type || notification.type;
+      const category = getCategoryFromNotificationType(type);
+      return category === selectedCategory;
+    });
+  }, [history, selectedCategory]);
+
+  // 카테고리별 통계
+  const categoryStats = React.useMemo(() => {
+    const registrationCount = history.filter(n => 
+      getCategoryFromNotificationType(n.notification_type || n.type) === 'registration'
+    ).length;
+    
+    const myAuctionCount = history.filter(n => 
+      getCategoryFromNotificationType(n.notification_type || n.type) === 'my_auction'
+    ).length;
+    
+    return {
+      all: history.length,
+      registration: registrationCount,
+      my_auction: myAuctionCount
+    };
+  }, [history]);
 
   // 알림 타입에 따른 아이콘과 색상
   const getNotificationIcon = (notification: any) => {
@@ -199,23 +252,47 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
   }, [isLoadingHistory]);
 
   // 빈 상태 렌더링
-  const renderEmptyState = useCallback(() => (
-    <Box className="bg-white rounded-xl p-8 border border-gray-200">
-      <VStack space="md" className="items-center">
-        <Box className="p-4 rounded-full bg-gray-100">
-          <Bell size={32} color="#6B7280" />
-        </Box>
-        <VStack space="xs" className="items-center">
-          <Text className="text-lg font-semibold text-gray-900">
-            알림이 없습니다
-          </Text>
-          <Text className="text-sm text-gray-600 text-center">
-            새로운 알림이 오면 여기에 표시됩니다
-          </Text>
+  const renderEmptyState = useCallback(() => {
+    const getEmptyMessage = () => {
+      switch (selectedCategory) {
+        case 'registration':
+          return {
+            title: '경매 등록 알림이 없습니다',
+            description: '새로운 경매가 등록되면 알림을 받을 수 있습니다'
+          };
+        case 'my_auction':
+          return {
+            title: '내 경매 알림이 없습니다',
+            description: '내 경매 활동에 대한 알림이 없습니다'
+          };
+        default:
+          return {
+            title: '알림이 없습니다',
+            description: '새로운 알림이 오면 여기에 표시됩니다'
+          };
+      }
+    };
+
+    const { title, description } = getEmptyMessage();
+
+    return (
+      <Box className="bg-white rounded-xl p-8 border border-gray-200">
+        <VStack space="md" className="items-center">
+          <Box className="p-4 rounded-full bg-gray-100">
+            <Bell size={32} color="#6B7280" />
+          </Box>
+          <VStack space="xs" className="items-center">
+            <Text className="text-lg font-semibold text-gray-900">
+              {title}
+            </Text>
+            <Text className="text-sm text-gray-600 text-center">
+              {description}
+            </Text>
+          </VStack>
         </VStack>
-      </VStack>
-    </Box>
-  ), []);
+      </Box>
+    );
+  }, [selectedCategory]);
 
   // 통계 섹션 렌더링
   const renderStats = useCallback(() => {
@@ -247,8 +324,70 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
     );
   }, [showStats, stats]);
 
+  // 카테고리 필터 렌더링
+  const renderCategoryFilter = useCallback(() => {
+    if (!showCategoryFilter) return null;
+
+    const categories = [
+      { key: 'all' as const, label: '전체', count: categoryStats.all },
+      { key: 'registration' as const, label: '경매 등록', count: categoryStats.registration },
+      { key: 'my_auction' as const, label: '내 경매', count: categoryStats.my_auction },
+    ];
+
+    return (
+      <Box className="bg-white rounded-xl p-3 border border-gray-200">
+        <HStack space="xs" className="items-center">
+          <Filter size={16} color="#6B7280" />
+          <Text className="text-sm font-medium text-gray-700 mr-2">카테고리:</Text>
+          {categories.map((category) => (
+            <Pressable
+              key={category.key}
+              onPress={() => setSelectedCategory(category.key)}
+              className={`px-3 py-1.5 rounded-full ${
+                selectedCategory === category.key
+                  ? "bg-blue-100 border border-blue-300"
+                  : "bg-gray-100 border border-gray-200"
+              }`}
+            >
+              <HStack space="xs" className="items-center">
+                <Text
+                  className={`text-sm font-medium ${
+                    selectedCategory === category.key
+                      ? "text-blue-700"
+                      : "text-gray-600"
+                  }`}
+                >
+                  {category.label}
+                </Text>
+                {category.count > 0 && (
+                  <Box
+                    className={`px-1.5 py-0.5 rounded-full min-w-[20px] items-center ${
+                      selectedCategory === category.key
+                        ? "bg-blue-200"
+                        : "bg-gray-200"
+                    }`}
+                  >
+                    <Text
+                      className={`text-xs font-semibold ${
+                        selectedCategory === category.key
+                          ? "text-blue-800"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {category.count}
+                    </Text>
+                  </Box>
+                )}
+              </HStack>
+            </Pressable>
+          ))}
+        </HStack>
+      </Box>
+    );
+  }, [showCategoryFilter, selectedCategory, categoryStats]);
+
   // 표시할 알림 목록 (최대 개수 제한)
-  const displayHistory = maxItems ? history.slice(0, maxItems) : history;
+  const displayHistory = maxItems ? filteredHistory.slice(0, maxItems) : filteredHistory;
 
   // 무한 스크롤 처리
   const handleLoadMore = useCallback(() => {
@@ -263,11 +402,16 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
       <HStack className="justify-between items-center">
         <VStack>
           <Text className="text-lg font-bold text-gray-900">
-            🔔 알림 ({history.length})
+            🔔 알림 ({filteredHistory.length})
           </Text>
           {unreadCount > 0 && (
             <Text className="text-sm text-blue-600">
               읽지 않은 알림 {unreadCount}개
+            </Text>
+          )}
+          {selectedCategory !== 'all' && (
+            <Text className="text-xs text-gray-500">
+              {selectedCategory === 'registration' ? '경매 등록' : '내 경매'} 알림만 표시
             </Text>
           )}
         </VStack>
@@ -286,6 +430,9 @@ export const OptimizedNotificationHistory: React.FC<OptimizedNotificationHistory
 
       {/* 통계 섹션 */}
       {renderStats()}
+
+      {/* 카테고리 필터 */}
+      {renderCategoryFilter()}
 
       {/* 알림 목록 */}
       {displayHistory.length > 0 ? (

@@ -433,9 +433,10 @@ export const Dashboard = () => {
                               {auction.title}
                             </Text>
                             <Text className="text-slate-400 text-xs uppercase tracking-[1px] font-nanum">
-                              {auction.address.address.split(" ")[0]} •{" "}
-                              {auction.quantity.quantity}
-                              {auction.quantity.unit}
+                              {auction.address?.address?.split(" ")?.[0] ||
+                                "주소 미등록"}{" "}
+                              • {auction.quantity?.quantity || 0}
+                              {auction.quantity?.unit || "개"}
                             </Text>
                           </VStack>
                           <VStack className="items-end">

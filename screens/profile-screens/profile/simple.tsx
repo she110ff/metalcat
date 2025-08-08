@@ -206,20 +206,106 @@ const UpdateSettings = () => {
 
 // 간소화된 알림 설정 컴포넌트
 const NotificationSettings = () => {
-  const [auctionNotifications, setAuctionNotifications] = useState(true);
-  const [priceNotifications, setPriceNotifications] = useState(true);
+  const { user } = useAuth();
+  const [
+    auctionRegistrationNotifications,
+    setAuctionRegistrationNotifications,
+  ] = useState(true);
+  const [myAuctionNotifications, setMyAuctionNotifications] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true);
 
-  const handleAuctionToggle = (value: boolean) => {
-    setAuctionNotifications(value);
-    // TODO: 서버에 설정 저장
-    console.log("경매 알림 설정:", value);
+  // 초기 설정 로드
+  useEffect(() => {
+    loadNotificationSettings();
+  }, [user]);
+
+  const loadNotificationSettings = async () => {
+    if (!user?.id) return;
+
+    setIsLoadingSettings(true);
+    try {
+      const { data, error } = await supabase.rpc(
+        "get_user_notification_preferences",
+        { p_user_id: user.id }
+      );
+
+      if (error) {
+        console.error("알림 설정 조회 실패:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const settings = data[0];
+        setAuctionRegistrationNotifications(
+          settings.auction_registration_enabled
+        );
+        setMyAuctionNotifications(settings.my_auction_enabled);
+      }
+    } catch (error) {
+      console.error("알림 설정 조회 중 오류:", error);
+    } finally {
+      setIsLoadingSettings(false);
+    }
   };
 
-  const handlePriceToggle = (value: boolean) => {
-    setPriceNotifications(value);
-    // TODO: 서버에 설정 저장
-    console.log("가격 알림 설정:", value);
+  const updateNotificationSettings = async (
+    auctionRegistration: boolean,
+    myAuction: boolean
+  ) => {
+    if (!user?.id) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.rpc(
+        "update_user_notification_preferences",
+        {
+          p_user_id: user.id,
+          p_auction_registration_enabled: auctionRegistration,
+          p_my_auction_enabled: myAuction,
+        }
+      );
+
+      if (error) {
+        console.error("알림 설정 저장 실패:", error);
+        // 실패 시 원래 상태로 되돌리기
+        await loadNotificationSettings();
+        return;
+      }
+
+      console.log("✅ 알림 설정 저장 성공:", {
+        auctionRegistration,
+        myAuction,
+      });
+    } catch (error) {
+      console.error("알림 설정 저장 중 오류:", error);
+      // 실패 시 원래 상태로 되돌리기
+      await loadNotificationSettings();
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleAuctionRegistrationToggle = async (value: boolean) => {
+    setAuctionRegistrationNotifications(value);
+    await updateNotificationSettings(value, myAuctionNotifications);
+  };
+
+  const handleMyAuctionToggle = async (value: boolean) => {
+    setMyAuctionNotifications(value);
+    await updateNotificationSettings(auctionRegistrationNotifications, value);
+  };
+
+  if (isLoadingSettings) {
+    return (
+      <VStack space="md">
+        <Text className="text-lg font-bold text-gray-900">🔔 알림 설정</Text>
+        <Box className="bg-white rounded-xl p-4 border border-gray-200">
+          <Text className="text-center text-gray-500">설정 로딩 중...</Text>
+        </Box>
+      </VStack>
+    );
+  }
 
   return (
     <VStack space="md">
@@ -227,42 +313,51 @@ const NotificationSettings = () => {
 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <VStack space="md">
-          {/* 경매 알림 */}
+          {/* 경매 등록 알림 */}
           <HStack className="justify-between items-center">
             <VStack className="flex-1">
-              <Text className="font-semibold text-gray-900">경매 알림</Text>
+              <Text className="font-semibold text-gray-900">
+                경매 등록 알림
+              </Text>
               <Text className="text-sm text-gray-600">
-                내 경매 종료 및 낙찰 알림
+                새로운 경매가 등록될 때 알림
               </Text>
             </VStack>
             <Switch
-              value={auctionNotifications}
-              onValueChange={handleAuctionToggle}
+              value={auctionRegistrationNotifications}
+              onValueChange={handleAuctionRegistrationToggle}
+              disabled={isLoading}
             />
           </HStack>
 
           <Divider />
 
-          {/* 가격 알림 */}
+          {/* 내 경매 알림 */}
           <HStack className="justify-between items-center">
             <VStack className="flex-1">
-              <Text className="font-semibold text-gray-900">가격 알림</Text>
+              <Text className="font-semibold text-gray-900">내 경매 알림</Text>
               <Text className="text-sm text-gray-600">
-                관심 금속 가격 변동 알림
+                내 경매 종료, 낙찰, 유찰 알림
               </Text>
             </VStack>
             <Switch
-              value={priceNotifications}
-              onValueChange={handlePriceToggle}
+              value={myAuctionNotifications}
+              onValueChange={handleMyAuctionToggle}
+              disabled={isLoading}
             />
           </HStack>
         </VStack>
       </Box>
 
       <Box className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-        <Text className="text-sm text-blue-800">
-          💡 경매가 종료되면 즉시 알림을 받을 수 있습니다.
-        </Text>
+        <VStack space="sm">
+          <Text className="text-sm text-blue-800">
+            💡 알림 설정을 통해 원하는 경매 정보만 받아보세요.
+          </Text>
+          {isLoading && (
+            <Text className="text-xs text-blue-600">설정 저장 중...</Text>
+          )}
+        </VStack>
       </Box>
     </VStack>
   );

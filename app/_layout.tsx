@@ -203,8 +203,16 @@ function RootLayoutNav() {
   };
 
   const handleApplyUpdate = async () => {
-    setShowProgressModal(false);
-    await applyUpdate();
+    try {
+      // 업데이트 적용 전에 사용자에게 알림
+      console.log("업데이트를 적용하고 앱을 재시작합니다...");
+      await applyUpdate();
+      // applyUpdate는 Updates.reloadAsync()를 호출하므로 이 코드는 실행되지 않음
+    } catch (error) {
+      console.error("업데이트 적용 실패:", error);
+      // 에러 발생 시에만 모달을 닫음
+      setShowProgressModal(false);
+    }
   };
 
   const handleDismissProgress = () => {

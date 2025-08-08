@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "988351707609",
+    "project_id": "metalcat-67489",
+    "storage_bucket": "metalcat-67489.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988351707609:android:f238cbb149e7e4b8e001c8",
+        "android_client_info": {
+          "package_name": "com.metalcatapp.metalcat"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBR62UbyUPWPas55BVGv3tkIN9_yzbNRmE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
