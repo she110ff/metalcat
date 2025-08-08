@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   ScrollView,
   ActivityIndicator,
@@ -37,19 +37,19 @@ import {
 import { AuctionResultSection } from "@/components/auction/result";
 import { getOptimizedAuctionPhotoUrl } from "@/utils/imageOptimizer";
 import { supabase } from "@/hooks/auctions/supabaseClient";
+import { ImageSkeleton } from "@/components/ui/skeleton/ImageSkeleton";
 
 const { width: screenWidth } = Dimensions.get("window");
 
 export const AuctionDetail = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isImageViewerVisible, setIsImageViewerVisible] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  // 이미지 스크롤 관련 useRef들을 최상단으로 이동
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
       setCurrentImageIndex(viewableItems[0].index || 0);
@@ -60,33 +60,26 @@ export const AuctionDetail = () => {
     itemVisiblePercentThreshold: 50,
   }).current;
 
-  // ID가 유효한지 확인
+  const { user } = useAuth();
+
   const auctionId = typeof id === "string" ? id : "";
   const hasValidId = !!auctionId;
 
-  // 현재 로그인된 사용자 정보
-  const { user } = useAuth();
+  const { data: auction, isLoading, error } = useAuction(auctionId || "");
 
-  // TanStack Query로 경매 상세 데이터 조회 - ID가 있을 때만 호출
-  const {
-    data: auction,
-    isLoading,
-    error,
-  } = useAuction(hasValidId ? auctionId : "");
+  const { data: bids = [], isLoading: bidsLoading } = useBids(auctionId || "");
 
-  // 입찰 기록 조회 - ID가 있을 때만 호출
-  const { data: bids = [], isLoading: bidsLoading } = useBids(
-    hasValidId ? auctionId : ""
-  );
-
-  // 경매 결과 조회 (종료된 경매인 경우) - ID가 있을 때만 호출
   const {
     data: auctionResult,
     isLoading: resultLoading,
     error: resultError,
-  } = useAuctionResult(hasValidId ? auctionId : "");
+  } = useAuctionResult(auctionId || "");
 
-  console.log("📊 경매 데이터 조회 결과:", {
+  const handleBack = useCallback(() => {
+    router.back();
+  }, [router]);
+
+  console.log("경매 데이터 조회 결과:", {
     auction: auction
       ? {
           id: auction.id,
@@ -123,7 +116,7 @@ export const AuctionDetail = () => {
               유효하지 않은 경매 ID입니다.
             </Text>
             <Pressable
-              onPress={() => router.back()}
+              onPress={handleBack}
               className="px-6 py-3 bg-blue-500/20 rounded-lg border border-blue-500/30"
             >
               <Text className="text-blue-300 font-semibold">뒤로 가기</Text>
@@ -156,7 +149,7 @@ export const AuctionDetail = () => {
   }
 
   if (error || !auction) {
-    console.error("❌ 경매 데이터 로딩 실패:", error);
+    console.error("경매 데이터 로딩 실패:", error);
     return (
       <LinearGradient
         colors={["#1a1a2e", "#16213e", "#0f3460"]}
@@ -175,7 +168,7 @@ export const AuctionDetail = () => {
               {error?.message || "알 수 없는 오류가 발생했습니다."}
             </Text>
             <Pressable
-              onPress={() => router.back()}
+              onPress={handleBack}
               className="px-6 py-3 bg-blue-500/20 rounded-lg border border-blue-500/30"
             >
               <Text className="text-blue-300 font-semibold">뒤로 가기</Text>
@@ -267,19 +260,6 @@ export const AuctionDetail = () => {
     ? bids.some((bid) => bid.userId === user.id)
     : false;
 
-  const handleBack = () => {
-    router.back();
-  };
-
-  // 이미지 로딩 상태 관리
-  const handleImageLoad = (imageId: string) => {
-    setLoadedImages((prev) => new Set([...prev, imageId]));
-  };
-
-  const handleImageError = (imageId: string) => {
-    setLoadedImages((prev) => new Set([...prev, imageId]));
-  };
-
   // 이미지 클릭 핸들러
   const handleImagePress = (index: number) => {
     setSelectedImageIndex(index);
@@ -311,39 +291,35 @@ export const AuctionDetail = () => {
 
   // 이미지 슬라이드 렌더링 함수
   const renderImageItem = ({ item, index }: { item: any; index: number }) => {
-    const isLoaded = loadedImages.has(item.id);
-
-    // Supabase Storage 이미지 최적화 적용
-    const optimizedImageUrl = getOptimizedAuctionPhotoUrl(
-      supabase,
-      item.uri,
-      "detail" // 상세 화면에서는 detail 크기 사용 (800x600, 85% 품질)
-    );
+    const imageUrl = getOptimizedAuctionPhotoUrl(supabase, item.uri, "detail");
 
     return (
       <TouchableOpacity
         style={{ width: screenWidth, height: 256 }}
         onPress={() => handleImagePress(index)}
         activeOpacity={0.9}
+        className="relative overflow-hidden"
       >
+        {/* 메인 이미지 */}
         <Image
-          source={{ uri: optimizedImageUrl }}
+          source={{ uri: imageUrl }}
           style={{
             width: screenWidth,
             height: 256,
             resizeMode: "cover",
           }}
-          onLoadEnd={() => handleImageLoad(item.id)}
-          onError={() => handleImageError(item.id)}
         />
-        {!isLoaded && (
-          <Box className="absolute inset-0 bg-black/30 items-center justify-center">
-            <ActivityIndicator size="large" color="#FFFFFF" />
-          </Box>
-        )}
+
         {/* 확대 아이콘 힌트 */}
-        <Box className="absolute top-4 right-4">
-          <Expand size={24} color="rgba(255, 255, 255, 0.8)" />
+        <Box className="absolute top-4 right-4 p-2 bg-black/40 rounded-full">
+          <Expand size={20} color="rgba(255, 255, 255, 0.9)" />
+        </Box>
+
+        {/* 이미지 순서 표시 */}
+        <Box className="absolute top-4 left-4 px-2 py-1 bg-black/60 rounded-lg">
+          <Text className="text-white/80 text-xs font-medium">
+            {index + 1}/{auction?.photos?.length || 1}
+          </Text>
         </Box>
       </TouchableOpacity>
     );
@@ -379,9 +355,9 @@ export const AuctionDetail = () => {
       <SafeAreaView className="flex-1">
         {/* 로딩 상태 */}
         {isLoading && (
-          <VStack className="items-center justify-center p-8 flex-1" space="md">
-            <ActivityIndicator size="large" color="#9333EA" />
-            <Text className="text-gray-400 text-base mt-4 font-nanum">
+          <VStack className="items-center justify-center p-8 flex-1" space="lg">
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text className="text-white text-lg font-semibold">
               경매 정보를 불러오는 중...
             </Text>
           </VStack>
@@ -407,43 +383,43 @@ export const AuctionDetail = () => {
           >
             <VStack space="xl">
               {/* Header */}
-              <VStack space="lg">
-                <HStack className="items-center justify-between px-4 py-3">
-                  {/* 모바일 표준 뒤로가기 버튼 */}
-                  <Pressable
-                    onPress={handleBack}
-                    className="active:opacity-60"
-                    style={{
-                      minWidth: 44,
-                      minHeight: 44,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginLeft: -8,
-                    }}
-                  >
-                    <HStack className="items-center" space="xs">
-                      <ChevronLeft
-                        size={Platform.OS === "ios" ? 28 : 24}
-                        color="#FFFFFF"
-                      />
-                      {Platform.OS === "ios" && (
-                        <Text className="text-white text-base font-medium">
-                          뒤로
-                        </Text>
-                      )}
-                    </HStack>
-                  </Pressable>
+              <HStack className="items-center justify-between px-4 py-3">
+                {/* 모바일 표준 뒤로가기 버튼 */}
+                <Pressable
+                  onPress={handleBack}
+                  className="active:opacity-60"
+                  style={{
+                    minWidth: 44,
+                    minHeight: 44,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    marginLeft: -8,
+                  }}
+                >
+                  <HStack className="items-center" space="xs">
+                    <ChevronLeft
+                      size={Platform.OS === "ios" ? 28 : 24}
+                      color="#FFFFFF"
+                    />
+                    {Platform.OS === "ios" && (
+                      <Text className="text-white text-base font-medium">
+                        뒤로
+                      </Text>
+                    )}
+                  </HStack>
+                </Pressable>
 
-                  <Text className="text-white font-bold text-lg tracking-wide">
-                    경매 상세
-                  </Text>
+                <Text className="text-white font-bold text-lg tracking-wide">
+                  경매 상세
+                </Text>
 
-                  {/* 오른쪽 여백 (대칭을 위해) */}
-                  <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
-                </HStack>
+                {/* 오른쪽 여백 (대칭을 위해) */}
+                <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
+              </HStack>
 
-                {/* 이미지 슬라이드 */}
-                {auction?.photos && auction.photos.length > 0 ? (
+              {/* 이미지 갤러리 */}
+              {auction?.photos && auction.photos.length > 0 ? (
+                <VStack space="md">
                   <Box style={{ width: screenWidth, height: 256 }}>
                     <FlatList
                       ref={flatListRef}
@@ -459,102 +435,54 @@ export const AuctionDetail = () => {
                       nestedScrollEnabled={true}
                       onViewableItemsChanged={onViewableItemsChanged}
                       viewabilityConfig={viewabilityConfig}
+                      removeClippedSubviews={true}
+                      maxToRenderPerBatch={3}
+                      windowSize={5}
+                      initialNumToRender={1}
+                      getItemLayout={(data, index) => ({
+                        length: screenWidth,
+                        offset: screenWidth * index,
+                        index,
+                      })}
                     />
                     {renderImageIndicator()}
                   </Box>
-                ) : (
-                  // 기본 이미지 (이미지가 없는 경우)
-                  <Box
-                    style={{ width: screenWidth, height: 256 }}
-                    className="bg-white/5 border border-white/10 items-center justify-center"
-                  >
-                    <Images size={64} color="rgba(255, 255, 255, 0.3)" />
-                    <Text className="text-white/40 text-sm mt-2">
-                      이미지 없음
-                    </Text>
-                  </Box>
-                )}
+                </VStack>
+              ) : (
+                <VStack space="md">
+                  <Text className="text-yellow-300 text-lg font-black tracking-[2px] uppercase px-6">
+                    상품 사진
+                  </Text>
+                  <ImageSkeleton height={256} showText={true} />
+                </VStack>
+              )}
 
-                <Box className="rounded-3xl p-8 mx-6 bg-purple-600/8 border border-purple-500/15 shadow-2xl shadow-purple-600/30">
-                  <VStack space="md">
-                    <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
-                      {auctionDetail.auctionCategory === "machinery"
-                        ? "Machinery"
-                        : auctionDetail.auctionCategory === "demolition"
-                        ? "Demolition"
-                        : auctionDetail.auctionCategory === "materials"
-                        ? "Materials"
-                        : auctionDetail.metalType || "Scrap"}{" "}
-                      Auction
-                    </Text>
-                    <Text className="text-white text-2xl font-black tracking-wide">
-                      {auctionDetail.auctionCategory === "machinery" &&
-                      auctionDetail.productName
-                        ? auctionDetail.productName
-                        : auctionDetail.auctionCategory === "demolition" &&
-                          (auction as any)?.demolitionInfo?.demolitionTitle &&
-                          Object.keys((auction as any).demolitionInfo || {})
-                            .length > 0
-                        ? (auction as any).demolitionInfo?.demolitionTitle
-                        : auctionDetail.title}
-                    </Text>
-                    {auctionDetail.auctionCategory === "machinery" ? (
-                      <VStack space="xs">
-                        <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
-                          {auctionDetail.weight || "1건"}
-                          {auctionDetail.manufacturer &&
-                            ` • ${auctionDetail.manufacturer}`}
-                        </Text>
-                        {auctionDetail.modelName && (
-                          <Text className="text-purple-200/60 text-xs tracking-wider">
-                            모델: {auctionDetail.modelName || "정보 없음"}
-                          </Text>
-                        )}
-                      </VStack>
-                    ) : auctionDetail.auctionCategory === "demolition" &&
-                      (auction as any)?.demolitionInfo &&
+              {/* 경매 제목 */}
+              <VStack space="md" className="px-6 py-8">
+                <Text className="text-purple-300 text-sm font-medium tracking-[3px] uppercase">
+                  {auctionDetail.auctionCategory === "machinery"
+                    ? "Machinery"
+                    : auctionDetail.auctionCategory === "demolition"
+                    ? "Demolition"
+                    : auctionDetail.auctionCategory === "materials"
+                    ? "Materials"
+                    : auctionDetail.metalType || "Scrap"}{" "}
+                  Auction
+                </Text>
+                <Text className="text-white text-2xl font-black tracking-wide">
+                  {auctionDetail.auctionCategory === "machinery" &&
+                  auctionDetail.productName
+                    ? auctionDetail.productName
+                    : auctionDetail.auctionCategory === "demolition" &&
+                      (auction as any)?.demolitionInfo?.demolitionTitle &&
                       Object.keys((auction as any).demolitionInfo || {})
-                        .length > 0 ? (
-                      <VStack space="xs">
-                        <Text className="text-purple-200/80 text-sm font-medium tracking-wider">
-                          {(auction as any).demolitionInfo?.buildingPurpose ===
-                          "residential"
-                            ? "주거용"
-                            : (auction as any).demolitionInfo
-                                ?.buildingPurpose === "commercial"
-                            ? "산업/상업용"
-                            : "공공시설"}
-                          •{" "}
-                          {(auction as any)?.demolitionArea?.toLocaleString() ||
-                            "미상"}{" "}
-                          {(auction as any)?.areaUnit === "sqm"
-                            ? "㎡"
-                            : (auction as any)?.areaUnit === "pyeong"
-                            ? "평"
-                            : ""}
-                        </Text>
-                        <Text className="text-purple-200/60 text-xs tracking-wider">
-                          {(auction as any).demolitionInfo?.demolitionMethod ===
-                          "full"
-                            ? "전면 철거"
-                            : (auction as any).demolitionInfo
-                                ?.demolitionMethod === "partial"
-                            ? "부분 철거"
-                            : "내부 철거"}
-                          • {(auction as any).demolitionInfo?.floorCount || 1}층
-                        </Text>
-                      </VStack>
-                    ) : (
-                      <Text className="text-purple-200/80 text-sm font-medium tracking-wider uppercase">
-                        {auctionDetail.weight || "1건"} •{" "}
-                        {auctionDetail.purity || "99.5%"}
-                      </Text>
-                    )}
-                  </VStack>
-                </Box>
+                        .length > 0
+                    ? (auction as any).demolitionInfo?.demolitionTitle
+                    : auctionDetail.title}
+                </Text>
               </VStack>
 
-              {/* 경매 상세 정보 */}
+              {/* 상세 정보 */}
               <VStack space="lg" className="px-6">
                 <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
                   상세 정보
@@ -736,7 +664,7 @@ export const AuctionDetail = () => {
                           </VStack>
                         )}
 
-                        {/* 🎨 UX: 희망 가격 제거 - 경매에서는 시작가/현재가가 더 중요 */}
+                        {/* 희망 가격 정보 */}
 
                         {/* 판매 조건 정보 */}
                         {(auction as any)?.salesEnvironment && (
@@ -805,7 +733,7 @@ export const AuctionDetail = () => {
                           </VStack>
                         )}
 
-                        {/* 🎨 UX: 단위당 가격 제거 - 고철 경매에서는 불필요 */}
+                        {/* 단위당 가격 정보 */}
 
                         {(auction as any)?.quantity && (
                           <VStack space="sm">
@@ -1026,7 +954,7 @@ export const AuctionDetail = () => {
                 </Box>
               </VStack>
 
-              {/* Current Bid Status */}
+              {/* 입찰 상태 */}
               <BidStatusSection
                 auctionStatus={auctionDetail.status}
                 currentBid={auction?.currentBid || 0}
@@ -1043,8 +971,8 @@ export const AuctionDetail = () => {
                 hasBids={bids.length > 0}
               />
 
-              {/* Bid Input - 진행 중인 경매만 */}
-              {auctionDetail.status !== "ended" && hasValidId && (
+              {/* 입찰 입력 */}
+              {auctionDetail.status !== "ended" && auctionId && (
                 <BidInputSection
                   auctionId={auctionId}
                   currentTopBid={currentTopBid}
@@ -1057,7 +985,7 @@ export const AuctionDetail = () => {
                 />
               )}
 
-              {/* Auction Result - 종료된 경매 결과 */}
+              {/* 종료된 경매 결과 */}
               {auctionDetail.status === "ended" && (
                 <AuctionResultSection
                   auction={auction}
@@ -1067,8 +995,8 @@ export const AuctionDetail = () => {
                 />
               )}
 
-              {/* Bid History */}
-              <BidHistorySection auctionId={hasValidId ? auctionId : ""} />
+              {/* 입찰 히스토리 */}
+              <BidHistorySection auctionId={auctionId || ""} />
             </VStack>
           </ScrollView>
         )}
