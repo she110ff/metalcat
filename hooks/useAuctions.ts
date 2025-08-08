@@ -1,4 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from "@tanstack/react-query";
 import { AppState } from "react-native";
 import { useEffect, useState } from "react";
 import { type AuctionItem, type AuctionCategory } from "@/data/types/auction";
@@ -96,6 +101,60 @@ export const useAuction = (id: string) => {
     enabled: !!id,
     staleTime: staleTime, // 동적 캐시 설정
     gcTime: gcTime, // 동적 캐시 보관 시간
+  });
+};
+
+// 경매 목록 무한 스크롤 훅 (배터리 최적화 적용)
+export const useInfiniteAuctions = (filters?: {
+  category?: AuctionCategory;
+  status?: string;
+  sortBy?: "createdAt" | "endTime";
+}) => {
+  const [isAppActive, setIsAppActive] = useState(
+    AppState.currentState === "active"
+  );
+  const { settings } = useBatteryOptimizationContext();
+
+  // 앱 상태 변경 감지 (배터리 최적화)
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      setIsAppActive(nextAppState === "active");
+    };
+
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
+    return () => subscription?.remove();
+  }, []);
+
+  // 배터리 최적화 설정에 따른 간격 계산
+  const effectiveInterval = getAuctionRefreshInterval(settings);
+  const shouldPoll = isAppActive && !settings.disableBackgroundPolling;
+
+  // 캐시 설정 동적 계산 (기존 useAuctions와 동일)
+  const staleTime = getCacheStaleTime(settings, effectiveInterval);
+  const gcTime = getCacheGcTime(settings, effectiveInterval);
+
+  return useInfiniteQuery({
+    queryKey: [...auctionKeys.list(filters), "infinite"],
+    queryFn: ({ pageParam = 1 }) =>
+      auctionAPI.getAuctionsWithPagination(filters, pageParam, 10),
+    getNextPageParam: (lastPage) => {
+      const { pagination } = lastPage;
+      return pagination.page < pagination.total_pages
+        ? pagination.page + 1
+        : undefined;
+    },
+    initialPageParam: 1,
+
+    // 기존 useAuctions와 동일한 배터리 최적화 전략
+    staleTime: staleTime,
+    gcTime: gcTime,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: true,
+    refetchInterval: shouldPoll ? effectiveInterval : false,
+    enabled: isAppActive,
   });
 };
 

@@ -487,6 +487,113 @@ export async function getAuctions(filters?: {
 }
 
 /**
+ * 경매 목록 조회 (페이지네이션 지원)
+ */
+export async function getAuctionsWithPagination(
+  filters?: {
+    category?: AuctionCategory;
+    status?: string;
+    sortBy?: "createdAt" | "endTime";
+  },
+  page: number = 1,
+  limit: number = 10
+): Promise<{
+  data: AuctionItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    total_pages: number;
+  };
+}> {
+  try {
+    console.log("🔍 [Auction API] getAuctionsWithPagination 호출:", {
+      filters,
+      page,
+      limit,
+    });
+
+    // 페이지네이션 계산
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    // 새로운 통합 뷰 사용 (count 포함)
+    let query = supabase
+      .from("auction_list_view")
+      .select("*", { count: "exact" });
+
+    // 카테고리 필터
+    if (filters?.category) {
+      query = query.eq("auction_category", filters.category);
+    }
+
+    // 상태 필터 처리 (기존 로직과 동일)
+    if (filters?.status) {
+      if (filters.status === "active") {
+        // 진행중: active 또는 ending 상태
+        query = query.in("status", ["active", "ending"]);
+      } else {
+        query = query.eq("status", filters.status);
+      }
+    }
+
+    // 정렬 처리 (기존 로직과 동일)
+    if (filters?.sortBy === "endTime") {
+      query = query.order("end_time", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    // 페이지네이션 적용
+    query = query.range(from, to);
+
+    const { data: auctions, error, count } = await query;
+
+    if (error) {
+      handleSupabaseError(error, "경매 목록 페이지네이션 조회");
+    }
+
+    const transformedAuctions = (auctions || []).map(
+      transformViewRowToAuctionItem
+    );
+
+    const total = count || 0;
+    const total_pages = Math.ceil(total / limit);
+
+    console.log("✅ [Auction API] 경매 목록 페이지네이션 조회 성공:", {
+      page,
+      limit,
+      total,
+      total_pages,
+      dataCount: transformedAuctions.length,
+      categories: [
+        ...new Set(transformedAuctions.map((a) => a.auctionCategory)),
+      ],
+    });
+
+    return {
+      data: transformedAuctions,
+      pagination: {
+        page,
+        limit,
+        total,
+        total_pages,
+      },
+    };
+  } catch (error) {
+    console.error("❌ [Auction API] 경매 목록 페이지네이션 조회 실패:", error);
+    if (error instanceof Error) {
+      console.error("❌ [Auction API] 오류 상세:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+    }
+    throw error;
+  }
+}
+
+/**
  * 경매 상세 조회 (기존 인터페이스 완전 호환)
  */
 export async function getAuctionById(id: string): Promise<AuctionItem | null> {
@@ -604,7 +711,7 @@ export async function createAuction(
         try {
           console.log(
             `📸 사진 ${index + 1}/${
-              auctionData.photos.length
+              auctionData.photos!.length
             } 업로드 중... (병렬)`
           );
 
@@ -625,7 +732,7 @@ export async function createAuction(
           if (uploadedUrl) {
             console.log(
               `✅ 사진 ${index + 1}/${
-                auctionData.photos.length
+                auctionData.photos!.length
               } 병렬 업로드 완료`
             );
             return { success: true, data: photoData };
@@ -642,7 +749,10 @@ export async function createAuction(
           // 오류 발생 시에도 원본 URI로 저장하여 정상 진행
           return {
             success: false,
-            error: uploadError.message,
+            error:
+              uploadError instanceof Error
+                ? uploadError.message
+                : "Unknown error",
             data: {
               auction_id: auctionId,
               photo_url: photo.uri,
@@ -675,11 +785,11 @@ export async function createAuction(
           // 실패한 경우도 원본 URI로 저장
           uploadedPhotos.push({
             auction_id: auctionId,
-            photo_url: auctionData.photos[index].uri,
-            photo_type: auctionData.photos[index].type || "full",
+            photo_url: auctionData.photos![index].uri,
+            photo_type: auctionData.photos![index].type || "full",
             photo_order: index,
             is_representative:
-              auctionData.photos[index].isRepresentative || false,
+              auctionData.photos![index].isRepresentative || false,
           });
         }
       });
@@ -1498,6 +1608,7 @@ export async function getAuctionStats(): Promise<AuctionStats> {
 // 기존 auctionAPI 인터페이스와 동일한 구조로 내보내기
 export const auctionAPI = {
   getAuctions,
+  getAuctionsWithPagination,
   getAuctionById,
   createAuction,
   updateAuction,
