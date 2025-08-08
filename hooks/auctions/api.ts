@@ -14,6 +14,36 @@ import { getCurrentUser } from "@/hooks/auth/api";
 // ============================================
 
 /**
+ * 파일 크기 포맷팅 유틸리티
+ */
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
+/**
+ * 파일 크기 제한 확인
+ */
+const isFileSizeExceeded = (
+  fileSize: number,
+  maxSizeMB: number = 8
+): boolean => {
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  return fileSize > maxSizeBytes;
+};
+
+/**
+ * 허용된 이미지 확장자 확인
+ */
+const isAllowedImageExtension = (extension: string): boolean => {
+  const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+  return allowedExtensions.includes(extension.toLowerCase());
+};
+
+/**
  * 로컬 이미지를 Supabase Storage에 업로드하고 공개 URL 반환
  * 프리미엄 서비스의 안정적인 업로드 방식 사용
  */
@@ -40,6 +70,14 @@ async function uploadImageToStorage(
 
     // 파일 확장자 추출 (기본값: jpg)
     const ext = imageUri.split(".").pop()?.toLowerCase() || "jpg";
+
+    // 확장자 검증
+    if (!isAllowedImageExtension(ext)) {
+      throw new Error(
+        `지원하지 않는 파일 형식입니다: ${ext}. JPG, PNG, WebP, GIF 파일만 업로드 가능합니다.`
+      );
+    }
+
     const fileName = `${auctionId}/photo_${photoIndex}_${Date.now()}.${ext}`;
 
     // 확장자에 따른 MIME 타입 매핑
@@ -61,6 +99,32 @@ async function uploadImageToStorage(
 
     const mimeType = getMimeType(ext);
     console.log("📸 파일 정보:", { ext, fileName, mimeType });
+
+    // 파일 크기 검증
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(imageUri);
+      if (!fileInfo.exists) {
+        throw new Error("이미지 파일을 찾을 수 없습니다.");
+      }
+
+      const fileSize = fileInfo.size || 0;
+      console.log("📸 파일 크기 정보:", {
+        size: formatFileSize(fileSize),
+        exists: fileInfo.exists,
+      });
+
+      // 8MB 제한 (Supabase 10MB 제한에 안전 마진)
+      if (isFileSizeExceeded(fileSize, 8)) {
+        throw new Error(
+          `파일 크기가 너무 큽니다. 최대 8MB까지 업로드 가능합니다. (현재: ${formatFileSize(
+            fileSize
+          )})`
+        );
+      }
+    } catch (fileInfoError) {
+      console.warn("📸 파일 정보 확인 실패, 계속 진행:", fileInfoError);
+      // 파일 정보 확인 실패 시에도 업로드 시도 (fallback)
+    }
 
     let fileData;
 

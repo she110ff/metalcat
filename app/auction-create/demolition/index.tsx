@@ -233,6 +233,7 @@ export default function DemolitionAuctionCreate() {
               title="현장 사진 등록"
               showCounter={false}
               size="medium"
+              maxFileSizeMB={8}
             />
           </VStack>
         </KeyboardAwareScrollView>

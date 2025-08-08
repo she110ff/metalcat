@@ -125,7 +125,7 @@ export default function MaterialsAuctionCreate() {
           showsVerticalScrollIndicator={false}
         >
           <VStack space="xl" className="pb-8">
-            {/* PhotoPicker 컴포넌트 사용 */}
+            {/* 사진 등록 */}
             <PhotoPicker
               photos={photos}
               onPhotosChange={setPhotos}
@@ -133,8 +133,9 @@ export default function MaterialsAuctionCreate() {
               minPhotos={3}
               hasRepresentative={true}
               title="사진 등록"
-              showCounter={true}
+              showCounter={false}
               size="medium"
+              maxFileSizeMB={8}
             />
           </VStack>
         </ScrollView>

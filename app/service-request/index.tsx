@@ -321,6 +321,7 @@ export default function ServiceRequest() {
               showCounter={true}
               size="medium"
               allowsMultipleSelection={true}
+              maxFileSizeMB={8}
             />
 
             {/* 전화번호 */}

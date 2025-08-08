@@ -334,6 +334,36 @@ export async function deleteServiceRequest(id: string): Promise<void> {
 // ============================================
 
 /**
+ * 파일 크기 포맷팅 유틸리티
+ */
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
+/**
+ * 파일 크기 제한 확인
+ */
+const isFileSizeExceeded = (
+  fileSize: number,
+  maxSizeMB: number = 8
+): boolean => {
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  return fileSize > maxSizeBytes;
+};
+
+/**
+ * 허용된 이미지 확장자 확인
+ */
+const isAllowedImageExtension = (extension: string): boolean => {
+  const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+  return allowedExtensions.includes(extension.toLowerCase());
+};
+
+/**
  * 서비스 요청 사진 업로드
  */
 export async function uploadServiceRequestPhoto(
@@ -367,7 +397,41 @@ export async function uploadServiceRequestPhoto(
 
     // 파일 확장자 추출
     const ext = fileUri.split(".").pop()?.toLowerCase() || "jpg";
+
+    // 확장자 검증
+    if (!isAllowedImageExtension(ext)) {
+      throw new Error(
+        `지원하지 않는 파일 형식입니다: ${ext}. JPG, PNG, WebP, GIF 파일만 업로드 가능합니다.`
+      );
+    }
+
     const fileName = `${requestId}/photo_${order}_${Date.now()}.${ext}`;
+
+    // 파일 크기 검증
+    try {
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error("이미지 파일을 찾을 수 없습니다.");
+      }
+
+      const fileSize = fileInfo.size || 0;
+      console.log("📸 파일 크기 정보:", {
+        size: formatFileSize(fileSize),
+        exists: fileInfo.exists,
+      });
+
+      // 8MB 제한 (Supabase 50MB 제한에 안전 마진)
+      if (isFileSizeExceeded(fileSize, 8)) {
+        throw new Error(
+          `파일 크기가 너무 큽니다. 최대 8MB까지 업로드 가능합니다. (현재: ${formatFileSize(
+            fileSize
+          )})`
+        );
+      }
+    } catch (fileInfoError) {
+      console.warn("📸 파일 정보 확인 실패, 계속 진행:", fileInfoError);
+      // 파일 정보 확인 실패 시에도 업로드 시도 (fallback)
+    }
 
     // expo-file-system을 사용해서 파일을 base64로 읽기
     let fileData;
@@ -436,40 +500,42 @@ export async function uploadServiceRequestPhoto(
       });
 
     if (uploadError) {
-      console.error("📸 Storage 업로드 실패:", uploadError);
-      handleSupabaseError(uploadError, "사진 업로드");
+      console.error("❌ 서비스 요청 사진 업로드 실패:", uploadError);
+      throw uploadError;
     }
 
     console.log("📸 Storage 업로드 성공:", data);
 
     // 공개 URL 생성
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("service-request-photos").getPublicUrl(fileName);
+    const { data: urlData } = supabase.storage
+      .from("service-request-photos")
+      .getPublicUrl(fileName);
 
+    const publicUrl = urlData.publicUrl;
     console.log("📸 공개 URL 생성:", publicUrl);
 
-    // DB에 사진 정보 저장
-    const { data: photo, error: dbError } = await supabase
+    // 데이터베이스에 사진 정보 저장
+    const { data: photoData, error: insertError } = await supabase
       .from("service_request_photos")
       .insert({
         service_request_id: requestId,
         photo_url: publicUrl,
         photo_order: order,
-        is_representative: order === 0,
+        is_representative: order === 0, // 첫 번째 사진을 대표 사진으로 설정
       })
       .select()
       .single();
 
-    if (dbError) {
-      console.error("📸 DB 저장 실패:", dbError);
-      handleSupabaseError(dbError, "사진 정보 저장");
+    if (insertError) {
+      console.error("❌ 사진 정보 저장 실패:", insertError);
+      throw insertError;
     }
 
-    console.log("📸 사진 업로드 완료:", photo);
-    return photo;
+    console.log("📸 사진 정보 저장 성공:", photoData);
+
+    return photoData;
   } catch (error) {
-    console.error("사진 업로드 실패:", error);
+    console.error("❌ 서비스 요청 사진 업로드 중 오류:", error);
     throw error;
   }
 }

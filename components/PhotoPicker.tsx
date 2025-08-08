@@ -7,6 +7,7 @@ import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Camera, Plus } from "lucide-react-native";
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
 import { getOptimizedServicePhotoUrl } from "@/utils/imageOptimizer";
 import { isSupabaseStorageUrl } from "@/utils/supabaseImageTransform";
 import { supabase } from "@/hooks/service-request/supabaseClient";
@@ -40,7 +41,70 @@ interface PhotoPickerProps<T extends Photo> {
   size?: "small" | "medium" | "large";
   style?: "default" | "compact";
   allowsMultipleSelection?: boolean;
+  maxFileSizeMB?: number; // 최대 파일 크기 제한 (MB)
 }
+
+/**
+ * 파일 크기 포맷팅 유틸리티
+ */
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+};
+
+/**
+ * 허용된 이미지 확장자 확인
+ */
+const isAllowedImageExtension = (extension: string): boolean => {
+  const allowedExtensions = ["jpg", "jpeg", "png", "webp", "gif"];
+  return allowedExtensions.includes(extension.toLowerCase());
+};
+
+/**
+ * 이미지 파일 검증
+ */
+const validateImageFile = async (
+  uri: string,
+  maxFileSizeMB: number = 8
+): Promise<{ isValid: boolean; error?: string }> => {
+  try {
+    // 파일 존재 여부 확인
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    if (!fileInfo.exists) {
+      return { isValid: false, error: "이미지 파일을 찾을 수 없습니다." };
+    }
+
+    // 파일 크기 확인
+    const fileSize = fileInfo.size || 0;
+    const maxSizeBytes = maxFileSizeMB * 1024 * 1024;
+
+    if (fileSize > maxSizeBytes) {
+      return {
+        isValid: false,
+        error: `파일 크기가 너무 큽니다. 최대 ${maxFileSizeMB}MB까지 업로드 가능합니다. (현재: ${formatFileSize(
+          fileSize
+        )})`,
+      };
+    }
+
+    // 파일 확장자 확인
+    const ext = uri.split(".").pop()?.toLowerCase();
+    if (!ext || !isAllowedImageExtension(ext)) {
+      return {
+        isValid: false,
+        error: `지원하지 않는 파일 형식입니다: ${ext}. JPG, PNG, WebP, GIF 파일만 업로드 가능합니다.`,
+      };
+    }
+
+    return { isValid: true };
+  } catch (error) {
+    console.warn("이미지 파일 검증 중 오류:", error);
+    return { isValid: false, error: "파일 검증 중 오류가 발생했습니다." };
+  }
+};
 
 export const PhotoPicker = <T extends Photo>({
   photos,
@@ -53,6 +117,7 @@ export const PhotoPicker = <T extends Photo>({
   size = "medium",
   style = "default",
   allowsMultipleSelection = true,
+  maxFileSizeMB = 8,
 }: PhotoPickerProps<T>) => {
   // 권한 관리 훅 사용
   const { permissions, requestPermission, openSettings } = usePermissions();
@@ -90,6 +155,54 @@ export const PhotoPicker = <T extends Photo>({
     }
   };
 
+  // 이미지 검증 및 추가 함수
+  const validateAndAddImage = async (uri: string, index: number = 0) => {
+    // 이미지 파일 검증
+    const validation = await validateImageFile(uri, maxFileSizeMB);
+
+    if (!validation.isValid) {
+      Alert.alert(
+        "파일 검증 실패",
+        validation.error || "알 수 없는 오류가 발생했습니다."
+      );
+      return false; // 검증 실패 시 false 반환
+    }
+
+    // 새 사진 객체 생성
+    const newPhoto = {
+      id: `photo_${Date.now()}_${index}`,
+      uri: uri,
+      ...(hasRepresentative && { type: "full" }),
+    } as T;
+
+    return newPhoto; // 성공 시 새 사진 객체 반환
+  };
+
+  // 다중 이미지 검증 및 추가 함수
+  const validateAndAddMultipleImages = async (assets: any[]) => {
+    const validPhotos: T[] = [];
+
+    for (let i = 0; i < assets.length; i++) {
+      const result = await validateAndAddImage(assets[i].uri, i);
+      if (result) {
+        // 대표 사진 설정: 기존 사진이 없고 첫 번째 유효한 사진인 경우
+        if (
+          hasRepresentative &&
+          photos.length === 0 &&
+          validPhotos.length === 0
+        ) {
+          (result as any).isRepresentative = true;
+        }
+        validPhotos.push(result);
+      }
+    }
+
+    // 모든 유효한 사진을 한번에 추가
+    if (validPhotos.length > 0) {
+      onPhotosChange([...photos, ...validPhotos]);
+    }
+  };
+
   // 카메라로 사진 촬영
   const handleTakePhoto = async () => {
     const hasPermissions = await requestPermissions();
@@ -104,14 +217,10 @@ export const PhotoPicker = <T extends Photo>({
       });
 
       if (!result.canceled && result.assets?.[0]) {
-        const newPhoto = {
-          id: `photo_${Date.now()}`,
-          uri: result.assets[0].uri,
-          ...(hasRepresentative && { isRepresentative: photos.length === 0 }),
-          ...(hasRepresentative && { type: "full" }),
-        } as T;
-
-        onPhotosChange([...photos, newPhoto]);
+        const photoResult = await validateAndAddImage(result.assets[0].uri);
+        if (photoResult) {
+          onPhotosChange([...photos, photoResult]);
+        }
       }
     } catch (error) {
       console.error("카메라 에러:", error);
@@ -135,25 +244,14 @@ export const PhotoPicker = <T extends Photo>({
 
       if (!result.canceled && result.assets) {
         if (allowsMultipleSelection) {
-          const newPhotos: T[] = result.assets.map((asset, index) => ({
-            id: `photo_${Date.now()}_${index}`,
-            uri: asset.uri,
-            ...(hasRepresentative && {
-              isRepresentative: photos.length === 0 && index === 0,
-            }),
-            ...(hasRepresentative && { type: "full" }),
-          })) as T[];
-
-          onPhotosChange([...photos, ...newPhotos]);
+          // 다중 선택 시 각 이미지 검증
+          await validateAndAddMultipleImages(result.assets);
         } else {
-          const newPhoto = {
-            id: `photo_${Date.now()}`,
-            uri: result.assets[0].uri,
-            ...(hasRepresentative && { isRepresentative: photos.length === 0 }),
-            ...(hasRepresentative && { type: "full" }),
-          } as T;
-
-          onPhotosChange([...photos, newPhoto]);
+          // 단일 선택 시
+          const photoResult = await validateAndAddImage(result.assets[0].uri);
+          if (photoResult) {
+            onPhotosChange([...photos, photoResult]);
+          }
         }
       }
     } catch (error) {
@@ -219,6 +317,14 @@ export const PhotoPicker = <T extends Photo>({
           </Text>
         )}
       </HStack>
+
+      {/* 파일 크기 제한 안내 */}
+      <Text
+        className="text-gray-400 text-xs text-center"
+        style={{ fontFamily: "NanumGothic" }}
+      >
+        최대 {maxFileSizeMB}MB, JPG, PNG, WebP, GIF 파일만 업로드 가능
+      </Text>
 
       {/* 사진 리스트 */}
       <VStack space="md">
