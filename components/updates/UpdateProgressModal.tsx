@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Modal, View, StyleSheet } from "react-native";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,7 @@ import { Text } from "@/components/ui/text";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Progress } from "@/components/ui/progress";
-import {
-  Download,
-  CheckCircle,
-  AlertCircle,
-  RefreshCw,
-} from "lucide-react-native";
+import { Download, CheckCircle, AlertCircle } from "lucide-react-native";
 import { UpdateState } from "@/hooks/useAppUpdates";
 import Constants from "expo-constants";
 
@@ -29,19 +24,7 @@ export function UpdateProgressModal({
   onApplyUpdate,
   onDismiss,
 }: UpdateProgressModalProps) {
-  const [isApplying, setIsApplying] = useState(false);
-
-  const handleApplyUpdate = async () => {
-    setIsApplying(true);
-    try {
-      await onApplyUpdate();
-    } catch (error) {
-      setIsApplying(false);
-      console.error("업데이트 적용 중 오류:", error);
-    }
-  };
   const getProgressText = () => {
-    if (isApplying) return "업데이트 적용 중...";
     if (updateState.error) return "다운로드 실패";
     if (updateState.isDownloaded) return "다운로드 완료";
     if (updateState.isDownloading) return "다운로드 중...";
@@ -49,17 +32,15 @@ export function UpdateProgressModal({
   };
 
   const getProgressIcon = () => {
-    if (isApplying) return RefreshCw;
     if (updateState.error) return AlertCircle;
     if (updateState.isDownloaded) return CheckCircle;
     return Download;
   };
 
   const getProgressColor = () => {
-    if (isApplying) return "$warning500";
-    if (updateState.error) return "$error500";
-    if (updateState.isDownloaded) return "$success500";
-    return "$primary500";
+    if (updateState.error) return "#ef4444";
+    if (updateState.isDownloaded) return "#22c55e";
+    return "#3b82f6";
   };
 
   const getProgressValue = () => {
@@ -67,7 +48,7 @@ export function UpdateProgressModal({
       return updateState.downloadProgress * 100;
     }
     if (updateState.isDownloaded) return 100;
-    if (updateState.isDownloading) return 50; // 기본값
+    if (updateState.isDownloading) return 50;
     return 0;
   };
 
@@ -76,7 +57,7 @@ export function UpdateProgressModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={updateState.error || !isApplying ? onDismiss : undefined}
+      onRequestClose={updateState.error ? onDismiss : undefined}
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
@@ -85,26 +66,15 @@ export function UpdateProgressModal({
             <VStack className="items-center space-y-4">
               {React.createElement(getProgressIcon(), {
                 size: 24,
-                color:
-                  getProgressColor() === "$error500"
-                    ? "#ef4444"
-                    : getProgressColor() === "$success500"
-                    ? "#22c55e"
-                    : getProgressColor() === "$warning500"
-                    ? "#f59e0b"
-                    : "#3b82f6",
+                color: getProgressColor(),
               })}
 
               <Heading size="md" className="text-gray-900 text-center">
-                {isApplying
-                  ? "업데이트 적용 중"
-                  : updateState.error
-                  ? "업데이트 실패"
-                  : "업데이트 다운로드"}
+                {updateState.error ? "업데이트 실패" : "업데이트 다운로드"}
               </Heading>
 
               <Text size="sm" className="text-gray-700 text-center">
-                {updateState.updateMessage || getProgressText()}
+                {getProgressText()}
               </Text>
             </VStack>
 
@@ -161,22 +131,12 @@ export function UpdateProgressModal({
               </Box>
             )}
 
-            {/* 적용 중 메시지 */}
-            {isApplying && (
-              <Box className="bg-orange-50 p-3 rounded-md border border-orange-200 mt-4">
-                <Text size="sm" className="text-orange-700 text-center">
-                  업데이트를 적용하고 있습니다. 잠시만 기다려 주세요...
-                </Text>
-              </Box>
-            )}
-
             {/* 액션 버튼들 */}
             <VStack className="space-y-3 mt-6">
-              {updateState.isDownloaded && !isApplying && (
+              {updateState.isDownloaded && (
                 <Button
-                  onPress={handleApplyUpdate}
+                  onPress={onApplyUpdate}
                   className="bg-green-500 active:bg-green-600"
-                  disabled={isApplying}
                 >
                   <HStack className="items-center space-x-2">
                     <CheckCircle size={16} color="#ffffff" />
@@ -196,16 +156,11 @@ export function UpdateProgressModal({
                 </Button>
               )}
 
-              {!updateState.error &&
-                !updateState.isDownloaded &&
-                !isApplying && (
-                  <Button
-                    onPress={onDismiss}
-                    className="border border-gray-300"
-                  >
-                    <Text className="text-gray-700">취소</Text>
-                  </Button>
-                )}
+              {!updateState.error && !updateState.isDownloaded && (
+                <Button onPress={onDismiss} className="border border-gray-300">
+                  <Text className="text-gray-700">취소</Text>
+                </Button>
+              )}
             </VStack>
           </Box>
         </View>
