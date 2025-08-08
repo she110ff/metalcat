@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-  ScrollView,
   ActivityIndicator,
   FlatList,
   Dimensions,
@@ -11,6 +10,7 @@ import {
   Modal,
   StatusBar,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import ImageViewer from "react-native-image-zoom-viewer";
 import { Box } from "@/components/ui/box";
 import { VStack } from "@/components/ui/vstack";
@@ -375,11 +375,14 @@ export const AuctionDetail = () => {
 
         {/* 경매 상세 정보 */}
         {!isLoading && !error && (
-          <ScrollView
-            className="flex-1"
+          <KeyboardAwareScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ paddingBottom: 120 }}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 110 }}
-            nestedScrollEnabled={true}
+            keyboardShouldPersistTaps="handled"
+            enableOnAndroid={true}
+            enableAutomaticScroll={true}
+            extraScrollHeight={20}
           >
             <VStack space="xl">
               {/* Header */}
@@ -998,7 +1001,7 @@ export const AuctionDetail = () => {
               {/* 입찰 히스토리 */}
               <BidHistorySection auctionId={auctionId || ""} />
             </VStack>
-          </ScrollView>
+          </KeyboardAwareScrollView>
         )}
       </SafeAreaView>
 
