@@ -160,33 +160,6 @@ export const LosingResultCard: React.FC<LosingResultCardProps> = ({
         </VStack>
       </Box>
 
-      {/* 액션 버튼들 */}
-      <VStack space="md">
-        <Button
-          onPress={handleViewSimilarAuctions}
-          className="bg-blue-600 hover:bg-blue-700 rounded-xl py-4"
-        >
-          <HStack className="items-center justify-center space-x-2">
-            <Ionicons name="search" size={20} color="white" />
-            <ButtonText className="text-white font-bold text-lg">
-              비슷한 경매 보기
-            </ButtonText>
-          </HStack>
-        </Button>
-
-        <Button
-          onPress={handleCreateSimilarAuction}
-          className="bg-green-600 hover:bg-green-700 rounded-xl py-4"
-        >
-          <HStack className="items-center justify-center space-x-2">
-            <Ionicons name="add" size={20} color="white" />
-            <ButtonText className="text-white font-bold text-lg">
-              구매 경매 등록하기
-            </ButtonText>
-          </HStack>
-        </Button>
-      </VStack>
-
       {/* 팁 박스 */}
       <Box className="rounded-xl p-4 bg-yellow-500/5 border border-yellow-500/20">
         <VStack space="sm">
