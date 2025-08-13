@@ -89,6 +89,8 @@ export default function AuthScreen() {
       { phoneNumber: cleanPhoneNumber },
       {
         onSuccess: (data) => {
+          // 인증번호 입력 필드 초기화
+          setVerificationCode("");
           Alert.alert("인증번호 발송", data.message, [
             { text: "확인", onPress: () => setStep("verify") },
           ]);
@@ -218,6 +220,7 @@ export default function AuthScreen() {
         setStep("mode");
         break;
       case "verify":
+        setVerificationCode(""); // 인증번호 입력 필드 초기화
         setStep("phone");
         break;
       case "info":
