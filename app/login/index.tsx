@@ -671,18 +671,6 @@ export default function AuthScreen() {
                   </Text>
                 </Box>
               )}
-
-              {/* 개발자 정보 */}
-              {step === "verify" && (
-                <Box className="mt-8 bg-blue-600/10 border border-blue-500/30 rounded-xl p-4">
-                  <Text
-                    className="text-blue-300 text-center text-xs"
-                    style={{ fontFamily: "NanumGothic" }}
-                  >
-                    SMS로 받은 6자리 인증번호를 입력하세요
-                  </Text>
-                </Box>
-              )}
             </VStack>
           </KeyboardAwareScrollView>
         </SafeAreaView>
