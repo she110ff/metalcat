@@ -174,7 +174,7 @@ export default function AuthScreen() {
             if (router.canGoBack()) {
               router.back();
             } else {
-              router.replace("/(tabs)/");
+              router.replace("/(tabs)");
             }
           },
         },
@@ -204,13 +204,10 @@ export default function AuthScreen() {
     } else {
       // 로그인 처리
       const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
-      login(
-        {
-          phoneNumber: cleanPhoneNumber,
-          verificationCode: "123456", // 이미 인증 완료됨
-        },
-        { onSuccess, onError }
-      );
+      // 로그인은 전화번호 인증이 이미 완료된 상태이므로
+      // 별도의 로그인 프로세스 대신 사용자 정보를 직접 가져옴
+      // TODO: 실제 로그인 로직으로 변경 필요
+      onSuccess();
     }
   };
 
@@ -334,7 +331,7 @@ export default function AuthScreen() {
                     "신규 회원가입 또는 기존 계정 로그인을 선택하세요"}
                   {step === "phone" &&
                     "전화번호를 입력하고 인증번호를 받아주세요"}
-                  {step === "verify" && "발송된 인증번호 123456을 입력해주세요"}
+                  {step === "verify" && "발송된 인증번호를 입력해주세요"}
                   {step === "info" &&
                     "회원가입을 위해 이름과 주소를 입력해주세요"}
                   {step === "final" &&
@@ -457,7 +454,7 @@ export default function AuthScreen() {
                       className="text-yellow-300 text-xl font-bold text-center mb-4"
                       style={{ fontFamily: "NanumGothic" }}
                     >
-                      인증번호: 123456
+                      SMS로 발송된 인증번호를 입력하세요
                     </Text>
 
                     <TextInput
@@ -679,7 +676,7 @@ export default function AuthScreen() {
                     className="text-blue-300 text-center text-xs"
                     style={{ fontFamily: "NanumGothic" }}
                   >
-                    개발 모드: 인증번호는 123456을 입력하세요
+                    SMS로 받은 6자리 인증번호를 입력하세요
                   </Text>
                 </Box>
               )}

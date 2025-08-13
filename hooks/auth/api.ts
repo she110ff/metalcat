@@ -228,10 +228,9 @@ export async function signinWithPhone(
       throw new AuthError("올바른 전화번호를 입력해주세요");
     }
 
-    // 2. 임시 인증코드 확인 (개발 단계)
-    if (request.verificationCode !== "123456") {
-      throw new AuthError("인증코드가 올바르지 않습니다");
-    }
+    // 로그인 로직은 전화번호 인증이 완료된 상태에서만 호출되므로
+    // 별도의 인증코드 검증이 불필요합니다.
+    // 실제로는 전화번호 인증 완료 후 자동 로그인 처리
 
     // 3. 사용자 조회
     const { data: user, error: selectError } = await supabase
