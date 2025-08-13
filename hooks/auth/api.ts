@@ -1,9 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  canProceedWithSignup,
-  clearVerificationAfterSignup,
-} from "./verification";
+// Note: verification functions now handle their own session management
 
 // 전용 Supabase 클라이언트 (auth용) - fallback 로직 포함
 const supabaseUrl =
@@ -45,11 +42,10 @@ export interface User {
 }
 
 export interface SignupRequest {
+  phoneNumber: string; // 이미 인증된 전화번호
   name: string;
   address: string;
   addressDetail?: string;
-  // phoneNumber는 인증된 번호를 자동으로 사용하므로 제거
-  // verificationCode도 이미 인증 완료되었으므로 제거
 }
 
 export interface LoginRequest {
@@ -126,14 +122,12 @@ export async function signupWithPhone(
   try {
     console.log("📱 인증된 전화번호로 회원가입 시작");
 
-    // 1. 인증된 전화번호 확인
-    const { canProceed, phoneNumber, reason } = await canProceedWithSignup();
-
-    if (!canProceed) {
-      throw new AuthError(reason || "전화번호 인증이 필요합니다.");
+    // 1. 전화번호 검증
+    if (!request.phoneNumber || request.phoneNumber.length < 10) {
+      throw new AuthError("올바른 전화번호를 입력해주세요");
     }
 
-    console.log("📱 인증된 전화번호:", phoneNumber);
+    console.log("📱 회원가입 전화번호:", request.phoneNumber);
 
     // 2. 입력 검증
     if (!request.name || request.name.trim().length < 2) {
@@ -144,11 +138,11 @@ export async function signupWithPhone(
       throw new AuthError("올바른 주소를 입력해주세요");
     }
 
-    // 3. 전화번호 중복 확인 (인증된 번호로)
+    // 3. 전화번호 중복 확인
     const { data: existingUser } = await supabase
       .from("users")
       .select("id")
-      .eq("phone_number", phoneNumber)
+      .eq("phone_number", request.phoneNumber)
       .single();
 
     if (existingUser) {
@@ -159,7 +153,7 @@ export async function signupWithPhone(
     const { data: newUser, error: insertError } = await supabase
       .from("users")
       .insert({
-        phone_number: phoneNumber, // 인증된 전화번호 사용
+        phone_number: request.phoneNumber, // 인증된 전화번호 사용
         name: request.name.trim(),
         address: request.address.trim(),
         address_detail: request.addressDetail?.trim() || null,
@@ -188,8 +182,8 @@ export async function signupWithPhone(
     await AsyncStorage.setItem("supabase.auth.token", session.access_token);
     await AsyncStorage.setItem("auth.user", JSON.stringify(newUser));
 
-    // 7. 인증 세션 정리
-    await clearVerificationAfterSignup();
+    // 7. 회원가입 완료 로그
+    console.log("✅ 회원가입 완료:", newUser.phone_number);
 
     const user: User = {
       id: newUser.id,

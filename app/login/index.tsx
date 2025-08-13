@@ -191,8 +191,10 @@ export default function AuthScreen() {
 
     if (authMode === "signup") {
       // 회원가입 처리 (인증된 전화번호 자동 사용)
+      const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
       signup(
         {
+          phoneNumber: cleanPhoneNumber,
           name: name.trim(),
           address: address.trim(),
           addressDetail: addressDetail.trim(),

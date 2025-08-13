@@ -1,16 +1,8 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { phoneAuthService, PhoneAuthError } from "./phoneAuthService";
 
 // ============================================
 // 타입 정의
 // ============================================
-
-export interface VerificationSession {
-  phoneNumber: string;
-  code: string;
-  expiresAt: string;
-  isVerified: boolean;
-  createdAt: string;
-}
 
 export interface SendCodeRequest {
   phoneNumber: string;
@@ -33,57 +25,11 @@ class VerificationError extends Error {
 }
 
 // ============================================
-// 인증 세션 관리
-// ============================================
-
-const VERIFICATION_SESSION_KEY = "verification_session";
-const VERIFICATION_EXPIRY_MINUTES = 5; // 5분
-
-/**
- * 인증 세션 저장
- */
-async function saveVerificationSession(
-  session: VerificationSession
-): Promise<void> {
-  await AsyncStorage.setItem(VERIFICATION_SESSION_KEY, JSON.stringify(session));
-}
-
-/**
- * 인증 세션 조회
- */
-async function getVerificationSession(): Promise<VerificationSession | null> {
-  try {
-    const sessionData = await AsyncStorage.getItem(VERIFICATION_SESSION_KEY);
-    if (!sessionData) return null;
-
-    const session: VerificationSession = JSON.parse(sessionData);
-
-    // 만료 확인
-    if (new Date() > new Date(session.expiresAt)) {
-      await clearVerificationSession();
-      return null;
-    }
-
-    return session;
-  } catch (error) {
-    console.error("인증 세션 조회 실패:", error);
-    return null;
-  }
-}
-
-/**
- * 인증 세션 삭제
- */
-async function clearVerificationSession(): Promise<void> {
-  await AsyncStorage.removeItem(VERIFICATION_SESSION_KEY);
-}
-
-// ============================================
 // API 함수들
 // ============================================
 
 /**
- * 인증번호 발송 (개발 단계에서는 시뮬레이션)
+ * 인증번호 발송 (네이버 클라우드 SMS 사용)
  */
 export async function sendVerificationCode(request: SendCodeRequest): Promise<{
   success: boolean;
@@ -98,37 +44,26 @@ export async function sendVerificationCode(request: SendCodeRequest): Promise<{
       throw new VerificationError("올바른 전화번호를 입력해주세요");
     }
 
-    // 2. 인증번호 생성 (개발 단계에서는 고정값)
-    const verificationCode = "123456";
-    const expiresAt = new Date(
-      Date.now() + VERIFICATION_EXPIRY_MINUTES * 60 * 1000
+    // 2. PhoneAuthService를 통한 실제 SMS 발송
+    const result = await phoneAuthService.sendVerificationCode(
+      request.phoneNumber
     );
 
-    // 3. 인증 세션 생성
-    const session: VerificationSession = {
-      phoneNumber: request.phoneNumber,
-      code: verificationCode,
-      expiresAt: expiresAt.toISOString(),
-      isVerified: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    // 4. 세션 저장
-    await saveVerificationSession(session);
-
-    // 5. 실제로는 SMS API 호출
-    // await sendSMS(request.phoneNumber, verificationCode);
-
-    console.log(`📱 개발 모드: 인증번호 ${verificationCode} 발송됨`);
+    console.log("✅ SMS 발송 성공");
 
     return {
-      success: true,
-      message: `${request.phoneNumber}로 인증번호가 발송되었습니다.`,
-      expiresIn: VERIFICATION_EXPIRY_MINUTES * 60, // 초 단위
+      success: result.success,
+      message: result.message,
+      expiresIn: result.expiresIn,
     };
   } catch (error) {
     console.error("❌ 인증번호 발송 실패:", error);
-    throw error;
+
+    if (error instanceof PhoneAuthError) {
+      throw new VerificationError(error.message);
+    }
+
+    throw new VerificationError("인증번호 발송에 실패했습니다");
   }
 }
 
@@ -139,6 +74,7 @@ export async function verifyCode(request: VerifyCodeRequest): Promise<{
   success: boolean;
   message: string;
   phoneNumber: string;
+  user?: any;
 }> {
   try {
     console.log("🔐 인증번호 확인 요청:", request.phoneNumber);
@@ -148,113 +84,49 @@ export async function verifyCode(request: VerifyCodeRequest): Promise<{
       throw new VerificationError("전화번호와 인증번호를 모두 입력해주세요");
     }
 
-    // 2. 저장된 인증 세션 조회
-    const session = await getVerificationSession();
-    if (!session) {
+    // 2. PhoneAuthService를 통한 실제 인증번호 검증
+    const result = await phoneAuthService.verifyCode(
+      request.phoneNumber,
+      request.code
+    );
+
+    if (!result.success) {
       throw new VerificationError(
-        "인증 세션이 만료되었습니다. 다시 인증번호를 요청해주세요."
+        result.message || "인증번호가 올바르지 않습니다"
       );
     }
-
-    // 3. 전화번호 일치 확인
-    if (session.phoneNumber !== request.phoneNumber) {
-      throw new VerificationError("인증 요청된 전화번호와 일치하지 않습니다.");
-    }
-
-    // 4. 인증번호 확인
-    if (session.code !== request.code) {
-      throw new VerificationError("인증번호가 올바르지 않습니다.");
-    }
-
-    // 5. 인증 성공 처리
-    const verifiedSession: VerificationSession = {
-      ...session,
-      isVerified: true,
-    };
-    await saveVerificationSession(verifiedSession);
 
     console.log("✅ 인증번호 확인 성공:", request.phoneNumber);
 
     return {
       success: true,
-      message: "인증이 완료되었습니다.",
+      message: result.message,
       phoneNumber: request.phoneNumber,
+      user: result.user,
     };
   } catch (error) {
     console.error("❌ 인증번호 확인 실패:", error);
-    throw error;
+
+    if (error instanceof PhoneAuthError) {
+      throw new VerificationError(error.message);
+    }
+
+    throw new VerificationError("인증번호 확인에 실패했습니다");
   }
 }
 
 /**
- * 현재 인증 상태 확인
+ * 현재 인증 상태 확인 (서버에서 조회)
  */
-export async function getVerificationStatus(): Promise<{
-  isVerified: boolean;
-  phoneNumber?: string;
+export async function getVerificationStatus(phoneNumber: string): Promise<{
+  hasActiveSession: boolean;
   expiresAt?: string;
+  attemptsRemaining?: number;
 }> {
   try {
-    const session = await getVerificationSession();
-
-    if (!session) {
-      return { isVerified: false };
-    }
-
-    return {
-      isVerified: session.isVerified,
-      phoneNumber: session.phoneNumber,
-      expiresAt: session.expiresAt,
-    };
+    return await phoneAuthService.getVerificationStatus(phoneNumber);
   } catch (error) {
     console.error("인증 상태 확인 실패:", error);
-    return { isVerified: false };
+    return { hasActiveSession: false };
   }
-}
-
-/**
- * 인증된 전화번호로 회원가입 진행 가능 여부 확인
- */
-export async function canProceedWithSignup(): Promise<{
-  canProceed: boolean;
-  phoneNumber?: string;
-  reason?: string;
-}> {
-  try {
-    const session = await getVerificationSession();
-
-    if (!session) {
-      return {
-        canProceed: false,
-        reason: "인증 세션이 없습니다. 먼저 전화번호 인증을 완료해주세요.",
-      };
-    }
-
-    if (!session.isVerified) {
-      return {
-        canProceed: false,
-        phoneNumber: session.phoneNumber,
-        reason: "전화번호 인증이 완료되지 않았습니다.",
-      };
-    }
-
-    return {
-      canProceed: true,
-      phoneNumber: session.phoneNumber,
-    };
-  } catch (error) {
-    console.error("회원가입 진행 가능 여부 확인 실패:", error);
-    return {
-      canProceed: false,
-      reason: "인증 상태 확인 중 오류가 발생했습니다.",
-    };
-  }
-}
-
-/**
- * 회원가입 완료 후 인증 세션 정리
- */
-export async function clearVerificationAfterSignup(): Promise<void> {
-  await clearVerificationSession();
-  console.log("✅ 회원가입 완료 후 인증 세션 정리됨");
 }

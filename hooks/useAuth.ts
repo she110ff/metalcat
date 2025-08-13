@@ -35,14 +35,10 @@ export const useAuth = () => {
     retry: 1,
   });
 
-  // 인증 상태 조회
-  const { data: verificationStatus, refetch: refetchVerificationStatus } =
-    useQuery({
-      queryKey: ["auth", "verification"],
-      queryFn: getVerificationStatus,
-      staleTime: 30 * 1000, // 30초
-      gcTime: 2 * 60 * 1000, // 2분
-    });
+  // 인증 상태 조회 - 현재는 전화번호별로 조회해야 하므로 비활성화
+  // 필요시 개별적으로 phoneAuthService.getVerificationStatus(phoneNumber) 호출
+  const verificationStatus = null;
+  const refetchVerificationStatus = () => Promise.resolve();
 
   // 인증번호 발송
   const sendCodeMutation = useMutation({
