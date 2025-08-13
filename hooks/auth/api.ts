@@ -228,9 +228,10 @@ export async function signinWithPhone(
       throw new AuthError("올바른 전화번호를 입력해주세요");
     }
 
-    // 로그인 로직은 전화번호 인증이 완료된 상태에서만 호출되므로
-    // 별도의 인증코드 검증이 불필요합니다.
-    // 실제로는 전화번호 인증 완료 후 자동 로그인 처리
+    // 2. 인증 완료 확인
+    if (request.verificationCode !== "verified") {
+      throw new AuthError("전화번호 인증이 완료되지 않았습니다");
+    }
 
     // 3. 사용자 조회
     const { data: user, error: selectError } = await supabase

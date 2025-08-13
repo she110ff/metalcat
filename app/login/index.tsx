@@ -206,10 +206,13 @@ export default function AuthScreen() {
     } else {
       // 로그인 처리
       const cleanPhoneNumber = phoneNumber.replace(/\D/g, "");
-      // 로그인은 전화번호 인증이 이미 완료된 상태이므로
-      // 별도의 로그인 프로세스 대신 사용자 정보를 직접 가져옴
-      // TODO: 실제 로그인 로직으로 변경 필요
-      onSuccess();
+      login(
+        {
+          phoneNumber: cleanPhoneNumber,
+          verificationCode: "verified", // 이미 인증 완료됨
+        },
+        { onSuccess, onError }
+      );
     }
   };
 
