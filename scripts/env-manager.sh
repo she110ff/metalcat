@@ -49,8 +49,8 @@ show_help() {
     backup               현재 환경 변수 백업
     restore <backup>     백업된 환경 변수 복원
     
-    status               현재 환경 상태 확인
-    validate             환경 변수 유효성 검사
+    status               현재 환경 상태 확인 (SMS 설정 포함)
+    validate             환경 변수 유효성 검사 (SMS 설정 확인 포함)
     
     deploy-secrets       현재 환경 변수를 Supabase에 배포
     deploy-secrets --force 확인 없이 모든 환경 변수를 Supabase에 배포
@@ -61,10 +61,17 @@ show_help() {
     
     help                 이 도움말 출력
 
+SMS 관련 환경 변수:
+    NC_SMS_ACCESS_KEY    네이버 클라우드 SMS API Access Key
+    NC_SMS_SECRET_KEY    네이버 클라우드 SMS API Secret Key  
+    NC_SMS_SERVICE_ID    네이버 클라우드 SMS 서비스 ID
+    NC_SMS_FROM_NUMBER   승인받은 발신번호
+
 예시:
     $0 switch-local      # 로컬 개발 환경으로 전환
     $0 switch-remote     # 프로덕션 환경으로 전환
-    $0 status            # 현재 환경 확인
+    $0 status            # 현재 환경 확인 (SMS 설정 포함)
+    $0 validate          # 환경 변수 유효성 검사 (SMS 설정 확인)
     $0 preview-secrets   # 배포될 환경 변수 미리보기
     $0 deploy-secrets    # 환경 변수를 Supabase에 배포 (확인 후)
     $0 deploy-secrets --force  # 모든 환경 변수를 즉시 배포
@@ -255,6 +262,28 @@ show_status() {
         grep "^EXPO_PUBLIC_SUPABASE_URL=" "$PROJECT_ROOT/.env.local" 2>/dev/null || echo "SUPABASE_URL: 설정되지 않음"
         grep "^LOG_LEVEL=" "$PROJECT_ROOT/.env.local" 2>/dev/null || echo "LOG_LEVEL: 설정되지 않음"
         grep "^DEBUG_MODE=" "$PROJECT_ROOT/.env.local" 2>/dev/null || echo "DEBUG_MODE: 설정되지 않음"
+        
+        echo
+        echo "SMS 관련 환경 변수:"
+        echo "----------------------------------------"
+        if grep -q "^NC_SMS_ACCESS_KEY=" "$PROJECT_ROOT/.env.local" 2>/dev/null; then
+            local sms_key=$(grep "^NC_SMS_ACCESS_KEY=" "$PROJECT_ROOT/.env.local" | cut -d'=' -f2)
+            echo "NC_SMS_ACCESS_KEY: ${sms_key:0:20}... (마스킹됨)"
+        else
+            echo "NC_SMS_ACCESS_KEY: 설정되지 않음"
+        fi
+        
+        if grep -q "^NC_SMS_SERVICE_ID=" "$PROJECT_ROOT/.env.local" 2>/dev/null; then
+            grep "^NC_SMS_SERVICE_ID=" "$PROJECT_ROOT/.env.local" 2>/dev/null
+        else
+            echo "NC_SMS_SERVICE_ID: 설정되지 않음"
+        fi
+        
+        if grep -q "^NC_SMS_FROM_NUMBER=" "$PROJECT_ROOT/.env.local" 2>/dev/null; then
+            grep "^NC_SMS_FROM_NUMBER=" "$PROJECT_ROOT/.env.local" 2>/dev/null
+        else
+            echo "NC_SMS_FROM_NUMBER: 설정되지 않음"
+        fi
     fi
     
     echo
@@ -274,10 +303,23 @@ validate_environment() {
     # 필수 변수 확인
     local required_vars=("EXPO_PUBLIC_SUPABASE_URL" "EXPO_PUBLIC_SUPABASE_SERVICE_ROLE_KEY" "ENVIRONMENT")
     
+    # 선택적 변수 (SMS 관련)
+    local optional_vars=("NC_SMS_ACCESS_KEY" "NC_SMS_SECRET_KEY" "NC_SMS_SERVICE_ID" "NC_SMS_FROM_NUMBER")
+    
     for var in "${required_vars[@]}"; do
         if ! grep -q "^$var=" "$PROJECT_ROOT/.env.local"; then
             log_error "필수 변수 누락: $var"
             ((errors++))
+        fi
+    done
+    
+    # 선택적 변수 확인 (SMS 관련)
+    log_info "SMS 관련 환경 변수 확인:"
+    for var in "${optional_vars[@]}"; do
+        if grep -q "^$var=" "$PROJECT_ROOT/.env.local"; then
+            log_success "✓ $var 설정됨"
+        else
+            log_warning "⚠ $var 설정되지 않음 (SMS 기능 사용 시 필요)"
         fi
     done
     
