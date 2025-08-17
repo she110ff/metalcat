@@ -97,6 +97,8 @@ yarn-error.*
 # 개인별 환경 설정
 .env.personal
 .env.development.local
+env.*
+
 
 # typescript
 *.tsbuildinfo
