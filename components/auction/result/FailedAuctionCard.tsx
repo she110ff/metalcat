@@ -4,7 +4,6 @@ import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
-import { Button, ButtonText } from "@/components/ui/button";
 import {
   Users,
   TrendingDown,
@@ -34,9 +33,6 @@ export const FailedAuctionCard: React.FC<FailedAuctionCardProps> = ({
 }) => {
   const router = useRouter();
   const { user } = useAuth();
-
-  // 현재 사용자가 판매자인지 확인
-  const isSeller = auction.userId === user?.id;
 
   // 유찰 사유 분석
   const getFailureReason = () => {
@@ -165,47 +161,6 @@ export const FailedAuctionCard: React.FC<FailedAuctionCardProps> = ({
           </Text>
         </VStack>
       </Box>
-
-      {/* 액션 버튼들 */}
-      {isSeller && (
-        <VStack space="md">
-          <Button
-            onPress={handleRelistAuction}
-            className="bg-purple-500 rounded-xl py-4"
-          >
-            <HStack className="items-center justify-center space-x-2">
-              <RefreshCw size={20} color="white" strokeWidth={2} />
-              <ButtonText className="text-white font-bold text-lg">
-                재경매 신청
-              </ButtonText>
-            </HStack>
-          </Button>
-
-          <Button
-            onPress={handleEditAuction}
-            className="bg-blue-500 rounded-xl py-4"
-          >
-            <HStack className="items-center justify-center space-x-2">
-              <Edit3 size={20} color="white" strokeWidth={2} />
-              <ButtonText className="text-white font-bold text-lg">
-                경매 조건 수정
-              </ButtonText>
-            </HStack>
-          </Button>
-        </VStack>
-      )}
-
-      <Button
-        onPress={handleViewSimilarAuctions}
-        className="bg-gray-600 rounded-xl py-4"
-      >
-        <HStack className="items-center justify-center space-x-2">
-          <Search size={20} color="white" strokeWidth={2} />
-          <ButtonText className="text-white font-bold text-lg">
-            비슷한 경매 보기
-          </ButtonText>
-        </HStack>
-      </Button>
 
       {/* 안내 메시지 */}
       <Box className="rounded-xl p-4 bg-gray-500/10 border border-gray-500/20">

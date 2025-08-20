@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import { Clock, Users } from "lucide-react-native";
+import { Clock, Users, MapPin } from "lucide-react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuctionResult } from "@/hooks/useAuctions";
 
@@ -16,6 +16,7 @@ interface AuctionItemProps {
     endTime: string;
     status: "active" | "ending" | "ended";
     bidders: number;
+    address?: string;
   };
   onPress: (id: string) => void;
 }
@@ -77,16 +78,49 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               >
                 {item.title}
               </Text>
-              <Text
-                style={{
-                  color: isEnded
-                    ? "rgba(255,255,255,0.3)"
-                    : "rgba(255,255,255,0.6)",
-                  fontSize: 13,
-                }}
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
               >
-                {item.metalType} • {item.weight}
-              </Text>
+                <Text
+                  style={{
+                    color: isEnded
+                      ? "rgba(255,255,255,0.3)"
+                      : "rgba(255,255,255,0.6)",
+                    fontSize: 13,
+                  }}
+                >
+                  {item.metalType} • {item.weight}
+                </Text>
+                {item.address && (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 2,
+                    }}
+                  >
+                    <MapPin
+                      size={11}
+                      color={
+                        isEnded
+                          ? "rgba(255,255,255,0.25)"
+                          : "rgba(255,255,255,0.5)"
+                      }
+                      strokeWidth={2}
+                    />
+                    <Text
+                      style={{
+                        color: isEnded
+                          ? "rgba(255,255,255,0.25)"
+                          : "rgba(255,255,255,0.5)",
+                        fontSize: 12,
+                      }}
+                    >
+                      {item.address}
+                    </Text>
+                  </View>
+                )}
+              </View>
             </View>
 
             {/* 상태 표시 */}

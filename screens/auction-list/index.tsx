@@ -48,6 +48,7 @@ import {
 import { AuctionCategory } from "@/data/types/auction";
 import { ResultBadge } from "@/components/auction/ui/ResultBadge";
 import { AuctionItemCard } from "./components/AuctionItemCard";
+import { formatAddressForList } from "@/utils/addressFormatter";
 
 interface AuctionItem {
   id: string;
@@ -58,6 +59,7 @@ interface AuctionItem {
   endTime: string;
   status: "active" | "ending" | "ended";
   bidders: number;
+  address?: string; // 주소 정보
   endTimeMinutes?: number; // 정렬용 선택적 속성
 }
 
@@ -278,6 +280,9 @@ export const AuctionList = () => {
           endTime: getCompactRemainingTime(auction.endTime),
           status: auction.status as "active" | "ending" | "ended",
           bidders: auction.bidders || 0,
+          address: auction.address?.address
+            ? formatAddressForList(auction.address.address)
+            : undefined,
         }));
 
   const auctionTypes = [

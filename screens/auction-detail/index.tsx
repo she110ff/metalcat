@@ -20,7 +20,13 @@ import { Pressable } from "@/components/ui/pressable";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
-import { AlertCircle, Expand, ChevronLeft, Images } from "lucide-react-native";
+import {
+  AlertCircle,
+  Expand,
+  ChevronLeft,
+  Images,
+  MapPin,
+} from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import { useAuction, useBids, useAuctionResult } from "@/hooks/useAuctions";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +44,7 @@ import { AuctionResultSection } from "@/components/auction/result";
 import { getOptimizedAuctionPhotoUrl } from "@/utils/imageOptimizer";
 import { supabase } from "@/hooks/auctions/supabaseClient";
 import { ImageSkeleton } from "@/components/ui/skeleton/ImageSkeleton";
+import { formatAddressForList } from "@/utils/addressFormatter";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -927,7 +934,7 @@ export const AuctionDetail = () => {
                       </Text>
                     </VStack>
 
-                    <VStack space="sm">
+                    {/* <VStack space="sm">
                       <Text className="text-white/60 text-xs uppercase tracking-[1px]">
                         시작가
                       </Text>
@@ -952,7 +959,26 @@ export const AuctionDetail = () => {
                       <Text className="text-white font-semibold text-base">
                         {auctionDetail.endDate}
                       </Text>
-                    </VStack>
+                    </VStack> */}
+
+                    {/* 주소 정보 */}
+                    {auction?.address?.address && (
+                      <VStack space="sm">
+                        <Text className="text-white/60 text-xs uppercase tracking-[1px]">
+                          위치
+                        </Text>
+                        <HStack className="items-center" space="sm">
+                          <MapPin
+                            size={16}
+                            color="rgba(255,255,255,0.6)"
+                            strokeWidth={2}
+                          />
+                          <Text className="text-white font-semibold text-base">
+                            {formatAddressForList(auction.address.address)}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                    )}
                   </VStack>
                 </Box>
               </VStack>
