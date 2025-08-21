@@ -693,13 +693,6 @@ const MainContent = () => {
             <Text className="text-gray-500 text-center">
               아직 서비스 요청이 없습니다
             </Text>
-            <Button
-              variant="outline"
-              onPress={() => router.push("/service-request")}
-              className="mt-4"
-            >
-              <ButtonText>서비스 요청하기</ButtonText>
-            </Button>
           </VStack>
         );
       }
@@ -749,13 +742,6 @@ const MainContent = () => {
             <Text className="text-gray-500 text-center">
               아직 등록한 경매가 없습니다
             </Text>
-            <Button
-              variant="outline"
-              onPress={() => router.push("/auction-create")}
-              className="mt-4"
-            >
-              <ButtonText>경매 등록하기</ButtonText>
-            </Button>
           </VStack>
         );
       }
@@ -842,13 +828,6 @@ const MainContent = () => {
             <Text className="text-gray-500 text-center">
               아직 입찰한 경매가 없습니다
             </Text>
-            <Button
-              variant="outline"
-              onPress={() => router.push("/auction")}
-              className="mt-4"
-            >
-              <ButtonText>경매 둘러보기</ButtonText>
-            </Button>
           </VStack>
         );
       }
