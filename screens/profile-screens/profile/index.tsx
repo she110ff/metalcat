@@ -275,7 +275,7 @@ const MainContent = () => {
     },
     {
       id: "p3",
-      serviceName: "스크랩 품질 감정 서비스",
+      serviceName: "회사 방문 감정 및 매입",
       requestDate: "2024-01-08",
       status: "완료",
       price: "₩75,000",
@@ -289,7 +289,7 @@ const MainContent = () => {
     },
     {
       id: "p5",
-      serviceName: "특수금속 매입 컨설팅",
+      serviceName: "개인 매입 서비스",
       requestDate: "2024-01-03",
       status: "대기중",
       price: "₩200,000",

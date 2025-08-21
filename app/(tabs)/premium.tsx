@@ -93,7 +93,7 @@ export default function Premium() {
                     className="text-white text-xl font-bold"
                     style={{ fontFamily: "NanumGothic" }}
                   >
-                    현장 방문 감정
+                    회사 방문 감정 및 매입
                   </Text>
                   <Text
                     className="text-white/60 text-sm"
@@ -195,7 +195,7 @@ export default function Premium() {
               <VStack space="md">
                 <VStack space="sm">
                   <Text className="text-white text-xl font-bold">
-                    즉시 매입 서비스
+                    개인 매입 서비스
                   </Text>
                   <Text className="text-white/60 text-sm">
                     감정 완료 즉시 최고가로 매입해드립니다
@@ -221,18 +221,20 @@ export default function Premium() {
                   <HStack className="items-center" space="sm">
                     <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">
-                      현금 즉시 지급
+                      현장 출장 매입
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
                     <CheckCircle size={16} color="#4CAF50" />
                     <Text className="text-white/80 text-sm">
-                      세금계산서 발급
+                      당일 현장 결제 (현금, 입금)
                     </Text>
                   </HStack>
                   <HStack className="items-center" space="sm">
                     <CheckCircle size={16} color="#4CAF50" />
-                    <Text className="text-white/80 text-sm">운송비 무료</Text>
+                    <Text className="text-white/80 text-sm">
+                      택배, 화물 발송 가능
+                    </Text>
                   </HStack>
                 </VStack>
 

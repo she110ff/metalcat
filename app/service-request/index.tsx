@@ -297,7 +297,7 @@ export default function ServiceRequest() {
                 >
                   {serviceType === "appraisal"
                     ? "🔍 전문 감정 서비스"
-                    : "💰 즉시 매입 서비스"}
+                    : "💰 개인 매입 서비스"}
                 </Text>
                 <Text
                   className="text-gray-300 text-sm mt-2"

@@ -490,7 +490,7 @@ const PremiumTabContent = () => {
 
   // 서비스 타입 텍스트 변환
   const getServiceTypeText = (type: string) => {
-    return type === "appraisal" ? "현장 감정" : "즉시 매입";
+    return type === "appraisal" ? "회사 방문 감정 및 매입" : "개인 매입 서비스";
   };
 
   // 상태 텍스트 변환

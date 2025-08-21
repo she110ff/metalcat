@@ -54,8 +54,8 @@ const STATUS_CONFIG = {
 
 // 서비스 타입 라벨
 const SERVICE_TYPE_LABELS = {
-  appraisal: "감정 서비스",
-  purchase: "매입 서비스",
+  appraisal: "회사 방문 감정 및 매입",
+  purchase: "개인 매입 서비스",
 } as const;
 
 // 유틸리티 함수들
