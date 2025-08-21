@@ -17,6 +17,10 @@ import {
   Phone,
   FileText,
   Camera,
+  Shield,
+  Package,
+  Hash,
+  CheckIcon,
 } from "lucide-react-native";
 import {
   DaumAddressSearch,
@@ -31,6 +35,7 @@ import { Image } from "react-native";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Input, InputField } from "@/components/ui/input";
 import { Textarea, TextareaInput } from "@/components/ui/textarea";
+// Checkbox 컴포넌트를 커스텀 Pressable로 대체
 
 export default function ServiceRequest() {
   const router = useRouter();
@@ -114,6 +119,15 @@ export default function ServiceRequest() {
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [useSafeNumber, setUseSafeNumber] = useState<boolean>(false);
+
+  // 안심번호 상태 변경 핸들러
+  const handleSafeNumberChange = (value: boolean) => {
+    console.log("🛡️ 안심번호 상태 변경:", value);
+    setUseSafeNumber(value);
+  };
+  const [itemType, setItemType] = useState("");
+  const [quantity, setQuantity] = useState("");
   const [address, setAddress] = useState("");
   const [addressDetail, setAddressDetail] = useState("");
   const [selectedAddress, setSelectedAddress] =
@@ -121,14 +135,9 @@ export default function ServiceRequest() {
   const [showAddressSearch, setShowAddressSearch] = useState(false);
   const [description, setDescription] = useState("");
 
-  // 필수 입력 항목 완성도 체크
+  // 필수 입력 항목 완성도 체크 (연락처만 필수, 안심번호는 선택사항)
   const checkRequiredFields = () => {
-    const isComplete =
-      photos.length > 0 &&
-      phoneNumber.trim() !== "" &&
-      address.trim() !== "" &&
-      addressDetail.trim() !== "" &&
-      description.trim() !== "";
+    const isComplete = phoneNumber.trim() !== ""; // 연락처만 필수
 
     return isComplete;
   };
@@ -139,7 +148,7 @@ export default function ServiceRequest() {
   useEffect(() => {
     const complete = checkRequiredFields();
     setIsFormComplete(complete);
-  }, [photos, phoneNumber, address, addressDetail, description]);
+  }, [phoneNumber]);
 
   // 주소 검색
   const openAddressModal = () => {
@@ -160,7 +169,7 @@ export default function ServiceRequest() {
   // 서비스 신청
   const handleSubmit = async () => {
     if (!isFormComplete) {
-      Alert.alert("입력 오류", "모든 필수 항목을 입력해주세요.");
+      Alert.alert("입력 오류", "연락처를 입력해주세요.");
       return;
     }
 
@@ -183,9 +192,12 @@ export default function ServiceRequest() {
       const formData: ServiceRequestFormData = {
         service_type: serviceType,
         contact_phone: phoneNumber,
-        address: address,
-        address_detail: addressDetail,
-        description: description,
+        use_safe_number: useSafeNumber,
+        address: address || undefined,
+        address_detail: addressDetail || undefined,
+        description: description || undefined,
+        item_type: itemType || undefined,
+        quantity: quantity ? parseInt(quantity) : undefined,
         photos: photos,
         user_id: user?.id, // 현재 로그인한 사용자 ID
       };
@@ -315,9 +327,9 @@ export default function ServiceRequest() {
               photos={photos}
               onPhotosChange={setPhotos}
               maxPhotos={5}
-              minPhotos={1}
+              minPhotos={0}
               hasRepresentative={false}
-              title="사진 등록"
+              title="사진 등록 (선택사항)"
               showCounter={true}
               size="medium"
               allowsMultipleSelection={true}
@@ -348,17 +360,102 @@ export default function ServiceRequest() {
               </Input>
             </VStack>
 
+            {/* 안심번호 */}
+            <VStack space="md" className="mb-8">
+              <HStack className="items-center" space="sm">
+                <Shield size={20} color="#10B981" strokeWidth={2} />
+                <Text
+                  className="text-green-300 text-lg font-bold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  안심번호 사용
+                </Text>
+                <Text className="text-gray-400 text-sm">(선택사항)</Text>
+              </HStack>
+              <Pressable
+                onPress={() => handleSafeNumberChange(!useSafeNumber)}
+                className="bg-white/5 border-white/10 rounded-lg p-3"
+              >
+                <HStack className="items-center" space="sm">
+                  <Box
+                    className={`w-5 h-5 rounded border-2 items-center justify-center ${
+                      useSafeNumber
+                        ? "bg-green-500 border-green-500"
+                        : "bg-transparent border-white/30"
+                    }`}
+                  >
+                    {useSafeNumber && (
+                      <CheckIcon size={12} color="white" strokeWidth={3} />
+                    )}
+                  </Box>
+                  <Text
+                    className="text-white text-base flex-1"
+                    style={{ fontFamily: "NanumGothic" }}
+                  >
+                    개인정보 보호를 위해 안심번호를 사용합니다
+                  </Text>
+                </HStack>
+              </Pressable>
+            </VStack>
+
+            {/* 종류 */}
+            <VStack space="md" className="mb-8">
+              <HStack className="items-center" space="sm">
+                <Package size={20} color="#10B981" strokeWidth={2} />
+                <Text
+                  className="text-green-300 text-lg font-bold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  금속 종류
+                </Text>
+                <Text className="text-gray-400 text-sm">(선택사항)</Text>
+              </HStack>
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  value={itemType}
+                  onChangeText={setItemType}
+                  placeholder="예: 구리, 알루미늄, 스테인리스 등"
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
+            </VStack>
+
+            {/* 수량 */}
+            <VStack space="md" className="mb-8">
+              <HStack className="items-center" space="sm">
+                <Hash size={20} color="#10B981" strokeWidth={2} />
+                <Text
+                  className="text-green-300 text-lg font-bold"
+                  style={{ fontFamily: "NanumGothic" }}
+                >
+                  수량
+                </Text>
+                <Text className="text-gray-400 text-sm">(선택사항)</Text>
+              </HStack>
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
+                <InputField
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  placeholder="예: 100 (kg 단위)"
+                  keyboardType="numeric"
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
+                />
+              </Input>
+            </VStack>
+
             {/* 주소 */}
             <VStack space="md" className="mb-8">
               <HStack className="items-center" space="sm">
                 <MapPin size={20} color="#FCD34D" strokeWidth={2} />
                 <Text
-                  className="text-yellow-300 text-lg font-bold"
+                  className="text-green-300 text-lg font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
                   주소
                 </Text>
-                <Text className="text-red-400 text-lg font-bold">*</Text>
+                <Text className="text-gray-400 text-sm">(선택사항)</Text>
               </HStack>
               <Pressable
                 onPress={openAddressModal}
@@ -400,12 +497,12 @@ export default function ServiceRequest() {
               <HStack className="items-center" space="sm">
                 <FileText size={20} color="#FCD34D" strokeWidth={2} />
                 <Text
-                  className="text-yellow-300 text-lg font-bold"
+                  className="text-green-300 text-lg font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
                   상세 설명
                 </Text>
-                <Text className="text-red-400 text-lg font-bold">*</Text>
+                <Text className="text-gray-400 text-sm">(선택사항)</Text>
               </HStack>
               <Textarea className="bg-white/5 border-white/10 rounded-2xl min-h-32">
                 <TextareaInput
@@ -472,7 +569,7 @@ export default function ServiceRequest() {
                 ? `${
                     serviceType === "appraisal" ? "감정 서비스" : "매입 서비스"
                   } 신청하기 ✓`
-                : "모든 필수 항목을 입력해주세요"}
+                : "연락처를 입력해주세요"}
             </Text>
             {isLoggedIn && user?.id && (
               <Text

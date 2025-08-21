@@ -504,9 +504,12 @@ export function useServiceRequestForm() {
           id: tempId,
           service_type: formData.service_type,
           contact_phone: formData.contact_phone,
+          use_safe_number: formData.use_safe_number,
           address: formData.address,
           address_detail: formData.address_detail,
           description: formData.description,
+          item_type: formData.item_type,
+          quantity: formData.quantity,
           user_id: formData.user_id,
           status: "pending",
           created_at: new Date().toISOString(),
@@ -544,9 +547,12 @@ export function useServiceRequestForm() {
       const requestData: CreateServiceRequestData = {
         service_type: formData.service_type,
         contact_phone: formData.contact_phone,
+        use_safe_number: formData.use_safe_number,
         address: formData.address,
         address_detail: formData.address_detail,
         description: formData.description,
+        item_type: formData.item_type,
+        quantity: formData.quantity,
         user_id: formData.user_id, // 사용자 ID 전달
       };
 

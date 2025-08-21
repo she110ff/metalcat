@@ -21,6 +21,9 @@ import {
   FileText,
   Images,
   Expand,
+  Shield,
+  Package,
+  Hash,
 } from "lucide-react-native";
 import {
   Alert,
@@ -50,9 +53,12 @@ interface ServiceRequestDetail {
   serviceType: "appraisal" | "purchase";
   status: "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
   contactPhone: string;
-  address: string;
+  useSafeNumber: boolean; // 새 필드
+  address?: string; // 선택사항으로 변경
   addressDetail?: string;
-  description: string;
+  description?: string; // 선택사항으로 변경
+  itemType?: string; // 새 필드
+  quantity?: number; // 새 필드
   scheduledDate?: string;
   estimatedValue?: number;
   finalOffer?: number;
@@ -114,9 +120,12 @@ async function getServiceRequestDetail(
       serviceType: data.service_type,
       status: data.status,
       contactPhone: data.contact_phone,
+      useSafeNumber: data.use_safe_number || false, // 새 필드
       address: data.address,
       addressDetail: data.address_detail,
       description: data.description,
+      itemType: data.item_type, // 새 필드
+      quantity: data.quantity, // 새 필드
       scheduledDate: data.scheduled_date,
       estimatedValue: data.estimated_value,
       finalOffer: data.final_offer,
@@ -155,7 +164,7 @@ export default function ServiceRequestDetailScreen() {
 
   // 서비스 타입 텍스트 변환
   const getServiceTypeText = (type: string) => {
-    return type === "appraisal" ? "현장 감정" : "즉시 매입";
+    return type === "appraisal" ? "회사 방문 감정 및 매입" : "개인 매입 서비스";
   };
 
   // 상태 텍스트 변환
@@ -501,52 +510,108 @@ export default function ServiceRequestDetailScreen() {
                 <Phone size={20} color="#6B7280" className="mt-1" />
                 <VStack className="flex-1">
                   <Text className="font-medium">연락처</Text>
-                  <Text className="text-gray-600">{request.contactPhone}</Text>
-                </VStack>
-              </HStack>
-              <HStack className="items-start space-x-3">
-                <MapPin size={20} color="#6B7280" className="mt-1" />
-                <VStack className="flex-1">
-                  <Text className="font-medium">주소</Text>
-                  <Text className="text-gray-600">{request.address}</Text>
-                  {request.addressDetail && (
-                    <Text className="text-gray-500 text-sm">
-                      {request.addressDetail}
-                    </Text>
-                  )}
-                </VStack>
-              </HStack>
-            </VStack>
-          </Box>
-
-          {/* 요청 내용 */}
-          <Box className="bg-white rounded-xl p-4 border border-gray-200">
-            <Heading size="md" className="mb-3">
-              📝 요청 내용
-            </Heading>
-            <VStack space="md">
-              <HStack className="items-start space-x-3">
-                <FileText size={20} color="#6B7280" className="mt-1" />
-                <VStack className="flex-1">
-                  <Text className="font-medium">설명</Text>
-                  <Text className="text-gray-600 leading-5">
-                    {request.description}
-                  </Text>
-                </VStack>
-              </HStack>
-              {request.scheduledDate && (
-                <HStack className="items-start space-x-3">
-                  <Calendar size={20} color="#6B7280" className="mt-1" />
-                  <VStack className="flex-1">
-                    <Text className="font-medium">희망 일정</Text>
+                  <HStack className="items-center" space="sm">
                     <Text className="text-gray-600">
-                      {formatDate(request.scheduledDate)}
+                      {request.contactPhone}
                     </Text>
+                    <Box
+                      className={`px-2 py-1 rounded-full ${
+                        request.useSafeNumber ? "bg-green-100" : "bg-gray-100"
+                      }`}
+                    >
+                      <Text
+                        className={`text-xs font-medium ${
+                          request.useSafeNumber
+                            ? "text-green-700"
+                            : "text-gray-600"
+                        }`}
+                      >
+                        {request.useSafeNumber
+                          ? "🛡️ 안심번호"
+                          : "📞 안심번호 미사용"}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </VStack>
+              </HStack>
+              {request.address && (
+                <HStack className="items-start space-x-3">
+                  <MapPin size={20} color="#6B7280" className="mt-1" />
+                  <VStack className="flex-1">
+                    <Text className="font-medium">주소</Text>
+                    <Text className="text-gray-600">{request.address}</Text>
+                    {request.addressDetail && (
+                      <Text className="text-gray-500 text-sm">
+                        {request.addressDetail}
+                      </Text>
+                    )}
                   </VStack>
                 </HStack>
               )}
             </VStack>
           </Box>
+
+          {/* 금속 정보 */}
+          {(request.itemType || request.quantity) && (
+            <Box className="bg-white rounded-xl p-4 border border-gray-200">
+              <Heading size="md" className="mb-3">
+                📦 금속 정보
+              </Heading>
+              <VStack space="md">
+                {request.itemType && (
+                  <HStack className="justify-between items-center">
+                    <Text className="font-medium">종류</Text>
+                    <Box className="bg-blue-100 px-3 py-1 rounded-full">
+                      <Text className="text-blue-700 font-medium">
+                        {request.itemType}
+                      </Text>
+                    </Box>
+                  </HStack>
+                )}
+                {request.quantity && (
+                  <HStack className="justify-between items-center">
+                    <Text className="font-medium">수량</Text>
+                    <Box className="bg-green-100 px-3 py-1 rounded-full">
+                      <Text className="text-green-700 font-medium">
+                        {request.quantity}kg
+                      </Text>
+                    </Box>
+                  </HStack>
+                )}
+              </VStack>
+            </Box>
+          )}
+
+          {/* 요청 내용 */}
+          {request.description && (
+            <Box className="bg-white rounded-xl p-4 border border-gray-200">
+              <Heading size="md" className="mb-3">
+                📝 요청 내용
+              </Heading>
+              <VStack space="md">
+                <HStack className="items-start space-x-3">
+                  <FileText size={20} color="#6B7280" className="mt-1" />
+                  <VStack className="flex-1">
+                    <Text className="font-medium">설명</Text>
+                    <Text className="text-gray-600 leading-5">
+                      {request.description}
+                    </Text>
+                  </VStack>
+                </HStack>
+                {request.scheduledDate && (
+                  <HStack className="items-start space-x-3">
+                    <Calendar size={20} color="#6B7280" className="mt-1" />
+                    <VStack className="flex-1">
+                      <Text className="font-medium">희망 일정</Text>
+                      <Text className="text-gray-600">
+                        {formatDate(request.scheduledDate)}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                )}
+              </VStack>
+            </Box>
+          )}
 
           {/* 이미지 갤러리 */}
           <Box className="bg-white rounded-xl p-4 border border-gray-200">

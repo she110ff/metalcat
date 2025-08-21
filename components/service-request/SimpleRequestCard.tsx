@@ -10,7 +10,14 @@ import { Card } from "@/components/ui/card";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
-import { MapPin, Calendar, CheckCircle } from "lucide-react-native";
+import {
+  MapPin,
+  Calendar,
+  CheckCircle,
+  Shield,
+  Package,
+  Hash,
+} from "lucide-react-native";
 import { ServiceRequest } from "@/types/service-request";
 
 interface SimpleRequestCardProps {
@@ -59,7 +66,11 @@ const SERVICE_TYPE_LABELS = {
 } as const;
 
 // 유틸리티 함수들
-function getShortLocation(address: string): string {
+function getShortLocation(address: string | null | undefined): string {
+  if (!address) {
+    return "주소 없음";
+  }
+
   // "서울시 강남구 테헤란로 123" -> "강남구"
   const parts = address.split(" ");
   if (parts.length >= 2) {
@@ -135,6 +146,37 @@ export function SimpleRequestCard({
             </HStack>
           </HStack>
 
+          {/* 새 필드들 표시 */}
+          <HStack space="md" className="items-center flex-wrap">
+            {/* 안심번호 */}
+            {request.use_safe_number && (
+              <HStack space="xs" className="items-center">
+                <Shield size={12} color="#10B981" strokeWidth={2} />
+                <Text className="text-xs text-green-600">안심번호</Text>
+              </HStack>
+            )}
+
+            {/* 종류 */}
+            {request.item_type && (
+              <HStack space="xs" className="items-center">
+                <Package size={12} color="#6B7280" strokeWidth={2} />
+                <Text className="text-xs text-gray-600">
+                  {request.item_type}
+                </Text>
+              </HStack>
+            )}
+
+            {/* 수량 */}
+            {request.quantity && (
+              <HStack space="xs" className="items-center">
+                <Hash size={12} color="#6B7280" strokeWidth={2} />
+                <Text className="text-xs text-gray-600">
+                  {request.quantity}kg
+                </Text>
+              </HStack>
+            )}
+          </HStack>
+
           {/* 완료 시간 (완료된 경우만) */}
           {request.status === "completed" && request.completed_at && (
             <HStack space="xs" className="items-center">
@@ -146,10 +188,12 @@ export function SimpleRequestCard({
           )}
 
           {/* 요청 내용 미리보기 */}
-          <Text className="text-gray-800 text-sm" numberOfLines={2}>
-            💬 "{request.description.slice(0, 50)}
-            {request.description.length > 50 ? "..." : ""}"
-          </Text>
+          {request.description && (
+            <Text className="text-gray-800 text-sm" numberOfLines={2}>
+              💬 "{request.description.slice(0, 50)}
+              {request.description.length > 50 ? "..." : ""}"
+            </Text>
+          )}
         </VStack>
       </Card>
     </Pressable>

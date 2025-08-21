@@ -705,9 +705,71 @@ const PremiumTabContent = () => {
                       <Text className="text-sm text-gray-600">
                         {request.address}
                       </Text>
-                      <Text className="text-xs text-gray-500">
-                        📞 {request.contactPhone}
-                      </Text>
+                      <VStack space="xs">
+                        <HStack className="items-center" space="sm">
+                          <Text className="text-xs text-gray-500">
+                            📞 {request.contactPhone}
+                          </Text>
+                        </HStack>
+                        <HStack className="items-center" space="xs">
+                          <Text className="text-xs text-gray-400">
+                            안심번호:
+                          </Text>
+                          <Box
+                            className={`px-2 py-1 rounded-full ${
+                              request.use_safe_number
+                                ? "bg-green-100"
+                                : "bg-gray-100"
+                            }`}
+                          >
+                            <Text
+                              className={`text-xs font-medium ${
+                                request.use_safe_number
+                                  ? "text-green-700"
+                                  : "text-gray-600"
+                              }`}
+                            >
+                              {request.use_safe_number
+                                ? "🛡️ 사용"
+                                : "❌ 미사용"}
+                            </Text>
+                          </Box>
+                        </HStack>
+                      </VStack>
+
+                      {/* 추가 정보 표시 */}
+                      {(request.item_type || request.quantity) && (
+                        <HStack
+                          className="items-center flex-wrap mt-1"
+                          space="xs"
+                        >
+                          {request.item_type && (
+                            <HStack className="items-center" space="xs">
+                              <Text className="text-xs text-gray-400">
+                                종류:
+                              </Text>
+                              <Box className="bg-blue-100 px-2 py-1 rounded-full">
+                                <Text className="text-xs font-medium text-blue-700">
+                                  📦 {request.item_type}
+                                </Text>
+                              </Box>
+                            </HStack>
+                          )}
+                          {request.quantity && (
+                            <HStack className="items-center" space="xs">
+                              <Text className="text-xs text-gray-400">
+                                수량:
+                              </Text>
+                              <Box className="bg-purple-100 px-2 py-1 rounded-full">
+                                <Text className="text-xs font-medium text-purple-700">
+                                  ⚖️ {request.quantity}kg
+                                </Text>
+                              </Box>
+                            </HStack>
+                          )}
+                        </HStack>
+                      )}
+
                       {request.description && (
                         <Text className="text-xs text-gray-500 mt-1">
                           {request.description}

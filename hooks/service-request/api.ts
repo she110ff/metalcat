@@ -31,19 +31,30 @@ export function validateServiceRequest(
 ): ServiceRequestValidationResult {
   const errors: string[] = [];
 
-  // 전화번호 검증
+  // 전화번호 검증 (필수)
   if (!data.contact_phone || !/^[0-9-+().\s]+$/.test(data.contact_phone)) {
     errors.push("올바른 전화번호를 입력해주세요.");
   }
 
-  // 주소 검증
-  if (!data.address || data.address.length < 10) {
-    errors.push("상세한 주소를 입력해주세요.");
+  // 안심번호는 boolean 값으로 항상 true 또는 false (검증 불필요)
+
+  // 주소 검증 (선택사항이지만 입력 시 10자 이상)
+  if (data.address && data.address.length < 10) {
+    errors.push("주소를 입력하시려면 10자 이상 입력해주세요.");
   }
 
-  // 설명 검증
-  if (!data.description || data.description.length < 20) {
-    errors.push("상세한 설명을 20자 이상 입력해주세요.");
+  // 설명 검증 (선택사항이지만 입력 시 20자 이상)
+  if (data.description && data.description.length < 20) {
+    errors.push("설명을 입력하시려면 20자 이상 입력해주세요.");
+  }
+
+  // 수량 검증 (선택사항이지만 입력 시 양수여야 함)
+  if (
+    data.quantity !== undefined &&
+    data.quantity !== null &&
+    data.quantity <= 0
+  ) {
+    errors.push("수량은 1 이상이어야 합니다.");
   }
 
   return {
@@ -81,9 +92,12 @@ export async function createServiceRequest(
     const requestData = {
       service_type: data.service_type,
       contact_phone: data.contact_phone,
+      use_safe_number: data.use_safe_number,
       address: data.address,
       address_detail: data.address_detail,
       description: data.description,
+      item_type: data.item_type,
+      quantity: data.quantity,
       user_id: data.user_id ?? null, // 폼에서 전달받은 사용자 ID (undefined → null)
     };
 
@@ -91,6 +105,9 @@ export async function createServiceRequest(
     console.log("  - 전달받은 data.user_id:", data.user_id);
     console.log("  - 최종 requestData.user_id:", requestData.user_id);
     console.log("  - 요청 타입:", data.service_type);
+    console.log("  - 안심번호:", data.use_safe_number);
+    console.log("  - 종류:", data.item_type);
+    console.log("  - 수량:", data.quantity);
 
     const { data: request, error } = await supabase
       .from("service_requests")
@@ -107,6 +124,9 @@ export async function createServiceRequest(
     console.log("  - 생성된 ID:", request.id);
     console.log("  - 저장된 user_id:", request.user_id);
     console.log("  - 요청 타입:", request.service_type);
+    console.log("  - 저장된 안심번호:", request.use_safe_number);
+    console.log("  - 저장된 종류:", request.item_type);
+    console.log("  - 저장된 수량:", request.quantity);
 
     return request;
   } catch (error) {

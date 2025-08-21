@@ -31,9 +31,12 @@ export interface ServiceRequest {
 
   // 기본 정보
   contact_phone: string;
-  address: string;
+  use_safe_number: boolean; // 새 필드
+  address?: string; // 선택사항으로 변경
   address_detail?: string;
-  description: string;
+  description?: string; // 선택사항으로 변경
+  item_type?: string; // 새 필드
+  quantity?: number; // 새 필드
 
   // 처리 정보
   scheduled_date?: string;
@@ -77,20 +80,26 @@ export interface ServiceRequestStatusLog {
 
 export interface ServiceRequestFormData {
   service_type: ServiceType;
-  contact_phone: string;
-  address: string;
-  address_detail?: string;
-  description: string;
-  photos: PhotoItem[];
+  contact_phone: string; // 필수
+  use_safe_number: boolean; // 필수 (새 필드)
+  address?: string; // 비필수로 변경
+  address_detail?: string; // 비필수 (기존)
+  description?: string; // 비필수로 변경
+  item_type?: string; // 비필수 (새 필드)
+  quantity?: number; // 비필수 (새 필드)
+  photos: PhotoItem[]; // 비필수
   user_id?: string; // 현재 로그인한 사용자 ID
 }
 
 export interface CreateServiceRequestData {
   service_type: ServiceType;
-  contact_phone: string;
-  address: string;
-  address_detail?: string;
-  description: string;
+  contact_phone: string; // 필수
+  use_safe_number: boolean; // 필수 (새 필드)
+  address?: string; // 비필수로 변경
+  address_detail?: string; // 비필수 (기존)
+  description?: string; // 비필수로 변경
+  item_type?: string; // 비필수 (새 필드)
+  quantity?: number; // 비필수 (새 필드)
   user_id?: string;
 }
 

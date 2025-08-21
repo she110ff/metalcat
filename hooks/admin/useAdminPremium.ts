@@ -6,9 +6,12 @@ export interface AdminServiceRequest {
   serviceType: "appraisal" | "purchase";
   status: "pending" | "assigned" | "in_progress" | "completed" | "cancelled";
   contactPhone: string;
-  address: string;
+  use_safe_number: boolean; // 새 필드 추가
+  address?: string; // 선택사항으로 변경
   addressDetail?: string;
-  description: string;
+  description?: string; // 선택사항으로 변경
+  item_type?: string; // 새 필드 추가
+  quantity?: number; // 새 필드 추가
   scheduledDate?: string;
   estimatedValue?: number;
   finalOffer?: number;
@@ -49,6 +52,20 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
     if (error) {
       console.error("서비스 요청 목록 조회 실패:", error);
       return [];
+    }
+
+    console.log(
+      "📋 [관리자] 서비스 요청 데이터 조회 완료:",
+      data?.length || 0,
+      "건"
+    );
+    if (data && data.length > 0) {
+      console.log("📋 [관리자] 첫 번째 요청 샘플:", {
+        id: data[0].id,
+        use_safe_number: data[0].use_safe_number,
+        item_type: data[0].item_type,
+        quantity: data[0].quantity,
+      });
     }
 
     // 사용자 정보를 별도로 조회하여 매핑
@@ -100,14 +117,17 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
       }
     }
 
-    return (data || []).map((item: any) => ({
+    const result = (data || []).map((item: any) => ({
       id: item.id,
       serviceType: item.service_type,
       status: item.status,
       contactPhone: item.contact_phone,
+      use_safe_number: item.use_safe_number || false, // 새 필드 매핑
       address: item.address,
       addressDetail: item.address_detail,
       description: item.description,
+      item_type: item.item_type, // 새 필드 매핑
+      quantity: item.quantity, // 새 필드 매핑
       scheduledDate: item.scheduled_date,
       estimatedValue: item.estimated_value,
       finalOffer: item.final_offer,
@@ -120,6 +140,20 @@ export async function getAllServiceRequests(): Promise<AdminServiceRequest[]> {
         : "비회원",
       photos: photoMap.get(item.id) || [],
     }));
+
+    console.log(
+      "📋 [관리자] 매핑 완료된 데이터 샘플:",
+      result.length > 0
+        ? {
+            id: result[0].id,
+            use_safe_number: result[0].use_safe_number,
+            item_type: result[0].item_type,
+            quantity: result[0].quantity,
+          }
+        : "데이터 없음"
+    );
+
+    return result;
   } catch (error) {
     console.error("서비스 요청 조회 중 오류:", error);
     return [];
