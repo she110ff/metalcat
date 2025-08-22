@@ -717,6 +717,7 @@ export async function createAuction(
       title: auctionData.title,
       category: auctionData.auctionCategory,
       userId: auctionData.userId,
+      originalUserId: auctionData.userId,
     });
 
     // endTime이 없으면 기본값 설정 (7일 후)
@@ -726,9 +727,18 @@ export async function createAuction(
     // 1. 공통 경매 데이터 구성
     // userId 검증 및 기본값 설정
     let validUserId = auctionData.userId;
+
+    console.log("🔍 [Auction API] userId 검증:", {
+      originalUserId: auctionData.userId,
+      isValidUserId: !!validUserId,
+      isUser1: validUserId === "user_1",
+    });
+
     if (!validUserId || validUserId === "user_1") {
       validUserId = "550e8400-e29b-41d4-a716-446655440001"; // 기본 사용자 ID
       console.log("⚠️ [Auction API] 기본 사용자 ID 사용:", validUserId);
+    } else {
+      console.log("✅ [Auction API] 전달받은 사용자 ID 사용:", validUserId);
     }
 
     const commonAuctionData = {

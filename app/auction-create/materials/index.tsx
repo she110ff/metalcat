@@ -9,7 +9,7 @@ import { Box } from "@/components/ui/box";
 import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { materialsProductTypes } from "@/data";
 import { MaterialProductType } from "@/data/types";
 import { PhotoPicker, PhotoInfo } from "@/components/PhotoPicker";
@@ -22,6 +22,12 @@ const styles = StyleSheet.create({
 
 export default function MaterialsAuctionCreate() {
   const router = useRouter();
+  const { slaveUserId, slaveName } = useLocalSearchParams();
+
+  console.log("📥 [자재 1단계] URL 파라미터 확인:", {
+    slaveUserId,
+    slaveName,
+  });
 
   // 빈 상태로 시작 - 사용자가 직접 사진을 선택해야 함
   const [photos, setPhotos] = useState<PhotoInfo[]>([]);
@@ -60,6 +66,20 @@ export default function MaterialsAuctionCreate() {
       // URL params를 통해 데이터 전달
       const params = new URLSearchParams({
         firstStepData: JSON.stringify(firstStepData),
+      });
+
+      // 슬레이브 유저 파라미터가 있으면 추가
+      if (slaveUserId) {
+        params.append("slaveUserId", slaveUserId as string);
+      }
+      if (slaveName) {
+        params.append("slaveName", slaveName as string);
+      }
+
+      console.log("🔗 [자재 1단계] 다음 단계로 이동:", {
+        slaveUserId,
+        slaveName,
+        finalUrl: `/auction-create/materials/additional-info?${params.toString()}`,
       });
 
       // 다음 화면으로 이동 (추가 정보 입력) - 절대 경로 사용

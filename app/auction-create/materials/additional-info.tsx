@@ -42,6 +42,10 @@ export default function MaterialsAdditionalInfoScreen() {
   const createAuctionMutation = useCreateAuction();
   const { user, isLoading: isLoadingAuth } = useAuth();
 
+  // 슬레이브 유저 정보 추출
+  const slaveUserId = params.slaveUserId as string;
+  const slaveName = params.slaveName as string;
+
   // 첫 번째 단계 데이터 파싱
   const [firstStepData, setFirstStepData] = useState<FirstStepData | null>(
     null
@@ -217,7 +221,7 @@ export default function MaterialsAdditionalInfoScreen() {
         bidders: 0,
         viewCount: 0,
         bids: [],
-        userId: user?.id, // 현재 로그인한 사용자 ID
+        userId: slaveUserId || user?.id, // 슬레이브 유저 ID 우선 사용, 없으면 현재 로그인한 사용자 ID
       };
 
       console.log("💾 완전한 경매 데이터 저장:", completeAuctionData);

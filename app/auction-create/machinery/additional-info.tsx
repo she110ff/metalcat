@@ -47,6 +47,10 @@ export default function MachineryAdditionalInfoScreen() {
   const createAuctionMutation = useCreateAuction();
   const { user, isLoading: isLoadingAuth } = useAuth();
 
+  // 슬레이브 유저 정보 추출
+  const slaveUserId = params.slaveUserId as string;
+  const slaveName = params.slaveName as string;
+
   // 첫 번째 단계 데이터 파싱
   const [firstStepData, setFirstStepData] = useState<FirstStepData | null>(
     null
@@ -259,7 +263,7 @@ export default function MachineryAdditionalInfoScreen() {
         bidders: 0,
         viewCount: 0,
         bids: [],
-        userId: user?.id, // 현재 로그인한 사용자 ID
+        userId: slaveUserId || user?.id, // 슬레이브 유저 ID 우선 사용, 없으면 현재 로그인한 사용자 ID
       };
 
       console.log("💾 완전한 경매 데이터 저장:", completeAuctionData);
@@ -382,6 +386,30 @@ export default function MachineryAdditionalInfoScreen() {
                 <Box style={{ width: Platform.OS === "ios" ? 60 : 44 }} />
               </HStack>
             </VStack>
+
+            {/* 슬레이브 유저 정보 표시 */}
+            {slaveUserId && slaveName && (
+              <Box
+                className="mx-4 p-4 rounded-xl"
+                style={{
+                  backgroundColor: "rgba(34, 197, 94, 0.1)",
+                  borderWidth: 1,
+                  borderColor: "rgba(34, 197, 94, 0.3)",
+                }}
+              >
+                <VStack space="xs">
+                  <Text className="text-green-300 text-sm font-medium">
+                    🎯 등록 대상 사용자
+                  </Text>
+                  <Text className="text-white text-lg font-bold">
+                    {decodeURIComponent(slaveName)}
+                  </Text>
+                  <Text className="text-white/70 text-sm">
+                    이 사용자 계정으로 경매가 등록됩니다
+                  </Text>
+                </VStack>
+              </Box>
+            )}
 
             {/* 첫 번째 단계 데이터 표시 */}
             {firstStepData && (

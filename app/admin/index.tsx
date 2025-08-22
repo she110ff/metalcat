@@ -31,17 +31,19 @@ import { Heading } from "@/components/ui/heading";
 import { Pressable } from "@/components/ui/pressable";
 import { SafeAreaView } from "@/components/ui/safe-area-view";
 import { ScrollView } from "@/components/ui/scroll-view";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonText } from "@/components/ui/button";
 import { useRouter } from "expo-router";
 import { ChevronLeft, RefreshCw, Edit3 } from "lucide-react-native";
 import { Alert, TextInput } from "react-native";
+import { useSlaveUsers, SlaveUser } from "@/hooks/admin/useSlaveUsers";
+import SlaveUserCard from "@/components/admin/SlaveUserCard";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
 // import { BatchTab } from "./tabs/BatchTab";
 // import { PremiumTab } from "./tabs/PremiumTab";
 // import { AuctionTab } from "./tabs/AuctionTab";
 
-type AdminTab = "batch" | "premium" | "auction" | "admin";
+type AdminTab = "batch" | "premium" | "auction" | "auction-create" | "admin";
 
 export default function AdminScreen() {
   const { isAdmin } = useAdminAuth();
@@ -93,6 +95,8 @@ export default function AdminScreen() {
         return <PremiumTabContent />;
       case "auction":
         return <AuctionTabContent />;
+      case "auction-create":
+        return <AuctionCreateTabContent />;
       case "admin":
         return <AdminTabContent />;
       default:
@@ -158,6 +162,25 @@ export default function AdminScreen() {
               }`}
             >
               경매
+            </Text>
+          </Pressable>
+
+          <Pressable
+            className={`flex-1 py-3 px-4 rounded-lg ${
+              activeTab === "auction-create"
+                ? "bg-white shadow-sm"
+                : "bg-transparent"
+            }`}
+            onPress={() => setActiveTab("auction-create")}
+          >
+            <Text
+              className={`text-center font-medium ${
+                activeTab === "auction-create"
+                  ? "text-gray-900"
+                  : "text-gray-600"
+              }`}
+            >
+              경매 등록
             </Text>
           </Pressable>
 
@@ -1270,6 +1293,102 @@ const AdminTabContent = () => {
           </Text>
         )}
       </Box>
+    </VStack>
+  );
+};
+
+// 경매 등록 탭 컴포넌트
+const AuctionCreateTabContent = () => {
+  const { slaveUsers, isLoading, error, refetch } = useSlaveUsers();
+  const router = useRouter();
+
+  const handleCreateAuction = (user: SlaveUser) => {
+    console.log("🚀 [관리자 대시보드] 슬레이브 유저 선택:", {
+      userId: user.id,
+      userName: user.name,
+      phoneNumber: user.phone_number,
+    });
+
+    // 경매 타입 선택 화면으로 이동
+    const targetUrl = `/admin/slave-auction/type-selection?slaveUserId=${
+      user.id
+    }&slaveName=${encodeURIComponent(user.name)}`;
+
+    console.log("🔗 [관리자 대시보드] 이동할 URL:", targetUrl);
+
+    router.push(targetUrl);
+  };
+
+  if (isLoading) {
+    return (
+      <VStack space="lg">
+        <Text className="text-xl font-bold text-gray-900">
+          슬레이브 유저 경매 등록
+        </Text>
+        <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+          <Text className="text-center text-gray-500">
+            슬레이브 유저 목록을 불러오는 중...
+          </Text>
+        </Box>
+      </VStack>
+    );
+  }
+
+  if (error) {
+    return (
+      <VStack space="lg">
+        <Text className="text-xl font-bold text-gray-900">
+          슬레이브 유저 경매 등록
+        </Text>
+        <Box className="bg-red-50 border border-red-200 rounded-xl p-8">
+          <Text className="text-center text-red-600">오류: {error}</Text>
+          <Button className="mt-4 bg-red-600" onPress={refetch}>
+            <ButtonText className="text-white">다시 시도</ButtonText>
+          </Button>
+        </Box>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack space="lg">
+      <VStack space="md">
+        <Text className="text-xl font-bold text-gray-900">
+          슬레이브 유저 경매 등록
+        </Text>
+      </VStack>
+
+      <VStack space="md">
+        <HStack className="items-center justify-between">
+          <Text className="text-lg font-semibold"></Text>
+          <HStack className="items-center" space="sm">
+            <Text className="text-sm text-gray-500">
+              총 {slaveUsers.length}명
+            </Text>
+            <Pressable onPress={refetch}>
+              <RefreshCw size={16} className="text-gray-500" />
+            </Pressable>
+          </HStack>
+        </HStack>
+
+        {slaveUsers.length > 0 ? (
+          <VStack space="sm">
+            {slaveUsers.map((user) => (
+              <SlaveUserCard
+                key={user.id}
+                user={user}
+                onCreateAuction={handleCreateAuction}
+              />
+            ))}
+          </VStack>
+        ) : (
+          <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+            <Text className="text-center text-gray-500">
+              등록된 슬레이브 유저가 없습니다.
+            </Text>
+          </Box>
+        )}
+      </VStack>
     </VStack>
   );
 };

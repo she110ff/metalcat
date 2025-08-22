@@ -10,14 +10,20 @@ import { Pressable } from "@/components/ui/pressable";
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { scrapProductTypes } from "@/data";
 import { PhotoPicker, PhotoInfo } from "@/components/PhotoPicker";
 
 export default function ScrapAuctionCreate() {
   const router = useRouter();
+  const { slaveUserId, slaveName } = useLocalSearchParams();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
   const [weight, setWeight] = useState("1");
+
+  console.log("📥 [고철 1단계] URL 파라미터 확인:", {
+    slaveUserId,
+    slaveName,
+  });
 
   // 빈 상태로 시작 - 사용자가 직접 사진을 선택해야 함
   const [photos, setPhotos] = useState<PhotoInfo[]>([]);
@@ -84,6 +90,20 @@ export default function ScrapAuctionCreate() {
     // URL params를 통해 데이터 전달
     const params = new URLSearchParams({
       firstStepData: JSON.stringify(firstStepData),
+    });
+
+    // 슬레이브 유저 파라미터가 있으면 추가
+    if (slaveUserId) {
+      params.append("slaveUserId", slaveUserId as string);
+    }
+    if (slaveName) {
+      params.append("slaveName", slaveName as string);
+    }
+
+    console.log("🔗 [고철 1단계] 다음 단계로 이동:", {
+      slaveUserId,
+      slaveName,
+      finalUrl: `/auction-create/scrap/additional-info?${params.toString()}`,
     });
 
     // 다음 화면으로 이동 (추가 정보 입력)
