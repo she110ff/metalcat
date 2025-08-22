@@ -5,6 +5,8 @@ export interface SlaveUser {
   id: string;
   name: string;
   phone_number: string;
+  address: string | null;
+  address_detail: string | null;
   created_at: string;
   updated_at: string;
   is_phone_verified: boolean;

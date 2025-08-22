@@ -15,15 +15,6 @@ const SlaveUserCard: React.FC<SlaveUserCardProps> = ({
   user,
   onCreateAuction,
 }) => {
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("ko-KR", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   const formatPhoneNumber = (phoneNumber: string) => {
     // 전화번호 포맷팅 (예: 01012345678 -> 010-1234-5678)
     if (phoneNumber.length === 11) {
@@ -62,7 +53,10 @@ const SlaveUserCard: React.FC<SlaveUserCardProps> = ({
           </Text>
 
           <Text className="text-xs text-gray-500">
-            가입일: {formatDate(user.created_at)}
+            📍{" "}
+            {user.address && user.address_detail
+              ? `${user.address} ${user.address_detail}`
+              : user.address || "주소 정보 없음"}
           </Text>
         </VStack>
 
