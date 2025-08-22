@@ -512,7 +512,7 @@ export default function MachineryAdditionalInfoScreen() {
                 </HStack>
                 <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
-                    placeholder="구매자의 관심을 끌 수 있는 제목을 작성해보세요"
+                    placeholder="제목을 작성해보세요"
                     value={title}
                     onChangeText={setTitle}
                     className="text-white text-base px-5 py-4"
@@ -535,7 +535,7 @@ export default function MachineryAdditionalInfoScreen() {
                 </HStack>
                 <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                   <InputField
-                    placeholder="희망하는 판매 가격을 입력하세요 (원)"
+                    placeholder="희망판매 가격을 입력하세요 (원)"
                     value={desiredPrice}
                     onChangeText={(text) => {
                       const numericText = text.replace(/[^0-9]/g, "");

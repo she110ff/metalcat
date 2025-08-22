@@ -286,18 +286,19 @@ export const AuctionList = () => {
         }));
 
   const auctionTypes = [
-    { id: "scrap", name: "고철", IconComponent: Hammer, enabled: true },
-    {
-      id: "machinery",
-      name: "중고기계",
-      IconComponent: Settings,
-      enabled: true,
-    },
+    { id: "scrap", name: "비철", IconComponent: Hammer, enabled: true },
+
     {
       id: "materials",
       name: "중고자재",
       IconComponent: Package,
       enabled: true, // 활성화
+    },
+    {
+      id: "machinery",
+      name: "중고기계",
+      IconComponent: Settings,
+      enabled: true,
     },
     { id: "demolition", name: "철거", IconComponent: Gavel, enabled: true },
   ];
@@ -1267,21 +1268,30 @@ export const AuctionList = () => {
             position: "absolute",
             bottom: 120,
             right: 24,
-            width: 56,
-            height: 56,
+            paddingHorizontal: 20,
+            paddingVertical: 16,
             borderRadius: 28,
             backgroundColor: "rgba(147, 51, 234, 0.9)",
             justifyContent: "center",
             alignItems: "center",
-            transform: [
-              {
-                rotate: showActionMenu ? "45deg" : "0deg",
-              },
-            ],
+            shadowColor: "#9333EA",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
           }}
           activeOpacity={0.8}
         >
-          <Plus size={28} color="#FFFFFF" strokeWidth={2.5} />
+          <Text
+            style={{
+              color: "#FFFFFF",
+              fontSize: 16,
+              fontWeight: "bold",
+              fontFamily: "NanumGothic",
+            }}
+          >
+            경매 등록
+          </Text>
         </TouchableOpacity>
 
         {/* Backdrop */}
