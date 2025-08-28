@@ -3,6 +3,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useMyServiceRequests } from "@/hooks/service-request/myRequests";
 import { useMyAuctions, useMyBiddings } from "@/hooks/auctions/useMyAuctions";
+import {
+  useMyAuctionsInfinite,
+  useMyBiddingsInfinite,
+} from "@/hooks/auctions/useMyAuctionsInfinite";
 import { SimpleRequestCard } from "@/components/service-request/SimpleRequestCard";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -562,19 +566,60 @@ const MainContent = () => {
   const { data: myRequests, isLoading: requestsLoading } =
     useMyServiceRequests();
 
-  // 내 경매 등록 목록 조회
+  // 내 경매 등록 목록 조회 (무한 스크롤)
   const {
-    data: myAuctions,
+    data: myAuctionsData,
     isLoading: auctionsLoading,
     error: auctionsError,
-  } = useMyAuctions();
+    fetchNextPage: fetchNextAuctions,
+    hasNextPage: hasNextAuctions,
+    isFetchingNextPage: isFetchingNextAuctions,
+  } = useMyAuctionsInfinite(10);
 
-  // 내 입찰 목록 조회
+  // 내 입찰 목록 조회 (무한 스크롤)
   const {
-    data: myBiddings,
+    data: myBiddingsData,
     isLoading: biddingsLoading,
     error: biddingsError,
-  } = useMyBiddings();
+    fetchNextPage: fetchNextBiddings,
+    hasNextPage: hasNextBiddings,
+    isFetchingNextPage: isFetchingNextBiddings,
+  } = useMyBiddingsInfinite(10);
+
+  // 모든 페이지의 경매 데이터를 평면화 (중복 제거)
+  const myAuctions = React.useMemo(() => {
+    const allData = myAuctionsData?.pages.flatMap((page) => page.data) || [];
+    // ID를 기준으로 중복 제거
+    const uniqueData = allData.filter(
+      (auction, index, self) =>
+        index === self.findIndex((a) => a.id === auction.id)
+    );
+    return uniqueData;
+  }, [myAuctionsData]);
+
+  // 모든 페이지의 입찰 데이터를 평면화 (중복 제거)
+  const myBiddings = React.useMemo(() => {
+    const allData = myBiddingsData?.pages.flatMap((page) => page.data) || [];
+    // ID를 기준으로 중복 제거
+    const uniqueData = allData.filter(
+      (auction, index, self) =>
+        index === self.findIndex((a) => a.id === auction.id)
+    );
+    return uniqueData;
+  }, [myBiddingsData]);
+
+  // 더 보기 버튼 핸들러
+  const handleLoadMoreAuctions = () => {
+    if (hasNextAuctions && !isFetchingNextAuctions) {
+      fetchNextAuctions();
+    }
+  };
+
+  const handleLoadMoreBiddings = () => {
+    if (hasNextBiddings && !isFetchingNextBiddings) {
+      fetchNextBiddings();
+    }
+  };
 
   // 로그아웃 처리
   const handleLogout = () => {
@@ -798,6 +843,27 @@ const MainContent = () => {
               </Box>
             </Pressable>
           ))}
+
+          {/* 더 보기 버튼 */}
+          {hasNextAuctions && (
+            <Pressable
+              onPress={handleLoadMoreAuctions}
+              disabled={isFetchingNextAuctions}
+              className={`mt-4 py-3 px-4 rounded-lg border-2 border-dashed ${
+                isFetchingNextAuctions
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-blue-200 bg-blue-50 active:bg-blue-100"
+              }`}
+            >
+              <Text
+                className={`text-center font-medium ${
+                  isFetchingNextAuctions ? "text-gray-500" : "text-blue-600"
+                }`}
+              >
+                {isFetchingNextAuctions ? "불러오는 중..." : "더 보기"}
+              </Text>
+            </Pressable>
+          )}
         </VStack>
       );
     }
@@ -888,6 +954,27 @@ const MainContent = () => {
               </Box>
             </Pressable>
           ))}
+
+          {/* 더 보기 버튼 */}
+          {hasNextBiddings && (
+            <Pressable
+              onPress={handleLoadMoreBiddings}
+              disabled={isFetchingNextBiddings}
+              className={`mt-4 py-3 px-4 rounded-lg border-2 border-dashed ${
+                isFetchingNextBiddings
+                  ? "border-gray-200 bg-gray-50"
+                  : "border-blue-200 bg-blue-50 active:bg-blue-100"
+              }`}
+            >
+              <Text
+                className={`text-center font-medium ${
+                  isFetchingNextBiddings ? "text-gray-500" : "text-blue-600"
+                }`}
+              >
+                {isFetchingNextBiddings ? "불러오는 중..." : "더 보기"}
+              </Text>
+            </Pressable>
+          )}
         </VStack>
       );
     }
