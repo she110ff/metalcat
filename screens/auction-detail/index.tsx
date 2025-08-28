@@ -1010,7 +1010,6 @@ export const AuctionDetail = () => {
                     auctionDetail.status === "ending"
                   }
                   isOwner={isAuctionOwner}
-                  hasBid={hasUserBid}
                 />
               )}
 

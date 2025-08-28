@@ -21,7 +21,6 @@ interface BidInputSectionProps {
   currentTopBid: number;
   isActive: boolean;
   isOwner?: boolean;
-  hasBid?: boolean;
   onBidSuccess?: () => void;
 }
 
@@ -30,7 +29,6 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
   currentTopBid,
   isActive,
   isOwner = false,
-  hasBid = false,
   onBidSuccess,
 }) => {
   const [bidAmount, setBidAmount] = useState("");
@@ -177,40 +175,6 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
             <Text className="text-orange-200/80 text-sm text-center leading-relaxed">
               본인이 등록한 경매에는 입찰할 수 없습니다.{"\n"}
               다른 사용자들의 입찰을 기다려주세요.
-            </Text>
-
-            {currentTopBid > 0 && (
-              <VStack space="xs" className="items-center mt-2">
-                <Text className="text-white/60 text-xs uppercase tracking-[1px]">
-                  현재 최고가
-                </Text>
-                <Text className="text-yellow-300 text-xl font-bold">
-                  {formatAuctionPrice(currentTopBid)}
-                </Text>
-              </VStack>
-            )}
-          </VStack>
-        </Box>
-      </VStack>
-    );
-  }
-
-  // 🚫 이미 입찰한 경우 입찰 폼 대신 안내 메시지 표시
-  if (hasBid) {
-    return (
-      <VStack space="lg" className="px-6">
-        <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
-          입찰 완료
-        </Text>
-
-        <Box className="rounded-2xl p-6 bg-blue-500/10 border border-blue-500/30 shadow-lg shadow-black/40">
-          <VStack space="md" className="items-center">
-            <Text className="text-blue-300 text-lg font-bold text-center">
-              이미 입찰하신 경매입니다
-            </Text>
-            <Text className="text-blue-200/80 text-sm text-center leading-relaxed">
-              한 번만 입찰할 수 있습니다.{"\n"}
-              다른 입찰자들의 경쟁을 지켜보세요.
             </Text>
 
             {currentTopBid > 0 && (
