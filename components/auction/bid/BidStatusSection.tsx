@@ -5,6 +5,7 @@ import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Users } from "lucide-react-native";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
+import { maskBidderName } from "@/utils/nameUtils";
 
 interface BidStatusSectionProps {
   auctionStatus: "active" | "ending" | "ended";
@@ -92,7 +93,7 @@ export const BidStatusSection: React.FC<BidStatusSectionProps> = ({
                     낙찰자
                   </Text>
                   <Text className="text-white font-semibold text-base">
-                    {winnerInfo.userName}
+                    {maskBidderName(winnerInfo.userName)}
                   </Text>
                 </VStack>
                 <VStack className="items-end" space="xs">

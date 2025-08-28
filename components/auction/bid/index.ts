@@ -3,3 +3,4 @@ export { BidStatusSection } from "./BidStatusSection";
 export { BidInputSection } from "./BidInputSection";
 export { BidHistorySection } from "./BidHistorySection";
 export { EndedAuctionSection } from "./EndedAuctionSection";
+export { SlaveUserSelectionModal } from "./SlaveUserSelectionModal";

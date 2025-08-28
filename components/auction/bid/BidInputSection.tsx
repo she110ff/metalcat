@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Alert } from "react-native";
 import { VStack } from "@/components/ui/vstack";
+import { HStack } from "@/components/ui/hstack";
 import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,11 @@ import { Input } from "@/components/ui/input";
 import { InputField } from "@/components/ui/input";
 import { useCreateBid } from "@/hooks/useAuctions";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
+import { SlaveUserSelectionModal } from "./SlaveUserSelectionModal";
+import { SlaveUser } from "@/hooks/admin/useSlaveUsers";
+import { Users } from "lucide-react-native";
 
 interface BidInputSectionProps {
   auctionId: string;
@@ -29,8 +34,10 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
   onBidSuccess,
 }) => {
   const [bidAmount, setBidAmount] = useState("");
+  const [showSlaveUserModal, setShowSlaveUserModal] = useState(false);
   const createBidMutation = useCreateBid();
   const { user } = useAuth();
+  const { isAdmin } = useAdminAuth();
 
   // 숫자에 콤마 추가하는 함수
   const formatNumberWithComma = (value: string) => {
@@ -91,6 +98,58 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
 
       setBidAmount("");
       Alert.alert("입찰 성공", "입찰이 성공적으로 등록되었습니다.");
+      onBidSuccess?.();
+    } catch (error: any) {
+      Alert.alert("입찰 실패", error.message || "입찰 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 관리자 슬레이브 유저 입찰 처리
+  const handleAdminSlaveUserBid = () => {
+    if (!bidAmount) {
+      Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
+      return;
+    }
+
+    // 콤마 제거 후 숫자 변환
+    const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert("입력 오류", "올바른 금액을 입력해주세요.");
+      return;
+    }
+
+    // 현재 최고 입찰가보다 낮은지 확인
+    if (amount <= currentTopBid) {
+      Alert.alert(
+        "입찰 오류",
+        "현재 최고 입찰가보다 높은 금액을 입력해주세요."
+      );
+      return;
+    }
+
+    setShowSlaveUserModal(true);
+  };
+
+  // 슬레이브 유저 선택 후 입찰 처리
+  const handleSlaveUserSelected = async (selectedUser: SlaveUser) => {
+    const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
+
+    try {
+      await createBidMutation.mutateAsync({
+        auctionId: auctionId,
+        bidData: {
+          userId: selectedUser.id,
+          userName: selectedUser.name,
+          amount: amount,
+          location: selectedUser.address || "위치 미상",
+        },
+      });
+
+      setBidAmount("");
+      Alert.alert(
+        "입찰 성공",
+        `${selectedUser.name} 유저로 입찰이 성공적으로 등록되었습니다.`
+      );
       onBidSuccess?.();
     } catch (error: any) {
       Alert.alert("입찰 실패", error.message || "입찰 중 오류가 발생했습니다.");
@@ -177,7 +236,7 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
       </Text>
 
       <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
-        <VStack space="md">
+        <VStack space="md" className="mb-6">
           <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
             입찰 금액
           </Text>
@@ -198,6 +257,7 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
             </Text>
           )}
 
+          {/* 일반 사용자 입찰 버튼 */}
           <Button
             onPress={handleBid}
             disabled={createBidMutation.isPending}
@@ -219,8 +279,50 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
               {createBidMutation.isPending ? "입찰 중..." : "입찰하기"}
             </ButtonText>
           </Button>
+
+          {/* 관리자 전용 슬레이브 유저 입찰 버튼 */}
+          {isAdmin && (
+            <Button
+              onPress={handleAdminSlaveUserBid}
+              disabled={createBidMutation.isPending}
+              className={`rounded-2xl border-2 min-h-14 mt-3 ${
+                createBidMutation.isPending
+                  ? "bg-gray-500/30 border-gray-500/30"
+                  : "bg-blue-500/15 border-blue-500/30"
+              } shadow-xl ${
+                createBidMutation.isPending
+                  ? "shadow-gray-500/40"
+                  : "shadow-blue-500/40"
+              }`}
+            >
+              <HStack className="items-center" space="sm">
+                <Users
+                  size={20}
+                  color={createBidMutation.isPending ? "#9CA3AF" : "#60A5FA"}
+                />
+                <ButtonText
+                  className={`font-bold tracking-wide text-base ${
+                    createBidMutation.isPending
+                      ? "text-gray-400"
+                      : "text-blue-300"
+                  }`}
+                >
+                  슬레이브 유저로 입찰
+                </ButtonText>
+              </HStack>
+            </Button>
+          )}
         </VStack>
       </Box>
+
+      {/* 슬레이브 유저 선택 모달 */}
+      <SlaveUserSelectionModal
+        visible={showSlaveUserModal}
+        onClose={() => setShowSlaveUserModal(false)}
+        onSelectUser={handleSlaveUserSelected}
+        auctionId={auctionId}
+        bidAmount={parseInt(bidAmount.replace(/[^\d]/g, "")) || 0}
+      />
     </VStack>
   );
 };

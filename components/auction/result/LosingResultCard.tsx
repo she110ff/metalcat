@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { formatAuctionPrice } from "@/data";
 import { useRouter } from "expo-router";
+import { maskBidderName } from "@/utils/nameUtils";
 import type { AuctionItem, AuctionResultInfo } from "@/data/types/auction";
 
 interface LosingResultCardProps {
@@ -75,7 +76,7 @@ export const LosingResultCard: React.FC<LosingResultCardProps> = ({
             <HStack className="justify-between items-center">
               <Text className="text-gray-300 text-lg font-bold">👤 낙찰자</Text>
               <Text className="text-white/80 text-sm">
-                {result.winningUserName}
+                {maskBidderName(result.winningUserName)}
               </Text>
             </HStack>
           )}

@@ -5,6 +5,7 @@ import { Text } from "@/components/ui/text";
 import { Box } from "@/components/ui/box";
 import { useBids } from "@/hooks/useAuctions";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
+import { maskBidderName } from "@/utils/nameUtils";
 
 interface BidHistorySectionProps {
   auctionId: string;
@@ -43,7 +44,7 @@ export const BidHistorySection: React.FC<BidHistorySectionProps> = ({
   const bidHistory = bids
     .map((bid) => ({
       id: bid.id,
-      bidder: bid.userName || "익명",
+      bidder: maskBidderName(bid.userName || "익명"),
       amount: formatAuctionPrice(bid.amount),
       time: getTimeAgo(bid.bidTime),
     }))
