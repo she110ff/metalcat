@@ -7,6 +7,7 @@ export interface AuctionStats {
   ending: number;
   ended: number;
   cancelled: number;
+  pendingApproval: number; // 승인 대기
   totalValue: number; // 총 거래액
   todayNew: number; // 오늘 신규 등록
   thisMonthValue: number; // 이번달 거래액
@@ -39,7 +40,7 @@ export async function getAuctionStats(): Promise<AuctionStats> {
   try {
     const { data, error } = await supabase
       .from("auctions")
-      .select("status, current_bid, created_at, end_time");
+      .select("status, current_bid, created_at, end_time, approval_status");
 
     if (error) {
       console.error("경매 통계 조회 실패:", error);
@@ -49,6 +50,7 @@ export async function getAuctionStats(): Promise<AuctionStats> {
         ending: 0,
         ended: 0,
         cancelled: 0,
+        pendingApproval: 0,
         totalValue: 0,
         todayNew: 0,
         thisMonthValue: 0,
@@ -66,28 +68,35 @@ export async function getAuctionStats(): Promise<AuctionStats> {
       (acc, auction) => {
         acc.total++;
 
-        // 상태별 통계
-        if (auction.status === "active") {
-          const endTime = new Date(auction.end_time);
-          if (endTime <= twentyFourHoursFromNow) {
-            acc.ending++;
-          } else {
-            acc.active++;
-          }
-        } else if (auction.status === "ended") {
-          acc.ended++;
-          // 종료된 경매의 거래액 누적
-          if (auction.current_bid) {
-            acc.totalValue += auction.current_bid;
+        // 승인 상태별 통계
+        if (auction.approval_status === "pending_approval") {
+          acc.pendingApproval++;
+        }
 
-            // 이번달 거래액
+        // 상태별 통계 (승인된 경매만 계산)
+        if (auction.approval_status === "approved") {
+          if (auction.status === "active") {
             const endTime = new Date(auction.end_time);
-            if (endTime >= thisMonth) {
-              acc.thisMonthValue += auction.current_bid;
+            if (endTime <= twentyFourHoursFromNow) {
+              acc.ending++;
+            } else {
+              acc.active++;
             }
+          } else if (auction.status === "ended") {
+            acc.ended++;
+            // 종료된 경매의 거래액 누적
+            if (auction.current_bid) {
+              acc.totalValue += auction.current_bid;
+
+              // 이번달 거래액
+              const endTime = new Date(auction.end_time);
+              if (endTime >= thisMonth) {
+                acc.thisMonthValue += auction.current_bid;
+              }
+            }
+          } else if (auction.status === "cancelled") {
+            acc.cancelled++;
           }
-        } else if (auction.status === "cancelled") {
-          acc.cancelled++;
         }
 
         // 오늘 신규 등록
@@ -104,6 +113,7 @@ export async function getAuctionStats(): Promise<AuctionStats> {
         ending: 0,
         ended: 0,
         cancelled: 0,
+        pendingApproval: 0,
         totalValue: 0,
         todayNew: 0,
         thisMonthValue: 0,
@@ -119,6 +129,7 @@ export async function getAuctionStats(): Promise<AuctionStats> {
       ending: 0,
       ended: 0,
       cancelled: 0,
+      pendingApproval: 0,
       totalValue: 0,
       todayNew: 0,
       thisMonthValue: 0,

@@ -16,6 +16,10 @@ import {
   useCategoryStats,
   useRecentAuctions,
 } from "@/hooks/admin/useAdminAuctions";
+import {
+  usePendingApprovalAuctions,
+  usePendingApprovalStats,
+} from "@/hooks/admin/usePendingApprovalAuctions";
 import { useAdminAuctionsInfinite } from "@/hooks/admin/useAdminAuctionsInfinite";
 import { useAdminServiceRequestsInfinite } from "@/hooks/admin/useAdminPremiumInfinite";
 import AuctionDetailModal from "@/components/admin/AuctionDetailModal";
@@ -40,13 +44,26 @@ import { ChevronLeft, RefreshCw, Edit3 } from "lucide-react-native";
 import { Alert, TextInput } from "react-native";
 import { useSlaveUsers, SlaveUser } from "@/hooks/admin/useSlaveUsers";
 import SlaveUserCard from "@/components/admin/SlaveUserCard";
+import {
+  useHiddenAuctions,
+  HiddenAuction,
+} from "@/hooks/admin/useHiddenAuctions";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/hooks/auth/api";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
 // import { BatchTab } from "./tabs/BatchTab";
 // import { PremiumTab } from "./tabs/PremiumTab";
 // import { AuctionTab } from "./tabs/AuctionTab";
 
-type AdminTab = "batch" | "premium" | "auction" | "auction-create" | "admin";
+type AdminTab =
+  | "batch"
+  | "premium"
+  | "auction"
+  | "auction-create"
+  | "admin"
+  | "hidden"
+  | "pending";
 
 export default function AdminScreen() {
   const { isAdmin } = useAdminAuth();
@@ -102,6 +119,10 @@ export default function AdminScreen() {
         return <AuctionCreateTabContent />;
       case "admin":
         return <AdminTabContent />;
+      case "hidden":
+        return <HiddenAuctionTabContent />;
+      case "pending":
+        return <PendingApprovalTabContent />;
       default:
         return null;
     }
@@ -122,86 +143,124 @@ export default function AdminScreen() {
 
       {/* 탭 네비게이션 */}
       <Box className="px-4 pt-4">
-        <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "batch" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("batch")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "batch" ? "text-gray-900" : "text-gray-600"
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <HStack className="bg-gray-100 rounded-xl p-1" space="xs">
+            <Pressable
+              className={`flex-1 py-3 px-4 rounded-lg ${
+                activeTab === "batch" ? "bg-white shadow-sm" : "bg-transparent"
               }`}
+              onPress={() => setActiveTab("batch")}
             >
-              배치
-            </Text>
-          </Pressable>
+              <Text
+                className={`text-center font-medium ${
+                  activeTab === "batch" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                배치
+              </Text>
+            </Pressable>
 
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "premium" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("premium")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "premium" ? "text-gray-900" : "text-gray-600"
+            <Pressable
+              className={`flex-1 py-3 px-4 rounded-lg ${
+                activeTab === "premium"
+                  ? "bg-white shadow-sm"
+                  : "bg-transparent"
               }`}
+              onPress={() => setActiveTab("premium")}
             >
-              프리미엄
-            </Text>
-          </Pressable>
+              <Text
+                className={`text-center font-medium ${
+                  activeTab === "premium" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                프리미엄
+              </Text>
+            </Pressable>
 
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "auction" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("auction")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "auction" ? "text-gray-900" : "text-gray-600"
+            <Pressable
+              className={`flex-1 py-3 px-4 rounded-lg ${
+                activeTab === "auction"
+                  ? "bg-white shadow-sm"
+                  : "bg-transparent"
               }`}
+              onPress={() => setActiveTab("auction")}
             >
-              경매
-            </Text>
-          </Pressable>
+              <Text
+                className={`text-center font-medium ${
+                  activeTab === "auction" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                경매
+              </Text>
+            </Pressable>
 
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "auction-create"
-                ? "bg-white shadow-sm"
-                : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("auction-create")}
-          >
-            <Text
-              className={`text-center font-medium ${
+            <Pressable
+              className={`flex-1 py-3 px-4 rounded-lg ${
                 activeTab === "auction-create"
-                  ? "text-gray-900"
-                  : "text-gray-600"
+                  ? "bg-white shadow-sm"
+                  : "bg-transparent"
               }`}
+              onPress={() => setActiveTab("auction-create")}
             >
-              경매 등록
-            </Text>
-          </Pressable>
+              <Text
+                className={`text-center font-medium ${
+                  activeTab === "auction-create"
+                    ? "text-gray-900"
+                    : "text-gray-600"
+                }`}
+              >
+                경매 등록
+              </Text>
+            </Pressable>
 
-          <Pressable
-            className={`flex-1 py-3 px-4 rounded-lg ${
-              activeTab === "admin" ? "bg-white shadow-sm" : "bg-transparent"
-            }`}
-            onPress={() => setActiveTab("admin")}
-          >
-            <Text
-              className={`text-center font-medium ${
-                activeTab === "admin" ? "text-gray-900" : "text-gray-600"
+            <Pressable
+              className={`flex-1 py-3 px-4 rounded-lg ${
+                activeTab === "admin" ? "bg-white shadow-sm" : "bg-transparent"
               }`}
+              onPress={() => setActiveTab("admin")}
             >
-              관리자
-            </Text>
-          </Pressable>
-        </HStack>
+              <Text
+                className={`text-center font-medium ${
+                  activeTab === "admin" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                관리자
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`py-3 px-4 rounded-lg ${
+                activeTab === "hidden" ? "bg-white shadow-sm" : "bg-transparent"
+              }`}
+              onPress={() => setActiveTab("hidden")}
+            >
+              <Text
+                className={`text-center font-medium whitespace-nowrap ${
+                  activeTab === "hidden" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                🔒 히든 경매
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`py-3 px-4 rounded-lg ${
+                activeTab === "pending"
+                  ? "bg-white shadow-sm"
+                  : "bg-transparent"
+              }`}
+              onPress={() => setActiveTab("pending")}
+            >
+              <Text
+                className={`text-center font-medium whitespace-nowrap ${
+                  activeTab === "pending" ? "text-gray-900" : "text-gray-600"
+                }`}
+              >
+                ⏳ 승인대기
+              </Text>
+            </Pressable>
+          </HStack>
+        </ScrollView>
       </Box>
 
       {/* 탭 컨텐츠 */}
@@ -1515,6 +1574,532 @@ const AuctionCreateTabContent = () => {
             <Text className="text-center text-gray-500">
               등록된 슬레이브 유저가 없습니다.
             </Text>
+          </Box>
+        )}
+      </VStack>
+    </VStack>
+  );
+};
+
+// 히든 경매 탭 컨텐츠
+const HiddenAuctionTabContent = () => {
+  const { user } = useAuth();
+  const {
+    hiddenAuctions,
+    stats,
+    isLoading,
+    error,
+    refetch,
+    unhideAuction,
+    getHiddenAuctionDetail,
+  } = useHiddenAuctions();
+
+  // 디버깅용 로그
+  console.log("🎯 HiddenAuctionTabContent 렌더링:");
+  console.log("  - hiddenAuctions:", hiddenAuctions);
+  console.log("  - hiddenAuctions.length:", hiddenAuctions?.length);
+  console.log("  - stats:", stats);
+  console.log("  - isLoading:", isLoading);
+  console.log("  - error:", error);
+
+  const handleUnhideAuction = async (auction: HiddenAuction) => {
+    if (!user?.id) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    Alert.alert(
+      "히든 경매 해제",
+      `"${auction.title}" 경매를 일반 경매로 전환하시겠습니까?\n\n전환 시 모든 사용자에게 알림이 발송됩니다.`,
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "해제",
+          style: "destructive",
+          onPress: async () => {
+            const success = await unhideAuction(
+              auction.auction_id,
+              user.id,
+              "관리자에 의한 히든 해제"
+            );
+            if (success) {
+              Alert.alert("성공", "히든 경매가 일반 경매로 전환되었습니다.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <VStack space="lg">
+        <Text className="text-xl font-bold text-gray-900">
+          🔒 히든 경매 관리
+        </Text>
+        <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+          <Text className="text-center text-gray-500">로딩 중...</Text>
+        </Box>
+      </VStack>
+    );
+  }
+
+  if (error) {
+    return (
+      <VStack space="lg">
+        <Text className="text-xl font-bold text-gray-900">
+          🔒 히든 경매 관리
+        </Text>
+        <Box className="bg-red-50 border border-red-200 rounded-xl p-6">
+          <VStack space="sm" className="items-center">
+            <Text className="text-4xl">🚫</Text>
+            <Text className="text-red-600 text-center font-medium">
+              {error}
+            </Text>
+            {error.includes("관리자 권한") && (
+              <Text className="text-red-500 text-center text-sm">
+                관리자 계정으로 다시 로그인해주세요.
+              </Text>
+            )}
+            <Button size="sm" variant="outline" onPress={refetch}>
+              <ButtonText className="text-red-600">다시 시도</ButtonText>
+            </Button>
+          </VStack>
+        </Box>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack space="lg">
+      <VStack space="md">
+        <HStack className="items-center justify-between">
+          <Text className="text-xl font-bold text-gray-900">
+            🔒 히든 경매 관리
+          </Text>
+          <Pressable onPress={refetch}>
+            <RefreshCw size={20} className="text-gray-500" />
+          </Pressable>
+        </HStack>
+
+        {/* 통계 카드 */}
+        {stats && (
+          <HStack space="sm" className="flex-wrap">
+            <Box className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex-1 min-w-[120px]">
+              <Text className="text-blue-600 text-sm font-medium">
+                전체 히든
+              </Text>
+              <Text className="text-blue-900 text-lg font-bold">
+                {stats.total_hidden}개
+              </Text>
+            </Box>
+            <Box className="bg-green-50 border border-green-200 rounded-lg p-3 flex-1 min-w-[120px]">
+              <Text className="text-green-600 text-sm font-medium">
+                오늘 히든
+              </Text>
+              <Text className="text-green-900 text-lg font-bold">
+                {stats.hidden_today}개
+              </Text>
+            </Box>
+            <Box className="bg-purple-50 border border-purple-200 rounded-lg p-3 flex-1 min-w-[120px]">
+              <Text className="text-purple-600 text-sm font-medium">
+                이번 주
+              </Text>
+              <Text className="text-purple-900 text-lg font-bold">
+                {stats.hidden_this_week}개
+              </Text>
+            </Box>
+            <Box className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex-1 min-w-[120px]">
+              <Text className="text-orange-600 text-sm font-medium">
+                평균 일수
+              </Text>
+              <Text className="text-orange-900 text-lg font-bold">
+                {stats.avg_days_hidden}일
+              </Text>
+            </Box>
+          </HStack>
+        )}
+      </VStack>
+
+      {/* 히든 경매 목록 */}
+      <VStack space="md">
+        <HStack className="items-center justify-between">
+          <Text className="text-lg font-semibold">히든 경매 목록</Text>
+          <Text className="text-sm text-gray-500">
+            총 {hiddenAuctions.length}개
+          </Text>
+        </HStack>
+
+        {hiddenAuctions.length > 0 ? (
+          <VStack space="sm">
+            {(() => {
+              console.log(
+                "🔄 히든 경매 목록 렌더링:",
+                hiddenAuctions.length,
+                "개"
+              );
+              console.log("🔄 첫 번째 경매:", hiddenAuctions[0]);
+              return hiddenAuctions.map((auction) => (
+                <Box
+                  key={auction.auction_id}
+                  className="bg-white border border-gray-200 rounded-xl p-4"
+                >
+                  <VStack space="sm">
+                    <HStack className="items-start justify-between">
+                      <VStack space="xs" className="flex-1">
+                        <Text className="font-semibold text-gray-900 text-base">
+                          {auction.title}
+                        </Text>
+                        <HStack space="sm" className="items-center">
+                          <Text className="text-sm text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            {auction.category}
+                          </Text>
+                          <Text className="text-sm text-gray-500">
+                            {auction.seller_name}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                      <Text className="text-xs text-gray-400">
+                        {auction.days_hidden}일 전
+                      </Text>
+                    </HStack>
+
+                    <VStack space="xs">
+                      <HStack className="items-center justify-between">
+                        <Text className="text-xs text-gray-500">
+                          히든 처리: {formatDate(auction.approved_at)}
+                        </Text>
+                        <Text className="text-xs text-gray-500">
+                          종료: {formatDate(auction.end_time)}
+                        </Text>
+                      </HStack>
+                      {auction.hidden_reason && (
+                        <Text className="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                          사유: {auction.hidden_reason}
+                        </Text>
+                      )}
+                    </VStack>
+
+                    <HStack space="sm" className="items-center justify-end">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onPress={() => handleUnhideAuction(auction)}
+                      >
+                        <ButtonText className="text-blue-600">
+                          히든 해제
+                        </ButtonText>
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </Box>
+              ));
+            })()}
+          </VStack>
+        ) : (
+          <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+            <VStack space="sm" className="items-center">
+              <Text className="text-4xl">🔒</Text>
+              <Text className="text-center text-gray-500 font-medium">
+                히든 경매가 없습니다
+              </Text>
+              <Text className="text-center text-gray-400 text-sm">
+                관리자가 히든 처리한 경매가 여기에 표시됩니다
+              </Text>
+            </VStack>
+          </Box>
+        )}
+      </VStack>
+    </VStack>
+  );
+};
+
+// 승인대기 탭 컨텐츠
+const PendingApprovalTabContent = () => {
+  const {
+    data: pendingAuctions,
+    isLoading: pendingLoading,
+    refetch: refetchPendingAuctions,
+  } = usePendingApprovalAuctions();
+  const {
+    data: pendingStats,
+    isLoading: statsLoading,
+    refetch: refetchPendingStats,
+  } = usePendingApprovalStats();
+  const { user } = useAuth();
+
+  // 전체 새로고침 함수
+  const handleRefreshAll = async () => {
+    await Promise.all([refetchPendingAuctions(), refetchPendingStats()]);
+  };
+
+  const handleApproveAuction = async (auctionId: string) => {
+    if (!user?.id) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("approve_auction", {
+        p_auction_id: auctionId,
+        p_admin_id: user.id,
+        p_reason: "관리자에 의한 승인",
+      });
+
+      if (error) throw error;
+
+      Alert.alert("성공", "경매가 승인되었습니다.");
+      // 승인 후 데이터 새로고침
+      handleRefreshAll();
+    } catch (error) {
+      console.error("경매 승인 오류:", error);
+      Alert.alert("오류", "경매 승인 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleHideAuction = async (auctionId: string) => {
+    if (!user?.id) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("hide_auction", {
+        p_auction_id: auctionId,
+        p_admin_id: user.id,
+        p_reason: "관리자에 의한 히든 처리",
+      });
+
+      if (error) throw error;
+
+      Alert.alert("성공", "경매가 히든 처리되었습니다.");
+      // 히든 처리 후 데이터 새로고침
+      handleRefreshAll();
+    } catch (error) {
+      console.error("경매 히든 처리 오류:", error);
+      Alert.alert("오류", "경매 히든 처리 중 오류가 발생했습니다.");
+    }
+  };
+
+  const handleRejectAuction = async (auctionId: string) => {
+    if (!user?.id) {
+      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
+      return;
+    }
+
+    Alert.prompt(
+      "경매 거부",
+      "거부 사유를 입력해주세요:",
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "거부",
+          style: "destructive",
+          onPress: async (reason) => {
+            try {
+              const { data, error } = await supabase.rpc("reject_auction", {
+                p_auction_id: auctionId,
+                p_admin_id: user.id,
+                p_reason: reason || "관리자에 의한 거부",
+              });
+
+              if (error) throw error;
+
+              Alert.alert("성공", "경매가 거부되었습니다.");
+              // 거부 후 데이터 새로고침
+              handleRefreshAll();
+            } catch (error) {
+              console.error("경매 거부 오류:", error);
+              Alert.alert("오류", "경매 거부 중 오류가 발생했습니다.");
+            }
+          },
+        },
+      ],
+      "plain-text"
+    );
+  };
+
+  const isRefreshing = pendingLoading || statsLoading;
+
+  return (
+    <VStack space="lg" className="flex-1">
+      {/* 새로고침 버튼 */}
+      <Box className="flex-row justify-end">
+        <Pressable
+          onPress={handleRefreshAll}
+          disabled={isRefreshing}
+          className={`flex-row items-center px-4 py-2 rounded-lg ${
+            isRefreshing ? "bg-gray-100" : "bg-blue-50 active:bg-blue-100"
+          }`}
+        >
+          <RefreshCw
+            size={16}
+            color={isRefreshing ? "#9CA3AF" : "#3B82F6"}
+            style={{
+              transform: [{ rotate: isRefreshing ? "360deg" : "0deg" }],
+            }}
+          />
+          <Text
+            className={`ml-2 text-sm font-medium ${
+              isRefreshing ? "text-gray-500" : "text-blue-600"
+            }`}
+          >
+            {isRefreshing ? "새로고침 중..." : "새로고침"}
+          </Text>
+        </Pressable>
+      </Box>
+
+      {/* 승인대기 통계 */}
+      <VStack space="md">
+        <Heading size="lg" className="text-gray-900">
+          ⏳ 승인대기 경매 관리
+        </Heading>
+
+        <HStack space="sm" className="flex-wrap">
+          <Box className="bg-orange-50 border border-orange-200 rounded-xl p-4 flex-1 min-w-[120px]">
+            <VStack>
+              <Text className="text-orange-800 font-semibold">
+                승인대기 경매
+              </Text>
+              <Text className="text-orange-600 text-lg font-bold">
+                {statsLoading
+                  ? "로딩 중..."
+                  : `${pendingStats?.totalPending || 0}개`}
+              </Text>
+            </VStack>
+          </Box>
+
+          <Box className="bg-red-50 border border-red-200 rounded-xl p-4 flex-1 min-w-[120px]">
+            <VStack>
+              <Text className="text-red-800 font-semibold text-sm">
+                자동승인 임박
+              </Text>
+              <Text className="text-red-600 text-lg font-bold">
+                {statsLoading
+                  ? "로딩 중..."
+                  : `${pendingStats?.autoApprovalSoon || 0}개`}
+              </Text>
+            </VStack>
+          </Box>
+
+          <Box className="bg-green-50 border border-green-200 rounded-xl p-4 flex-1 min-w-[120px]">
+            <VStack>
+              <Text className="text-green-800 font-semibold text-sm">
+                오늘 승인
+              </Text>
+              <Text className="text-green-600 text-lg font-bold">
+                {statsLoading
+                  ? "로딩 중..."
+                  : `${pendingStats?.todayApproved || 0}개`}
+              </Text>
+            </VStack>
+          </Box>
+        </HStack>
+      </VStack>
+
+      {/* 승인대기 경매 목록 */}
+      <VStack space="md">
+        <HStack className="items-center justify-between">
+          <Text className="text-lg font-semibold">승인대기 경매 목록</Text>
+          <Text className="text-sm text-gray-500">
+            {pendingAuctions?.length || 0}개
+          </Text>
+        </HStack>
+
+        {pendingLoading ? (
+          <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+            <Text className="text-center text-gray-500">로딩 중...</Text>
+          </Box>
+        ) : pendingAuctions && pendingAuctions.length > 0 ? (
+          <VStack space="sm">
+            {pendingAuctions.map((auction) => (
+              <Box
+                key={auction.id}
+                className="bg-white border border-gray-200 rounded-xl p-4"
+              >
+                <VStack space="sm">
+                  <HStack className="items-start justify-between">
+                    <VStack className="flex-1">
+                      <Text className="font-semibold text-gray-900">
+                        {auction.title}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        카테고리: {auction.auction_category}
+                      </Text>
+                      <Text className="text-sm text-gray-600">
+                        등록자: {auction.seller_name}
+                      </Text>
+                      <Text className="text-sm text-gray-500">
+                        등록일:{" "}
+                        {new Date(auction.created_at).toLocaleDateString()}
+                      </Text>
+                      {auction.waiting_minutes !== undefined && (
+                        <Text className="text-xs text-orange-600">
+                          대기시간: {auction.waiting_minutes}분
+                          {auction.waiting_minutes > 25 && " (자동승인 임박)"}
+                        </Text>
+                      )}
+                    </VStack>
+                    <Box className="bg-orange-100 px-2 py-1 rounded">
+                      <Text className="text-xs text-orange-800 font-medium">
+                        승인대기
+                      </Text>
+                    </Box>
+                  </HStack>
+
+                  {/* 액션 버튼들 */}
+                  <HStack space="sm" className="mt-3">
+                    <Button
+                      size="sm"
+                      className="bg-green-600 flex-1"
+                      onPress={() => handleApproveAuction(auction.id)}
+                    >
+                      <ButtonText className="text-white">✅ 승인</ButtonText>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      className="bg-orange-600 flex-1"
+                      onPress={() => handleHideAuction(auction.id)}
+                    >
+                      <ButtonText className="text-white">🔒 히든</ButtonText>
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 flex-1"
+                      onPress={() => handleRejectAuction(auction.id)}
+                    >
+                      <ButtonText className="text-red-600">❌ 거부</ButtonText>
+                    </Button>
+                  </HStack>
+                </VStack>
+              </Box>
+            ))}
+          </VStack>
+        ) : (
+          <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+            <VStack space="sm" className="items-center">
+              <Text className="text-4xl">✅</Text>
+              <Text className="text-center text-gray-500 font-medium">
+                승인대기 경매가 없습니다
+              </Text>
+              <Text className="text-center text-gray-400 text-sm">
+                새로 등록된 경매가 승인을 기다리고 있을 때 여기에 표시됩니다
+              </Text>
+            </VStack>
           </Box>
         )}
       </VStack>
