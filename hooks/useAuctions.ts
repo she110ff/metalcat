@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { type AuctionItem, type AuctionCategory } from "@/data/types/auction";
 import { auctionAPI } from "./auctions/api";
 import { useBatteryOptimizationContext } from "@/contexts/BatteryOptimizationContext";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getAuctionRefreshInterval,
   getCacheStaleTime,
@@ -114,6 +115,7 @@ export const useInfiniteAuctions = (filters?: {
     AppState.currentState === "active"
   );
   const { settings } = useBatteryOptimizationContext();
+  const { user } = useAuth(); // 사용자 정보 추가
 
   // 앱 상태 변경 감지 (배터리 최적화)
   useEffect(() => {
@@ -136,10 +138,16 @@ export const useInfiniteAuctions = (filters?: {
   const staleTime = getCacheStaleTime(settings, effectiveInterval);
   const gcTime = getCacheGcTime(settings, effectiveInterval);
 
+  // 사용자 ID를 포함한 필터 생성
+  const filtersWithUserId = {
+    ...filters,
+    userId: user?.id, // 로그인한 사용자의 ID 추가
+  };
+
   return useInfiniteQuery({
-    queryKey: [...auctionKeys.list(filters), "infinite"],
+    queryKey: [...auctionKeys.list(filtersWithUserId), "infinite"],
     queryFn: ({ pageParam = 1 }) =>
-      auctionAPI.getAuctionsWithPagination(filters, pageParam, 10),
+      auctionAPI.getAuctionsWithPagination(filtersWithUserId, pageParam, 10),
     getNextPageParam: (lastPage) => {
       const { pagination } = lastPage;
       return pagination.page < pagination.total_pages

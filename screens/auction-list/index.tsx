@@ -94,6 +94,7 @@ export const AuctionList = () => {
   const [selectedCategory, setSelectedCategory] =
     useState<AuctionCategoryFilter>("all");
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const animatedValue = useState(new Animated.Value(0))[0];
   const filterAnimatedValue = useState(new Animated.Value(0))[0];
 
@@ -172,6 +173,33 @@ export const AuctionList = () => {
       fetchNextPage();
     }
   };
+
+  // Pull-to-Refresh 핸들러
+  const handleRefresh = useCallback(async () => {
+    console.log("🔄 [AuctionList] Pull-to-Refresh 시작");
+    setIsRefreshing(true);
+
+    try {
+      // 경매 관련 모든 캐시 무효화
+      await queryClient.invalidateQueries({
+        queryKey: ["auctions", "infinite"],
+      });
+
+      // 경매 결과 캐시도 무효화
+      await queryClient.invalidateQueries({
+        queryKey: ["auction-results"],
+      });
+
+      // 데이터 새로고침
+      await refetch();
+
+      console.log("✅ [AuctionList] Pull-to-Refresh 완료");
+    } catch (error) {
+      console.error("❌ [AuctionList] Pull-to-Refresh 실패:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [queryClient, refetch]);
 
   // 로딩 중이거나 에러가 있을 때 기본 데이터 사용
   const displayItems =
@@ -702,6 +730,15 @@ export const AuctionList = () => {
           )}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.1}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              tintColor="#ffffff"
+              colors={["#ffffff"]}
+              progressBackgroundColor="#2A1A3A"
+            />
+          }
           ListHeaderComponent={() => (
             <View style={{ padding: 24 }}>
               {/* Header */}

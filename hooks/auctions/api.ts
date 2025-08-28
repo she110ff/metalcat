@@ -489,12 +489,24 @@ export async function getAuctions(filters?: {
   category?: AuctionCategory;
   status?: string;
   sortBy?: "createdAt" | "endTime";
+  userId?: string; // 사용자 ID 추가 (자신의 히든 경매 포함용)
 }): Promise<AuctionItem[]> {
   try {
     console.log("🔍 [Auction API] getAuctions 호출:", filters);
 
     // 새로운 통합 뷰 사용
     let query = supabase.from("auction_list_view").select("*");
+
+    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 승인된/히든 경매만
+    if (filters?.userId) {
+      // 로그인한 사용자: 승인된 경매 + 자신의 승인된/히든 경매 (승인 대기/거부 제외)
+      query = query.or(
+        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden))`
+      );
+    } else {
+      // 비로그인 사용자: 승인된 경매만
+      query = query.eq("approval_status", "approved");
+    }
 
     // 카테고리 필터
     if (filters?.category) {
@@ -557,6 +569,7 @@ export async function getAuctionsWithPagination(
     category?: AuctionCategory;
     status?: string;
     sortBy?: "createdAt" | "endTime";
+    userId?: string; // 사용자 ID 추가 (자신의 히든 경매 포함용)
   },
   page: number = 1,
   limit: number = 10
@@ -584,6 +597,17 @@ export async function getAuctionsWithPagination(
     let query = supabase
       .from("auction_list_view")
       .select("*", { count: "exact" });
+
+    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 승인된/히든 경매만
+    if (filters?.userId) {
+      // 로그인한 사용자: 승인된 경매 + 자신의 승인된/히든 경매 (승인 대기/거부 제외)
+      query = query.or(
+        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden))`
+      );
+    } else {
+      // 비로그인 사용자: 승인된 경매만
+      query = query.eq("approval_status", "approved");
+    }
 
     // 카테고리 필터
     if (filters?.category) {
@@ -658,12 +682,13 @@ export async function getAuctionsWithPagination(
 
 /**
  * 경매 상세 조회 (기존 인터페이스 완전 호환)
+ * 모든 상태의 경매 조회 가능 (목록에서만 히든 경매 제외)
  */
 export async function getAuctionById(id: string): Promise<AuctionItem | null> {
   try {
     console.log("🔍 [Auction API] getAuctionById 호출:", id);
 
-    // 새로운 통합 뷰 사용
+    // 새로운 통합 뷰 사용 (모든 승인 상태 포함)
     const { data: auction, error } = await supabase
       .from("auction_list_view")
       .select("*")
@@ -701,6 +726,67 @@ export async function getAuctionById(id: string): Promise<AuctionItem | null> {
     return transformedAuction;
   } catch (error) {
     console.error("경매 상세 조회 실패:", error);
+    throw error;
+  }
+}
+
+/**
+ * 경매 상세 조회 (모든 승인 상태 포함 - 등록자/관리자용)
+ * 경매 등록자나 관리자는 히든/대기/거부 상태의 경매도 조회 가능
+ */
+export async function getAuctionByIdWithAllStatus(
+  id: string,
+  userId?: string
+): Promise<AuctionItem | null> {
+  try {
+    console.log("🔍 [Auction API] getAuctionByIdWithAllStatus 호출:", {
+      id,
+      userId,
+    });
+
+    // 새로운 통합 뷰 사용 (승인 상태 필터 없음)
+    const { data: auction, error } = await supabase
+      .from("auction_list_view")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST116") {
+        // 데이터가 없는 경우
+        console.log("❌ 경매를 찾을 수 없음:", id);
+        return null;
+      }
+      handleSupabaseError(error, "경매 상세 조회 (모든 상태)");
+    }
+
+    if (!auction) {
+      return null;
+    }
+
+    // 권한 체크: 등록자만 자신의 경매를 볼 수 있음 (관리자는 별도 처리)
+    if (
+      userId &&
+      auction.user_id !== userId &&
+      auction.approval_status !== "approved"
+    ) {
+      console.log("❌ 권한 없음: 다른 사용자의 비승인 경매 접근 시도");
+      return null;
+    }
+
+    const transformedAuction = transformViewRowToAuctionItem(auction);
+
+    console.log("✅ [Auction API] 경매 상세 조회 성공 (모든 상태):", {
+      id: transformedAuction.id,
+      title: transformedAuction.title,
+      approval_status: auction.approval_status,
+      user_id: auction.user_id,
+      requesting_user: userId,
+    });
+
+    return transformedAuction;
+  } catch (error) {
+    console.error("❌ [Auction API] 경매 상세 조회 실패 (모든 상태):", error);
     throw error;
   }
 }
@@ -1250,7 +1336,8 @@ export async function getBids(auctionId: string): Promise<BidInfo[]> {
 }
 
 /**
- * 사용자별 등록된 경매 목록 조회
+ * 사용자별 등록된 경매 목록 조회 (모든 승인 상태 포함)
+ * 내 경매는 승인 대기, 승인됨, 히든, 거부됨 모든 상태를 볼 수 있어야 함
  */
 export async function getMyAuctions(userId: string): Promise<AuctionItem[]> {
   try {
