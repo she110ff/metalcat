@@ -129,9 +129,46 @@ export async function getAuctionDetailInfo(
           addressDetail: userDetail?.addressDetail,
           bidAmount: bid.amount,
           bidTime: bid.bid_time || bid.created_at,
-          isTopBid: bid.is_top_bid,
+          isTopBid: false, // 일단 false로 설정, 나중에 계산
         };
       });
+
+      // 최고가 입찰자 계산 (가장 높은 금액의 입찰자만)
+      if (bidders.length > 0) {
+        console.log(
+          "🔍 [Debug] 입찰자 정보:",
+          bidders.map((b) => ({
+            name: b.name,
+            bidAmount: b.bidAmount,
+            isTopBid: b.isTopBid,
+          }))
+        );
+
+        const maxBidAmount = Math.max(...bidders.map((b) => b.bidAmount));
+        console.log("🔍 [Debug] 최고 입찰가:", maxBidAmount);
+
+        const topBidderIndex = bidders.findIndex(
+          (b) => b.bidAmount === maxBidAmount
+        );
+        console.log("🔍 [Debug] 최고가 입찰자 인덱스:", topBidderIndex);
+
+        if (topBidderIndex !== -1) {
+          bidders[topBidderIndex].isTopBid = true;
+          console.log(
+            "🔍 [Debug] 최고가 입찰자 설정:",
+            bidders[topBidderIndex].name
+          );
+        }
+
+        console.log(
+          "🔍 [Debug] 최종 입찰자 정보:",
+          bidders.map((b) => ({
+            name: b.name,
+            bidAmount: b.bidAmount,
+            isTopBid: b.isTopBid,
+          }))
+        );
+      }
     }
 
     const auctionDetailInfo: AuctionDetailInfo = {
@@ -175,7 +212,8 @@ export const useAuctionDetailInfo = (auctionId: string) => {
     queryKey: ["admin", "auction-detail", auctionId],
     queryFn: () => getAuctionDetailInfo(auctionId),
     enabled: !!auctionId,
-    staleTime: 2 * 60 * 1000, // 2분
+    staleTime: 0, // 캐시 비활성화 (디버깅용)
+    gcTime: 0, // 캐시 비활성화 (디버깅용)
     refetchOnWindowFocus: false,
   });
 };

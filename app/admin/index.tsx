@@ -17,6 +17,7 @@ import {
   useRecentAuctions,
 } from "@/hooks/admin/useAdminAuctions";
 import { useAdminAuctionsInfinite } from "@/hooks/admin/useAdminAuctionsInfinite";
+import { useAdminServiceRequestsInfinite } from "@/hooks/admin/useAdminPremiumInfinite";
 import AuctionDetailModal from "@/components/admin/AuctionDetailModal";
 import {
   getAllAdminUsers,
@@ -508,10 +509,36 @@ const BatchTabContent = () => {
 
 const PremiumTabContent = () => {
   const { data: stats, isLoading: statsLoading } = usePremiumStats();
-  const { data: requests, isLoading: requestsLoading } =
-    useAdminServiceRequests();
+
+  // 무한 스크롤 훅 사용
+  const {
+    data: requestsData,
+    isLoading: requestsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminServiceRequestsInfinite(10);
+
   const updateStatusMutation = useUpdateServiceRequestStatus();
   const router = useRouter();
+
+  // 모든 페이지의 서비스 요청 데이터를 평면화 (중복 제거)
+  const allRequests = React.useMemo(() => {
+    const allData = requestsData?.pages.flatMap((page) => page.data) || [];
+    // ID를 기준으로 중복 제거
+    const uniqueData = allData.filter(
+      (request, index, self) =>
+        index === self.findIndex((r) => r.id === request.id)
+    );
+    return uniqueData;
+  }, [requestsData]);
+
+  // 더 보기 버튼 핸들러
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   // 서비스 타입 텍스트 변환
   const getServiceTypeText = (type: string) => {
@@ -710,9 +737,9 @@ const PremiumTabContent = () => {
         </Heading>
         {requestsLoading ? (
           <Text className="text-gray-500">요청 목록을 불러오는 중...</Text>
-        ) : requests && requests.length > 0 ? (
+        ) : allRequests && allRequests.length > 0 ? (
           <VStack space="md">
-            {requests.map((request) => (
+            {allRequests.map((request) => (
               <Pressable
                 key={request.id}
                 onPress={() =>
@@ -842,6 +869,32 @@ const PremiumTabContent = () => {
                 </VStack>
               </Pressable>
             ))}
+
+            {/* 더 보기 버튼 */}
+            {hasNextPage && (
+              <Pressable
+                onPress={handleLoadMore}
+                disabled={isFetchingNextPage}
+                className={`mt-4 py-3 px-4 rounded-lg border-2 border-dashed ${
+                  isFetchingNextPage
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-blue-200 bg-blue-50 active:bg-blue-100"
+                }`}
+              >
+                <Text
+                  className={`text-center font-medium ${
+                    isFetchingNextPage ? "text-gray-500" : "text-blue-600"
+                  }`}
+                >
+                  {isFetchingNextPage ? "불러오는 중..." : "더 보기"}
+                </Text>
+              </Pressable>
+            )}
+
+            {/* 총 개수 표시 */}
+            <Text className="text-center text-gray-500 text-sm mt-2">
+              {`총 ${stats?.total || allRequests.length}건의 서비스 요청`}
+            </Text>
           </VStack>
         ) : (
           <Text className="text-gray-500">등록된 서비스 요청이 없습니다.</Text>

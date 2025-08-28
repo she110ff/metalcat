@@ -249,7 +249,7 @@ const AuctionDetailModal: React.FC<AuctionDetailModalProps> = ({
                       <Box
                         key={bidder.id}
                         className={`p-3 rounded-lg border ${
-                          bidder.isTopBid
+                          bidder.isTopBid && auctionDetail.status === "ended"
                             ? "bg-green-50 border-green-200"
                             : "bg-gray-50 border-gray-200"
                         }`}
@@ -261,13 +261,14 @@ const AuctionDetailModal: React.FC<AuctionDetailModalProps> = ({
                                 <Text className="font-semibold">
                                   {bidder.name}
                                 </Text>
-                                {bidder.isTopBid && (
-                                  <Box className="bg-green-100 px-2 py-1 rounded-full">
-                                    <Text className="text-xs text-green-700 font-medium">
-                                      최고가
-                                    </Text>
-                                  </Box>
-                                )}
+                                {bidder.isTopBid &&
+                                  auctionDetail.status === "ended" && (
+                                    <Box className="bg-green-100 px-2 py-1 rounded-full">
+                                      <Text className="text-xs text-green-700 font-medium">
+                                        낙찰
+                                      </Text>
+                                    </Box>
+                                  )}
                               </HStack>
                               <HStack className="items-center" space="sm">
                                 <Phone size={14} color="#666" />
