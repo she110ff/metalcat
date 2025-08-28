@@ -375,11 +375,10 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
     specialNotes: details.specialNotes,
 
     // 철거 전용 필드들 (demolition 카테고리)
-    ...(row.auction_category === "demolition" &&
-      details.demolitionInfo && {
-        demolitionArea: details.demolitionArea,
-        areaUnit: details.areaUnit,
-      }),
+    ...(row.auction_category === "demolition" && {
+      demolitionArea: details.demolitionArea || 0,
+      areaUnit: details.areaUnit || "sqm",
+    }),
 
     // 고철 전용 필드들 (scrap 카테고리)
     ...(row.auction_category === "scrap" && {
@@ -999,8 +998,12 @@ export async function createAuction(
       const demolitionData = {
         auction_id: auctionId,
         product_type: auctionData.productType || {},
-        demolition_area: (auctionData as any).demolitionArea || 0,
-        area_unit: (auctionData as any).areaUnit || "sqm",
+        demolition_area:
+          demolitionInfo.demolitionArea ||
+          (auctionData as any).demolitionArea ||
+          0,
+        area_unit:
+          demolitionInfo.areaUnit || (auctionData as any).areaUnit || "sqm",
         price_per_unit: (auctionData as any).pricePerUnit || 0,
         building_purpose: demolitionInfo.buildingPurpose || "residential",
         demolition_method: demolitionInfo.demolitionMethod || "full",

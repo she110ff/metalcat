@@ -260,14 +260,19 @@ export const AuctionList = () => {
               ? "철거"
               : auction.productType?.name || "고철",
           weight:
-            (auction as any).auctionCategory === "demolition" &&
-            (auction as any).demolitionInfo
+            (auction as any).auctionCategory === "demolition"
               ? `${
-                  (
-                    auction as any
-                  ).demolitionInfo.demolitionArea?.toLocaleString() || "미상"
+                  (auction as any)?.demolitionArea &&
+                  (auction as any).demolitionArea > 0
+                    ? (auction as any).demolitionArea.toLocaleString()
+                    : (
+                        auction as any
+                      )?.demolitionInfo?.demolitionArea?.toLocaleString() ||
+                      "미상"
                 } ${
-                  (auction as any).demolitionInfo.areaUnit === "sqm"
+                  (auction as any)?.areaUnit === "sqm"
+                    ? "㎡"
+                    : (auction as any)?.demolitionInfo?.areaUnit === "sqm"
                     ? "㎡"
                     : "평"
                 }`
