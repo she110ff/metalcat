@@ -16,6 +16,8 @@ import {
   useCategoryStats,
   useRecentAuctions,
 } from "@/hooks/admin/useAdminAuctions";
+import { useAdminAuctionsInfinite } from "@/hooks/admin/useAdminAuctionsInfinite";
+import AuctionDetailModal from "@/components/admin/AuctionDetailModal";
 import {
   getAllAdminUsers,
   grantAdminRole,
@@ -853,8 +855,51 @@ const AuctionTabContent = () => {
   const { data: auctionStats, isLoading: statsLoading } = useAuctionStats();
   const { data: categoryStats, isLoading: categoryLoading } =
     useCategoryStats();
-  const { data: recentAuctions, isLoading: auctionsLoading } =
-    useRecentAuctions(8);
+
+  // 무한 스크롤 훅 사용
+  const {
+    data: auctionsData,
+    isLoading: auctionsLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminAuctionsInfinite(10);
+
+  // 모달 상태
+  const [selectedAuctionId, setSelectedAuctionId] = React.useState<
+    string | null
+  >(null);
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
+
+  // 모든 페이지의 경매 데이터를 평면화 (중복 제거)
+  const allAuctions = React.useMemo(() => {
+    const allData = auctionsData?.pages.flatMap((page) => page.data) || [];
+    // ID를 기준으로 중복 제거
+    const uniqueData = allData.filter(
+      (auction, index, self) =>
+        index === self.findIndex((a) => a.id === auction.id)
+    );
+    return uniqueData;
+  }, [auctionsData]);
+
+  // 경매 아이템 클릭 핸들러
+  const handleAuctionPress = (auctionId: string) => {
+    setSelectedAuctionId(auctionId);
+    setIsModalVisible(true);
+  };
+
+  // 모달 닫기 핸들러
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedAuctionId(null);
+  };
+
+  // 더 보기 버튼 핸들러
+  const handleLoadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   // 카테고리명 변환
   const getCategoryText = (category: string) => {
@@ -1009,14 +1054,18 @@ const AuctionTabContent = () => {
 
       <Box className="bg-white rounded-xl p-4 border border-gray-200">
         <Heading size="md" className="mb-3">
-          🏆 최근 경매 목록
+          🏆 경매 목록
         </Heading>
         {auctionsLoading ? (
           <Text className="text-gray-500">경매 목록을 불러오는 중...</Text>
-        ) : recentAuctions && recentAuctions.length > 0 ? (
+        ) : allAuctions && allAuctions.length > 0 ? (
           <VStack space="md">
-            {recentAuctions.map((auction) => (
-              <Box key={auction.id} className="p-3 bg-gray-50 rounded-lg">
+            {allAuctions.map((auction) => (
+              <Pressable
+                key={auction.id}
+                onPress={() => handleAuctionPress(auction.id)}
+                className="p-3 bg-gray-50 rounded-lg active:bg-gray-100"
+              >
                 <VStack space="sm">
                   <HStack className="justify-between items-start">
                     <VStack className="flex-1">
@@ -1049,14 +1098,34 @@ const AuctionTabContent = () => {
                     </Text>
                   </HStack>
                 </VStack>
-              </Box>
+              </Pressable>
             ))}
 
-            {recentAuctions.length >= 8 && (
-              <Text className="text-center text-gray-500 text-sm mt-4">
-                {`최근 8건 표시 • 전체 ${auctionStats?.total || 0}건`}
-              </Text>
+            {/* 더 보기 버튼 */}
+            {hasNextPage && (
+              <Pressable
+                onPress={handleLoadMore}
+                disabled={isFetchingNextPage}
+                className={`mt-4 py-3 px-4 rounded-lg border-2 border-dashed ${
+                  isFetchingNextPage
+                    ? "border-gray-200 bg-gray-50"
+                    : "border-blue-200 bg-blue-50 active:bg-blue-100"
+                }`}
+              >
+                <Text
+                  className={`text-center font-medium ${
+                    isFetchingNextPage ? "text-gray-500" : "text-blue-600"
+                  }`}
+                >
+                  {isFetchingNextPage ? "불러오는 중..." : "더 보기"}
+                </Text>
+              </Pressable>
             )}
+
+            {/* 총 개수 표시 */}
+            <Text className="text-center text-gray-500 text-sm mt-2">
+              {`총 ${auctionStats?.total || allAuctions.length}건의 경매`}
+            </Text>
           </VStack>
         ) : (
           <Text className="text-gray-500 text-center py-4">
@@ -1064,6 +1133,13 @@ const AuctionTabContent = () => {
           </Text>
         )}
       </Box>
+
+      {/* 경매 상세 정보 모달 */}
+      <AuctionDetailModal
+        auctionId={selectedAuctionId}
+        isVisible={isModalVisible}
+        onClose={handleModalClose}
+      />
     </VStack>
   );
 };
