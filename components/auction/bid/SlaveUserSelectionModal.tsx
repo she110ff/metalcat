@@ -18,11 +18,19 @@ interface SlaveUserSelectionModalProps {
   onSelectUser: (user: SlaveUser) => void;
   auctionId: string;
   bidAmount: number;
+  pricePerUnit?: number; // 고철 경매용 단위가격
 }
 
 export const SlaveUserSelectionModal: React.FC<
   SlaveUserSelectionModalProps
-> = ({ visible, onClose, onSelectUser, auctionId, bidAmount }) => {
+> = ({
+  visible,
+  onClose,
+  onSelectUser,
+  auctionId,
+  bidAmount,
+  pricePerUnit,
+}) => {
   const { slaveUsers, isLoading, error, refetch } = useSlaveUsers();
   const { data: bids } = useBids(auctionId);
   const [selectedUser, setSelectedUser] = useState<SlaveUser | null>(null);

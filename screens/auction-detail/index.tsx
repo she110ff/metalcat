@@ -72,7 +72,12 @@ export const AuctionDetail = () => {
   const auctionId = typeof id === "string" ? id : "";
   const hasValidId = !!auctionId;
 
-  const { data: auction, isLoading, error } = useAuction(auctionId || "");
+  const {
+    data: auction,
+    isLoading,
+    error,
+    refetch,
+  } = useAuction(auctionId || "");
 
   const { data: bids = [], isLoading: bidsLoading } = useBids(auctionId || "");
 
@@ -1010,6 +1015,11 @@ export const AuctionDetail = () => {
                     auctionDetail.status === "ending"
                   }
                   isOwner={isAuctionOwner}
+                  auction={auction} // 경매 정보 전달 (고철 경매 여부 및 중량 확인용)
+                  onBidSuccess={() => {
+                    // 입찰 성공 시 경매 정보 새로고침
+                    refetch();
+                  }}
                 />
               )}
 

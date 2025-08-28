@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Alert } from "react-native";
 import { VStack } from "@/components/ui/vstack";
 import { HStack } from "@/components/ui/hstack";
@@ -15,6 +15,7 @@ import { formatAuctionPrice } from "@/data/utils/auction-utils";
 import { SlaveUserSelectionModal } from "./SlaveUserSelectionModal";
 import { SlaveUser } from "@/hooks/admin/useSlaveUsers";
 import { Users } from "lucide-react-native";
+import { AuctionItem } from "@/data/types/auction";
 
 interface BidInputSectionProps {
   auctionId: string;
@@ -22,6 +23,7 @@ interface BidInputSectionProps {
   isActive: boolean;
   isOwner?: boolean;
   onBidSuccess?: () => void;
+  auction?: AuctionItem; // 경매 정보 (고철 경매 여부 및 중량 확인용)
 }
 
 export const BidInputSection: React.FC<BidInputSectionProps> = ({
@@ -30,12 +32,22 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
   isActive,
   isOwner = false,
   onBidSuccess,
+  auction,
 }) => {
   const [bidAmount, setBidAmount] = useState("");
+  const [pricePerUnit, setPricePerUnit] = useState(""); // 단위가격 (원/kg)
   const [showSlaveUserModal, setShowSlaveUserModal] = useState(false);
   const createBidMutation = useCreateBid();
   const { user } = useAuth();
   const { isAdmin } = useAdminAuth();
+
+  // 고철 경매 여부 확인
+  const isScrapAuction = auction?.auctionCategory === "scrap";
+
+  // 고철 경매의 중량 정보 가져오기
+  const scrapWeight = isScrapAuction
+    ? (auction as any)?.quantity?.quantity || (auction as any)?.weightKg || 0
+    : 0;
 
   // 숫자에 콤마 추가하는 함수
   const formatNumberWithComma = (value: string) => {
@@ -48,17 +60,59 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
     return "";
   };
 
-  // 입력값 변경 처리
+  // 단위가격 입력값 변경 처리
+  const handlePricePerUnitChange = (text: string) => {
+    // 숫자와 소수점만 허용
+    const numericText = text.replace(/[^0-9.]/g, "");
+    const numValue = parseFloat(numericText);
+
+    // 빈 문자열이거나 유효한 숫자인 경우에만 업데이트
+    if (numericText === "" || (!isNaN(numValue) && numValue >= 0)) {
+      setPricePerUnit(numericText);
+    }
+  };
+
+  // 입찰금액 입력값 변경 처리 (고철이 아닌 경우에만 사용)
   const handleBidAmountChange = (text: string) => {
     // 콤마가 포함된 형식으로 변환
     const formattedText = formatNumberWithComma(text);
     setBidAmount(formattedText);
   };
 
+  // 단위가격 * 중량으로 총 입찰금액 자동 계산
+  useEffect(() => {
+    if (isScrapAuction && pricePerUnit && scrapWeight > 0) {
+      const unitPrice = parseFloat(pricePerUnit);
+      if (!isNaN(unitPrice)) {
+        const totalAmount = Math.round(unitPrice * scrapWeight);
+        const formattedAmount = formatNumberWithComma(totalAmount.toString());
+        setBidAmount(formattedAmount);
+      }
+    }
+  }, [pricePerUnit, scrapWeight, isScrapAuction]);
+
   const handleBid = async () => {
-    if (!bidAmount) {
-      Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
-      return;
+    // 고철 경매인 경우 단위가격 검증
+    if (isScrapAuction) {
+      if (!pricePerUnit) {
+        Alert.alert("입력 오류", "단위가격을 입력해주세요.");
+        return;
+      }
+      const unitPrice = parseFloat(pricePerUnit);
+      if (isNaN(unitPrice) || unitPrice <= 0) {
+        Alert.alert("입력 오류", "올바른 단위가격을 입력해주세요.");
+        return;
+      }
+      if (scrapWeight <= 0) {
+        Alert.alert("오류", "경매 중량 정보를 확인할 수 없습니다.");
+        return;
+      }
+    } else {
+      // 고철이 아닌 경우 기존 로직
+      if (!bidAmount) {
+        Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
+        return;
+      }
     }
 
     // 콤마 제거 후 숫자 변환
@@ -84,17 +138,26 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
         return;
       }
 
+      // 입찰 데이터 구성
+      const bidData: any = {
+        userId: user.id,
+        userName: user.name || "익명",
+        amount: amount,
+        location: user.address || "위치 미상",
+      };
+
+      // 고철 경매인 경우 단위가격도 포함
+      if (isScrapAuction && pricePerUnit) {
+        bidData.pricePerUnit = parseFloat(pricePerUnit);
+      }
+
       await createBidMutation.mutateAsync({
         auctionId: auctionId,
-        bidData: {
-          userId: user.id,
-          userName: user.name || "익명",
-          amount: amount,
-          location: user.address || "위치 미상",
-        },
+        bidData: bidData,
       });
 
       setBidAmount("");
+      setPricePerUnit("");
       Alert.alert("입찰 성공", "입찰이 성공적으로 등록되었습니다.");
       onBidSuccess?.();
     } catch (error: any) {
@@ -104,9 +167,22 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
 
   // 관리자 슬레이브 유저 입찰 처리
   const handleAdminSlaveUserBid = () => {
-    if (!bidAmount) {
-      Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
-      return;
+    // 고철 경매인 경우 단위가격 검증
+    if (isScrapAuction) {
+      if (!pricePerUnit) {
+        Alert.alert("입력 오류", "단위가격을 입력해주세요.");
+        return;
+      }
+      const unitPrice = parseFloat(pricePerUnit);
+      if (isNaN(unitPrice) || unitPrice <= 0) {
+        Alert.alert("입력 오류", "올바른 단위가격을 입력해주세요.");
+        return;
+      }
+    } else {
+      if (!bidAmount) {
+        Alert.alert("입력 오류", "입찰 금액을 입력해주세요.");
+        return;
+      }
     }
 
     // 콤마 제거 후 숫자 변환
@@ -133,17 +209,26 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
     const amount = parseInt(bidAmount.replace(/[^\d]/g, ""));
 
     try {
+      // 입찰 데이터 구성
+      const bidData: any = {
+        userId: selectedUser.id,
+        userName: selectedUser.name,
+        amount: amount,
+        location: selectedUser.address || "위치 미상",
+      };
+
+      // 고철 경매인 경우 단위가격도 포함
+      if (isScrapAuction && pricePerUnit) {
+        bidData.pricePerUnit = parseFloat(pricePerUnit);
+      }
+
       await createBidMutation.mutateAsync({
         auctionId: auctionId,
-        bidData: {
-          userId: selectedUser.id,
-          userName: selectedUser.name,
-          amount: amount,
-          location: selectedUser.address || "위치 미상",
-        },
+        bidData: bidData,
       });
 
       setBidAmount("");
+      setPricePerUnit("");
       Alert.alert(
         "입찰 성공",
         `${selectedUser.name} 유저로 입찰이 성공적으로 등록되었습니다.`
@@ -201,17 +286,50 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
 
       <Box className="rounded-2xl p-6 bg-white/5 border border-white/10 shadow-lg shadow-black/40">
         <VStack space="md" className="mb-6">
+          {/* 고철 경매인 경우 단위가격 입력 필드 추가 */}
+          {isScrapAuction && (
+            <VStack space="md">
+              <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
+                단위가격 (원/kg)
+              </Text>
+              <Input className="bg-white/5 border-white/10 rounded-2xl">
+                <InputField
+                  placeholder="kg당 가격을 입력하세요"
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  value={pricePerUnit}
+                  onChangeText={handlePricePerUnitChange}
+                  className="text-white text-base px-4 py-3"
+                  keyboardType="numeric"
+                />
+              </Input>
+              {scrapWeight > 0 && (
+                <Text className="text-blue-300 text-xs font-medium">
+                  중량: {scrapWeight}kg
+                </Text>
+              )}
+            </VStack>
+          )}
+
           <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
             입찰 금액
           </Text>
           <Input className="bg-white/5 border-white/10 rounded-2xl">
             <InputField
-              placeholder="입찰 금액을 입력하세요"
+              placeholder={
+                isScrapAuction ? "자동 계산됩니다" : "입찰 금액을 입력하세요"
+              }
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
               value={bidAmount}
-              onChangeText={handleBidAmountChange}
+              onChangeText={isScrapAuction ? undefined : handleBidAmountChange}
               className="text-white text-base px-4 py-3"
               keyboardType="numeric"
+              editable={!isScrapAuction}
+              style={{
+                opacity: isScrapAuction ? 0.7 : 1,
+                backgroundColor: isScrapAuction
+                  ? "rgba(255, 255, 255, 0.02)"
+                  : "transparent",
+              }}
             />
           </Input>
 
@@ -286,6 +404,9 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
         onSelectUser={handleSlaveUserSelected}
         auctionId={auctionId}
         bidAmount={parseInt(bidAmount.replace(/[^\d]/g, "")) || 0}
+        pricePerUnit={
+          isScrapAuction ? parseFloat(pricePerUnit) || 0 : undefined
+        }
       />
     </VStack>
   );

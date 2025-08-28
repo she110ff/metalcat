@@ -1099,12 +1099,14 @@ export async function createBid(
     userName: string;
     amount: number;
     location: string;
+    pricePerUnit?: number; // 고철 경매용 단위가격
   }
 ): Promise<BidInfo> {
   try {
     console.log("💰 [Auction API] createBid 호출:", {
       auctionId,
       amount: bidData.amount,
+      pricePerUnit: bidData.pricePerUnit,
       userId: bidData.userId,
     });
 
@@ -1146,16 +1148,23 @@ export async function createBid(
       .eq("auction_id", auctionId);
 
     // 4. 새 입찰 생성
+    const bidInsertData: any = {
+      auction_id: auctionId,
+      user_id: bidData.userId,
+      user_name: bidData.userName,
+      amount: bidData.amount, // DB 컬럼명: amount
+      location: bidData.location, // DB 컬럼명: location
+      is_top_bid: true,
+    };
+
+    // 고철 경매인 경우 단위가격도 저장
+    if (bidData.pricePerUnit !== undefined) {
+      bidInsertData.price_per_unit = bidData.pricePerUnit;
+    }
+
     const { data: bid, error: bidError } = await auctionTables
       .bids()
-      .insert({
-        auction_id: auctionId,
-        user_id: bidData.userId,
-        user_name: bidData.userName,
-        amount: bidData.amount, // DB 컬럼명: amount
-        location: bidData.location, // DB 컬럼명: location
-        is_top_bid: true,
-      })
+      .insert(bidInsertData)
       .select()
       .single();
 
@@ -1180,6 +1189,7 @@ export async function createBid(
       userId: (bid as any).user_id,
       userName: (bid as any).user_name,
       amount: (bid as any).amount, // DB 컬럼명: amount
+      pricePerUnit: (bid as any).price_per_unit, // 단위가격
       location: (bid as any).location, // DB 컬럼명: location
       bidTime: new Date(
         (bid as any).bid_time || (bid as any).created_at || new Date()
