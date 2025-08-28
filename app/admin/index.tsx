@@ -1584,6 +1584,7 @@ const AuctionCreateTabContent = () => {
 // 히든 경매 탭 컨텐츠
 const HiddenAuctionTabContent = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const {
     hiddenAuctions,
     stats,
@@ -1735,7 +1736,12 @@ const HiddenAuctionTabContent = () => {
       {/* 히든 경매 목록 */}
       <VStack space="md">
         <HStack className="items-center justify-between">
-          <Text className="text-lg font-semibold">히든 경매 목록</Text>
+          <VStack>
+            <Text className="text-lg font-semibold">히든 경매 목록</Text>
+            <Text className="text-xs text-gray-400">
+              경매를 클릭하면 상세 정보를 볼 수 있습니다
+            </Text>
+          </VStack>
           <Text className="text-sm text-gray-500">
             총 {hiddenAuctions.length}개
           </Text>
@@ -1751,9 +1757,12 @@ const HiddenAuctionTabContent = () => {
               );
               console.log("🔄 첫 번째 경매:", hiddenAuctions[0]);
               return hiddenAuctions.map((auction) => (
-                <Box
+                <Pressable
                   key={auction.auction_id}
-                  className="bg-white border border-gray-200 rounded-xl p-4"
+                  onPress={() =>
+                    router.push(`/auction-detail/${auction.auction_id}`)
+                  }
+                  className="bg-white border border-gray-200 rounded-xl p-4 active:bg-gray-50"
                 >
                   <VStack space="sm">
                     <HStack className="items-start justify-between">
@@ -1795,7 +1804,10 @@ const HiddenAuctionTabContent = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onPress={() => handleUnhideAuction(auction)}
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          handleUnhideAuction(auction);
+                        }}
                       >
                         <ButtonText className="text-blue-600">
                           히든 해제
@@ -1803,7 +1815,7 @@ const HiddenAuctionTabContent = () => {
                       </Button>
                     </HStack>
                   </VStack>
-                </Box>
+                </Pressable>
               ));
             })()}
           </VStack>
@@ -1838,6 +1850,7 @@ const PendingApprovalTabContent = () => {
     refetch: refetchPendingStats,
   } = usePendingApprovalStats();
   const { user } = useAuth();
+  const router = useRouter();
 
   // 전체 새로고침 함수
   const handleRefreshAll = async () => {
@@ -2011,7 +2024,12 @@ const PendingApprovalTabContent = () => {
       {/* 승인대기 경매 목록 */}
       <VStack space="md">
         <HStack className="items-center justify-between">
-          <Text className="text-lg font-semibold">승인대기 경매 목록</Text>
+          <VStack>
+            <Text className="text-lg font-semibold">승인대기 경매 목록</Text>
+            <Text className="text-xs text-gray-400">
+              경매를 클릭하면 상세 정보를 볼 수 있습니다
+            </Text>
+          </VStack>
           <Text className="text-sm text-gray-500">
             {pendingAuctions?.length || 0}개
           </Text>
@@ -2024,9 +2042,10 @@ const PendingApprovalTabContent = () => {
         ) : pendingAuctions && pendingAuctions.length > 0 ? (
           <VStack space="sm">
             {pendingAuctions.map((auction) => (
-              <Box
+              <Pressable
                 key={auction.id}
-                className="bg-white border border-gray-200 rounded-xl p-4"
+                onPress={() => router.push(`/auction-detail/${auction.id}`)}
+                className="bg-white border border-gray-200 rounded-xl p-4 active:bg-gray-50"
               >
                 <VStack space="sm">
                   <HStack className="items-start justify-between">
@@ -2063,7 +2082,10 @@ const PendingApprovalTabContent = () => {
                     <Button
                       size="sm"
                       className="bg-green-600 flex-1"
-                      onPress={() => handleApproveAuction(auction.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleApproveAuction(auction.id);
+                      }}
                     >
                       <ButtonText className="text-white">✅ 승인</ButtonText>
                     </Button>
@@ -2071,7 +2093,10 @@ const PendingApprovalTabContent = () => {
                     <Button
                       size="sm"
                       className="bg-orange-600 flex-1"
-                      onPress={() => handleHideAuction(auction.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleHideAuction(auction.id);
+                      }}
                     >
                       <ButtonText className="text-white">🔒 히든</ButtonText>
                     </Button>
@@ -2080,13 +2105,16 @@ const PendingApprovalTabContent = () => {
                       size="sm"
                       variant="outline"
                       className="border-red-300 flex-1"
-                      onPress={() => handleRejectAuction(auction.id)}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        handleRejectAuction(auction.id);
+                      }}
                     >
                       <ButtonText className="text-red-600">❌ 거부</ButtonText>
                     </Button>
                   </HStack>
                 </VStack>
-              </Box>
+              </Pressable>
             ))}
           </VStack>
         ) : (
