@@ -1936,44 +1936,6 @@ const PendingApprovalTabContent = () => {
     }
   };
 
-  const handleRejectAuction = async (auctionId: string) => {
-    if (!user?.id) {
-      Alert.alert("오류", "사용자 정보를 찾을 수 없습니다.");
-      return;
-    }
-
-    Alert.prompt(
-      "경매 거부",
-      "거부 사유를 입력해주세요:",
-      [
-        { text: "취소", style: "cancel" },
-        {
-          text: "거부",
-          style: "destructive",
-          onPress: async (reason) => {
-            try {
-              const { data, error } = await supabase.rpc("reject_auction", {
-                p_auction_id: auctionId,
-                p_admin_id: user.id,
-                p_reason: reason || "관리자에 의한 거부",
-              });
-
-              if (error) throw error;
-
-              Alert.alert("성공", "경매가 거부되었습니다.");
-              // 거부 후 데이터 새로고침
-              handleRefreshAll();
-            } catch (error) {
-              console.error("경매 거부 오류:", error);
-              Alert.alert("오류", "경매 거부 중 오류가 발생했습니다.");
-            }
-          },
-        },
-      ],
-      "plain-text"
-    );
-  };
-
   const isRefreshing = pendingLoading || statsLoading;
 
   return (
@@ -2130,18 +2092,6 @@ const PendingApprovalTabContent = () => {
                       }}
                     >
                       <ButtonText className="text-white">🔒 히든</ButtonText>
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-red-300 flex-1"
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        handleRejectAuction(auction.id);
-                      }}
-                    >
-                      <ButtonText className="text-red-600">❌ 거부</ButtonText>
                     </Button>
                   </HStack>
                 </VStack>
