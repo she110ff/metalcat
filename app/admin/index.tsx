@@ -50,6 +50,14 @@ import {
 } from "@/hooks/admin/useHiddenAuctions";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/hooks/auth/api";
+import {
+  useCalculationStandards,
+  useCreateCalculationStandard,
+  useUpdateCalculationStandard,
+  useDeleteCalculationStandard,
+  CalculationStandard,
+  CreateCalculationStandardData,
+} from "@/hooks/admin/useCalculationStandards";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
 // import { BatchTab } from "./tabs/BatchTab";
@@ -63,7 +71,8 @@ type AdminTab =
   | "auction-create"
   | "admin"
   | "hidden"
-  | "pending";
+  | "pending"
+  | "calculation-standards";
 
 export default function AdminScreen() {
   const { isAdmin } = useAdminAuth();
@@ -123,6 +132,8 @@ export default function AdminScreen() {
         return <HiddenAuctionTabContent />;
       case "pending":
         return <PendingApprovalTabContent />;
+      case "calculation-standards":
+        return <CalculationStandardsTabContent />;
       default:
         return null;
     }
@@ -257,6 +268,25 @@ export default function AdminScreen() {
                 }`}
               >
                 ⏳ 승인대기
+              </Text>
+            </Pressable>
+
+            <Pressable
+              className={`py-3 px-4 rounded-lg ${
+                activeTab === "calculation-standards"
+                  ? "bg-white shadow-sm"
+                  : "bg-transparent"
+              }`}
+              onPress={() => setActiveTab("calculation-standards")}
+            >
+              <Text
+                className={`text-center font-medium whitespace-nowrap ${
+                  activeTab === "calculation-standards"
+                    ? "text-gray-900"
+                    : "text-gray-600"
+                }`}
+              >
+                📊 계산 기준
               </Text>
             </Pressable>
           </HStack>
@@ -1504,7 +1534,7 @@ const AuctionCreateTabContent = () => {
 
     console.log("🔗 [관리자 대시보드] 이동할 URL:", targetUrl);
 
-    router.push(targetUrl);
+    router.push(targetUrl as any);
   };
 
   if (isLoading) {
@@ -2131,6 +2161,440 @@ const PendingApprovalTabContent = () => {
           </Box>
         )}
       </VStack>
+    </VStack>
+  );
+};
+
+// 계산 기준 탭 컨텐츠
+const CalculationStandardsTabContent = () => {
+  const {
+    data: standards,
+    isLoading,
+    refetch,
+    isFetching,
+  } = useCalculationStandards();
+  const createMutation = useCreateCalculationStandard();
+  const updateMutation = useUpdateCalculationStandard();
+  const deleteMutation = useDeleteCalculationStandard();
+
+  // 폼 상태
+  const [isFormVisible, setIsFormVisible] = React.useState(false);
+  const [editingStandard, setEditingStandard] =
+    React.useState<CalculationStandard | null>(null);
+  const [formData, setFormData] = React.useState<CreateCalculationStandardData>(
+    {
+      metal_type: "",
+      category: "",
+      lme_ratio: 95,
+      deviation: 10,
+    }
+  );
+
+  // 입력 필드용 문자열 상태 (소수점 입력 지원)
+  const [lmeRatioText, setLmeRatioText] = React.useState("95");
+  const [deviationText, setDeviationText] = React.useState("10");
+
+  // 폼 초기화
+  const resetForm = () => {
+    setFormData({
+      metal_type: "",
+      category: "",
+      lme_ratio: 95,
+      deviation: 10,
+    });
+    setLmeRatioText("95");
+    setDeviationText("10");
+    setEditingStandard(null);
+    setIsFormVisible(false);
+  };
+
+  // 수정 모드로 전환
+  const handleEdit = (standard: CalculationStandard) => {
+    setFormData({
+      metal_type: standard.metal_type,
+      category: standard.category,
+      lme_ratio: standard.lme_ratio,
+      deviation: standard.deviation,
+    });
+    setLmeRatioText(standard.lme_ratio.toString());
+    setDeviationText(standard.deviation.toString());
+    setEditingStandard(standard);
+    setIsFormVisible(true);
+  };
+
+  // 폼 제출
+  const handleSubmit = async () => {
+    try {
+      // 문자열 입력값을 숫자로 변환
+      const lmeRatio = parseFloat(lmeRatioText) || 0;
+      const deviation = parseFloat(deviationText) || 0;
+
+      // 범위 검증
+      if (lmeRatio < 0 || lmeRatio > 300) {
+        Alert.alert("오류", "LME 비율은 0-300 사이의 값이어야 합니다.");
+        return;
+      }
+
+      if (deviation < 0 || deviation > 100) {
+        Alert.alert("오류", "편차는 0-100 사이의 값이어야 합니다.");
+        return;
+      }
+
+      const submitData = {
+        ...formData,
+        lme_ratio: lmeRatio,
+        deviation: deviation,
+      };
+
+      if (editingStandard) {
+        // 수정
+        const result = await updateMutation.mutateAsync({
+          ...submitData,
+          id: editingStandard.id,
+        });
+        if (result.success) {
+          Alert.alert("성공", "계산 기준이 수정되었습니다.");
+          resetForm();
+        } else {
+          Alert.alert("오류", result.error || "수정에 실패했습니다.");
+        }
+      } else {
+        // 생성
+        const result = await createMutation.mutateAsync(submitData);
+        if (result.success) {
+          Alert.alert("성공", "계산 기준이 추가되었습니다.");
+          resetForm();
+        } else {
+          Alert.alert("오류", result.error || "추가에 실패했습니다.");
+        }
+      }
+    } catch (error) {
+      console.error("계산 기준 저장 오류:", error);
+      Alert.alert("오류", "저장 중 오류가 발생했습니다.");
+    }
+  };
+
+  // 삭제 처리
+  const handleDelete = (standard: CalculationStandard) => {
+    Alert.alert(
+      "삭제 확인",
+      `${standard.metal_type} ${standard.category} 계산 기준을 삭제하시겠습니까?`,
+      [
+        { text: "취소", style: "cancel" },
+        {
+          text: "삭제",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const result = await deleteMutation.mutateAsync(standard.id);
+              if (result.success) {
+                Alert.alert("성공", "계산 기준이 삭제되었습니다.");
+              } else {
+                Alert.alert("오류", result.error || "삭제에 실패했습니다.");
+              }
+            } catch (error) {
+              console.error("계산 기준 삭제 오류:", error);
+              Alert.alert("오류", "삭제 중 오류가 발생했습니다.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 입력값 유효성 검사
+  const isFormValid = () => {
+    return (
+      formData.metal_type.trim() !== "" &&
+      formData.category.trim() !== "" &&
+      formData.lme_ratio >= 0 &&
+      formData.lme_ratio <= 100 &&
+      formData.deviation >= 0 &&
+      formData.deviation <= 100
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <VStack space="lg">
+        <Text className="text-xl font-bold text-gray-900">
+          📊 계산 기준 관리
+        </Text>
+        <Box className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+          <Text className="text-center text-gray-500">
+            계산 기준을 불러오는 중...
+          </Text>
+        </Box>
+      </VStack>
+    );
+  }
+
+  return (
+    <VStack space="lg">
+      {/* 헤더 */}
+      <VStack space="md">
+        <HStack className="items-center justify-between">
+          <Text className="text-xl font-bold text-gray-900">
+            📊 계산 기준 관리
+          </Text>
+          <HStack space="sm">
+            <Pressable
+              onPress={() => {
+                refetch();
+              }}
+              disabled={isFetching}
+              className={`p-2 rounded-lg ${
+                isFetching ? "bg-gray-100" : "bg-transparent active:bg-gray-100"
+              }`}
+            >
+              <RefreshCw
+                size={20}
+                color={isFetching ? "#9CA3AF" : "#6B7280"}
+                style={{
+                  transform: [{ rotate: isFetching ? "360deg" : "0deg" }],
+                }}
+              />
+            </Pressable>
+            <Button
+              size="sm"
+              className="bg-blue-600"
+              onPress={() => setIsFormVisible(true)}
+            >
+              <ButtonText className="text-white">+ 새 기준 추가</ButtonText>
+            </Button>
+          </HStack>
+        </HStack>
+        <Text className="text-sm text-gray-600">
+          비철 계산기에서 사용할 금속별 계산 기준을 관리합니다.
+        </Text>
+      </VStack>
+
+      {/* 추가/수정 폼 */}
+      {isFormVisible && (
+        <Box className="bg-white border border-gray-200 rounded-xl p-4">
+          <VStack space="md">
+            <HStack className="items-center justify-between">
+              <Text className="text-lg font-semibold">
+                {editingStandard ? "계산 기준 수정" : "새 계산 기준 추가"}
+              </Text>
+              <Pressable onPress={resetForm}>
+                <Text className="text-gray-500">✕</Text>
+              </Pressable>
+            </HStack>
+
+            <VStack space="sm">
+              <VStack space="xs">
+                <Text className="text-sm font-medium text-gray-700">
+                  금속 종류
+                </Text>
+                <TextInput
+                  value={formData.metal_type}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, metal_type: text })
+                  }
+                  placeholder="예: 구리, 알루미늄, 아연"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#D1D5DB",
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 16,
+                  }}
+                />
+              </VStack>
+
+              <VStack space="xs">
+                <Text className="text-sm font-medium text-gray-700">구분</Text>
+                <TextInput
+                  value={formData.category}
+                  onChangeText={(text) =>
+                    setFormData({ ...formData, category: text })
+                  }
+                  placeholder="예: A동, B동, 1급"
+                  style={{
+                    borderWidth: 1,
+                    borderColor: "#D1D5DB",
+                    borderRadius: 8,
+                    padding: 12,
+                    fontSize: 16,
+                  }}
+                />
+              </VStack>
+
+              <HStack space="sm">
+                <VStack space="xs" className="flex-1">
+                  <Text className="text-sm font-medium text-gray-700">
+                    LME 비율 (0-300%)
+                  </Text>
+                  <TextInput
+                    value={lmeRatioText}
+                    onChangeText={(text) => {
+                      // 숫자와 소수점만 허용
+                      const numericText = text.replace(/[^0-9.]/g, "");
+
+                      // 소수점이 여러 개 있으면 첫 번째만 유지
+                      const parts = numericText.split(".");
+                      const cleanText =
+                        parts.length > 2
+                          ? parts[0] + "." + parts.slice(1).join("")
+                          : numericText;
+
+                      setLmeRatioText(cleanText);
+                    }}
+                    placeholder="95.00"
+                    keyboardType="decimal-pad"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#D1D5DB",
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 16,
+                    }}
+                  />
+                </VStack>
+
+                <VStack space="xs" className="flex-1">
+                  <Text className="text-sm font-medium text-gray-700">
+                    편차 (0-100%)
+                  </Text>
+                  <TextInput
+                    value={deviationText}
+                    onChangeText={(text) => {
+                      // 숫자와 소수점만 허용
+                      const numericText = text.replace(/[^0-9.]/g, "");
+
+                      // 소수점이 여러 개 있으면 첫 번째만 유지
+                      const parts = numericText.split(".");
+                      const cleanText =
+                        parts.length > 2
+                          ? parts[0] + "." + parts.slice(1).join("")
+                          : numericText;
+
+                      setDeviationText(cleanText);
+                    }}
+                    placeholder="10.00"
+                    keyboardType="decimal-pad"
+                    style={{
+                      borderWidth: 1,
+                      borderColor: "#D1D5DB",
+                      borderRadius: 8,
+                      padding: 12,
+                      fontSize: 16,
+                    }}
+                  />
+                </VStack>
+              </HStack>
+            </VStack>
+
+            <HStack space="sm" className="justify-end">
+              <Button size="sm" variant="outline" onPress={resetForm}>
+                <ButtonText className="text-gray-600">취소</ButtonText>
+              </Button>
+              <Button
+                size="sm"
+                className="bg-blue-600"
+                onPress={handleSubmit}
+                disabled={
+                  !isFormValid() ||
+                  createMutation.isPending ||
+                  updateMutation.isPending
+                }
+              >
+                <ButtonText className="text-white">
+                  {createMutation.isPending || updateMutation.isPending
+                    ? "저장 중..."
+                    : editingStandard
+                    ? "수정"
+                    : "추가"}
+                </ButtonText>
+              </Button>
+            </HStack>
+          </VStack>
+        </Box>
+      )}
+
+      {/* 계산 기준 목록 */}
+      <Box className="bg-white border border-gray-200 rounded-xl p-4">
+        <VStack space="md">
+          <HStack className="items-center justify-between">
+            <Text className="text-lg font-semibold">계산 기준 목록</Text>
+            <Text className="text-sm text-gray-500">
+              총 {standards?.length || 0}개
+            </Text>
+          </HStack>
+
+          {standards && standards.length > 0 ? (
+            <VStack space="sm">
+              {/* 헤더 */}
+              <HStack className="py-2 px-3 bg-gray-50 rounded-lg">
+                <Text className="flex-1 text-sm font-medium text-gray-700">
+                  금속 종류
+                </Text>
+                <Text className="flex-1 text-sm font-medium text-gray-700">
+                  구분
+                </Text>
+                <Text className="w-20 text-sm font-medium text-gray-700 text-center">
+                  LME비율
+                </Text>
+                <Text className="w-16 text-sm font-medium text-gray-700 text-center">
+                  편차
+                </Text>
+                <Text className="w-20 text-sm font-medium text-gray-700 text-center">
+                  작업
+                </Text>
+              </HStack>
+
+              {/* 데이터 행들 */}
+              {standards.map((standard) => (
+                <HStack
+                  key={standard.id}
+                  className="py-3 px-3 border-b border-gray-100 items-center"
+                >
+                  <Text className="flex-1 text-sm text-gray-900 font-medium">
+                    {standard.metal_type}
+                  </Text>
+                  <Text className="flex-1 text-sm text-gray-700">
+                    {standard.category}
+                  </Text>
+                  <Text className="w-20 text-sm text-gray-700 text-center">
+                    {standard.lme_ratio}%
+                  </Text>
+                  <Text className="w-16 text-sm text-gray-700 text-center">
+                    ±{standard.deviation}%
+                  </Text>
+                  <HStack space="xs" className="w-20 justify-center">
+                    <Pressable
+                      onPress={() => handleEdit(standard)}
+                      className="p-1"
+                    >
+                      <Edit3 size={14} color="#3B82F6" />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleDelete(standard)}
+                      className="p-1"
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Text className="text-red-500 text-sm">🗑</Text>
+                    </Pressable>
+                  </HStack>
+                </HStack>
+              ))}
+            </VStack>
+          ) : (
+            <Box className="py-8">
+              <VStack space="sm" className="items-center">
+                <Text className="text-4xl">📊</Text>
+                <Text className="text-center text-gray-500 font-medium">
+                  등록된 계산 기준이 없습니다
+                </Text>
+                <Text className="text-center text-gray-400 text-sm">
+                  새 기준 추가 버튼을 눌러 계산 기준을 추가해보세요
+                </Text>
+              </VStack>
+            </Box>
+          )}
+        </VStack>
+      </Box>
     </VStack>
   );
 };
