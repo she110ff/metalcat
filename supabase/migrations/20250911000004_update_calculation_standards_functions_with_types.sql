@@ -1,7 +1,6 @@
--- 계산 기준 관리를 위한 Supabase 함수들
--- CRUD 작업을 위한 함수 정의
+-- 계산 기준 함수들을 계산 타입과 고정가격 지원하도록 업데이트
 
--- 계산 기준 목록 조회 함수
+-- 1. 계산 기준 목록 조회 함수 업데이트
 CREATE OR REPLACE FUNCTION get_calculation_standards()
 RETURNS TABLE (
     id UUID,
@@ -33,7 +32,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 계산 기준 생성 함수
+-- 2. 계산 기준 생성 함수 업데이트
 CREATE OR REPLACE FUNCTION create_calculation_standard(
     p_user_id UUID,
     p_metal_type VARCHAR,
@@ -76,11 +75,41 @@ BEGIN
         );
     END IF;
 
-    IF p_lme_ratio IS NULL OR p_lme_ratio < 0 OR p_lme_ratio > 300 THEN
+    -- 계산 타입 유효성 검사
+    IF p_calculation_type IS NULL OR p_calculation_type NOT IN ('lme_based', 'fixed_price') THEN
         RETURN json_build_object(
             'success', false,
-            'error', 'LME 비율은 0-300 사이의 값이어야 합니다.'
+            'error', '계산 타입은 lme_based 또는 fixed_price여야 합니다.'
         );
+    END IF;
+
+    -- 계산 타입별 필드 유효성 검사
+    IF p_calculation_type = 'lme_based' THEN
+        IF p_lme_ratio IS NULL OR p_lme_ratio < 0 OR p_lme_ratio > 300 THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', 'LME 기반 타입에서는 LME 비율(0-300)이 필요합니다.'
+            );
+        END IF;
+        IF p_fixed_price IS NOT NULL THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', 'LME 기반 타입에서는 고정가격을 설정할 수 없습니다.'
+            );
+        END IF;
+    ELSIF p_calculation_type = 'fixed_price' THEN
+        IF p_fixed_price IS NULL OR p_fixed_price <= 0 THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', '고정가격 타입에서는 양수인 고정가격이 필요합니다.'
+            );
+        END IF;
+        IF p_lme_ratio IS NOT NULL THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', '고정가격 타입에서는 LME 비율을 설정할 수 없습니다.'
+            );
+        END IF;
     END IF;
 
     IF p_deviation IS NULL OR p_deviation < 0 OR p_deviation > 100 THEN
@@ -102,8 +131,8 @@ BEGIN
     END IF;
 
     -- 데이터 삽입
-    INSERT INTO calculation_standards (metal_type, category, lme_ratio, deviation)
-    VALUES (TRIM(p_metal_type), TRIM(p_category), p_lme_ratio, p_deviation)
+    INSERT INTO calculation_standards (metal_type, category, calculation_type, lme_ratio, fixed_price, deviation)
+    VALUES (TRIM(p_metal_type), TRIM(p_category), p_calculation_type, p_lme_ratio, p_fixed_price, p_deviation)
     RETURNING id INTO v_new_id;
 
     RETURN json_build_object(
@@ -119,13 +148,15 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql;
 
--- 계산 기준 수정 함수
+-- 3. 계산 기준 수정 함수 업데이트
 CREATE OR REPLACE FUNCTION update_calculation_standard(
     p_user_id UUID,
     p_id UUID,
     p_metal_type VARCHAR,
     p_category VARCHAR,
+    p_calculation_type VARCHAR,
     p_lme_ratio DECIMAL,
+    p_fixed_price DECIMAL,
     p_deviation DECIMAL
 )
 RETURNS JSON
@@ -161,11 +192,41 @@ BEGIN
         );
     END IF;
 
-    IF p_lme_ratio IS NULL OR p_lme_ratio < 0 OR p_lme_ratio > 300 THEN
+    -- 계산 타입 유효성 검사
+    IF p_calculation_type IS NULL OR p_calculation_type NOT IN ('lme_based', 'fixed_price') THEN
         RETURN json_build_object(
             'success', false,
-            'error', 'LME 비율은 0-300 사이의 값이어야 합니다.'
+            'error', '계산 타입은 lme_based 또는 fixed_price여야 합니다.'
         );
+    END IF;
+
+    -- 계산 타입별 필드 유효성 검사
+    IF p_calculation_type = 'lme_based' THEN
+        IF p_lme_ratio IS NULL OR p_lme_ratio < 0 OR p_lme_ratio > 300 THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', 'LME 기반 타입에서는 LME 비율(0-300)이 필요합니다.'
+            );
+        END IF;
+        IF p_fixed_price IS NOT NULL THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', 'LME 기반 타입에서는 고정가격을 설정할 수 없습니다.'
+            );
+        END IF;
+    ELSIF p_calculation_type = 'fixed_price' THEN
+        IF p_fixed_price IS NULL OR p_fixed_price <= 0 THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', '고정가격 타입에서는 양수인 고정가격이 필요합니다.'
+            );
+        END IF;
+        IF p_lme_ratio IS NOT NULL THEN
+            RETURN json_build_object(
+                'success', false,
+                'error', '고정가격 타입에서는 LME 비율을 설정할 수 없습니다.'
+            );
+        END IF;
     END IF;
 
     IF p_deviation IS NULL OR p_deviation < 0 OR p_deviation > 100 THEN
@@ -205,7 +266,9 @@ BEGIN
     SET 
         metal_type = TRIM(p_metal_type),
         category = TRIM(p_category),
+        calculation_type = p_calculation_type,
         lme_ratio = p_lme_ratio,
+        fixed_price = p_fixed_price,
         deviation = p_deviation,
         updated_at = NOW()
     WHERE id = p_id;
@@ -220,44 +283,7 @@ EXCEPTION WHEN OTHERS THEN
 END;
 $$ LANGUAGE plpgsql;
 
--- 계산 기준 삭제 함수
-CREATE OR REPLACE FUNCTION delete_calculation_standard(p_user_id UUID, p_id UUID)
-RETURNS JSON
-SECURITY DEFINER
-AS $$
-BEGIN
-    -- 관리자 권한 확인
-    IF NOT EXISTS (
-        SELECT 1 FROM users 
-        WHERE id = p_user_id AND is_admin = true
-    ) THEN
-        RETURN json_build_object(
-            'success', false,
-            'error', '관리자 권한이 필요합니다.'
-        );
-    END IF;
-
-    -- 데이터 삭제
-    DELETE FROM calculation_standards WHERE id = p_id;
-
-    IF NOT FOUND THEN
-        RETURN json_build_object(
-            'success', false,
-            'error', '해당 계산 기준을 찾을 수 없습니다.'
-        );
-    END IF;
-
-    RETURN json_build_object('success', true);
-
-EXCEPTION WHEN OTHERS THEN
-    RETURN json_build_object(
-        'success', false,
-        'error', SQLERRM
-    );
-END;
-$$ LANGUAGE plpgsql;
-
--- 특정 금속의 계산 기준 조회 함수 (향후 계산기 연동용)
+-- 4. 특정 금속의 계산 기준 조회 함수 업데이트
 CREATE OR REPLACE FUNCTION get_calculation_standard_by_metal(
     p_metal_type VARCHAR,
     p_category VARCHAR
@@ -266,7 +292,9 @@ RETURNS TABLE (
     id UUID,
     metal_type VARCHAR,
     category VARCHAR,
+    calculation_type VARCHAR,
     lme_ratio DECIMAL,
+    fixed_price DECIMAL,
     deviation DECIMAL
 ) 
 SECURITY DEFINER
@@ -277,7 +305,9 @@ BEGIN
         cs.id,
         cs.metal_type,
         cs.category,
+        cs.calculation_type,
         cs.lme_ratio,
+        cs.fixed_price,
         cs.deviation
     FROM calculation_standards cs
     WHERE cs.metal_type = p_metal_type 
@@ -285,11 +315,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 금속 종류별 구분 목록 조회 함수
+-- 5. 금속 종류별 구분 목록 조회 함수 업데이트
 CREATE OR REPLACE FUNCTION get_categories_by_metal(p_metal_type VARCHAR)
 RETURNS TABLE (
     category VARCHAR,
+    calculation_type VARCHAR,
     lme_ratio DECIMAL,
+    fixed_price DECIMAL,
     deviation DECIMAL
 ) 
 SECURITY DEFINER
@@ -298,18 +330,18 @@ BEGIN
     RETURN QUERY
     SELECT 
         cs.category,
+        cs.calculation_type,
         cs.lme_ratio,
+        cs.fixed_price,
         cs.deviation
     FROM calculation_standards cs
     WHERE cs.metal_type = p_metal_type
-    ORDER BY cs.category;
+    ORDER BY cs.calculation_type, cs.category;
 END;
 $$ LANGUAGE plpgsql;
 
--- 함수들에 대한 코멘트 추가
-COMMENT ON FUNCTION get_calculation_standards() IS '계산 기준 전체 목록 조회';
-COMMENT ON FUNCTION create_calculation_standard(UUID, VARCHAR, VARCHAR, DECIMAL, DECIMAL) IS '새로운 계산 기준 생성';
-COMMENT ON FUNCTION update_calculation_standard(UUID, UUID, VARCHAR, VARCHAR, DECIMAL, DECIMAL) IS '계산 기준 수정';
-COMMENT ON FUNCTION delete_calculation_standard(UUID, UUID) IS '계산 기준 삭제';
-COMMENT ON FUNCTION get_calculation_standard_by_metal(VARCHAR, VARCHAR) IS '특정 금속의 계산 기준 조회';
-COMMENT ON FUNCTION get_categories_by_metal(VARCHAR) IS '금속 종류별 구분 목록 조회';
+-- 6. 함수 코멘트 업데이트
+COMMENT ON FUNCTION create_calculation_standard(UUID, VARCHAR, VARCHAR, VARCHAR, DECIMAL, DECIMAL, DECIMAL) IS '새로운 계산 기준 생성 (계산 타입 지원)';
+COMMENT ON FUNCTION update_calculation_standard(UUID, UUID, VARCHAR, VARCHAR, VARCHAR, DECIMAL, DECIMAL, DECIMAL) IS '계산 기준 수정 (계산 타입 지원)';
+COMMENT ON FUNCTION get_calculation_standard_by_metal(VARCHAR, VARCHAR) IS '특정 금속의 계산 기준 조회 (계산 타입 포함)';
+COMMENT ON FUNCTION get_categories_by_metal(VARCHAR) IS '금속 종류별 구분 목록 조회 (계산 타입 포함)';

@@ -57,6 +57,7 @@ import {
   useDeleteCalculationStandard,
   CalculationStandard,
   CreateCalculationStandardData,
+  UpdateCalculationStandardData,
 } from "@/hooks/admin/useCalculationStandards";
 
 // 탭 컴포넌트 import (아직 생성하지 않았으므로 임시)
@@ -2185,13 +2186,16 @@ const CalculationStandardsTabContent = () => {
     {
       metal_type: "",
       category: "",
+      calculation_type: "lme_based",
       lme_ratio: 95,
+      fixed_price: undefined,
       deviation: 10,
     }
   );
 
   // 입력 필드용 문자열 상태 (소수점 입력 지원)
   const [lmeRatioText, setLmeRatioText] = React.useState("95");
+  const [fixedPriceText, setFixedPriceText] = React.useState("");
   const [deviationText, setDeviationText] = React.useState("10");
 
   // 폼 초기화
@@ -2199,10 +2203,13 @@ const CalculationStandardsTabContent = () => {
     setFormData({
       metal_type: "",
       category: "",
+      calculation_type: "lme_based",
       lme_ratio: 95,
+      fixed_price: undefined,
       deviation: 10,
     });
     setLmeRatioText("95");
+    setFixedPriceText("");
     setDeviationText("10");
     setEditingStandard(null);
     setIsFormVisible(false);
@@ -2213,10 +2220,13 @@ const CalculationStandardsTabContent = () => {
     setFormData({
       metal_type: standard.metal_type,
       category: standard.category,
+      calculation_type: standard.calculation_type,
       lme_ratio: standard.lme_ratio,
+      fixed_price: standard.fixed_price,
       deviation: standard.deviation,
     });
-    setLmeRatioText(standard.lme_ratio.toString());
+    setLmeRatioText(standard.lme_ratio?.toString() || "");
+    setFixedPriceText(standard.fixed_price?.toString() || "");
     setDeviationText(standard.deviation.toString());
     setEditingStandard(standard);
     setIsFormVisible(true);
@@ -2226,32 +2236,44 @@ const CalculationStandardsTabContent = () => {
   const handleSubmit = async () => {
     try {
       // 문자열 입력값을 숫자로 변환
-      const lmeRatio = parseFloat(lmeRatioText) || 0;
       const deviation = parseFloat(deviationText) || 0;
 
-      // 범위 검증
-      if (lmeRatio < 0 || lmeRatio > 300) {
-        Alert.alert("오류", "LME 비율은 0-300 사이의 값이어야 합니다.");
-        return;
-      }
-
+      // 편차 범위 검증
       if (deviation < 0 || deviation > 100) {
         Alert.alert("오류", "편차는 0-100 사이의 값이어야 합니다.");
         return;
       }
 
-      const submitData = {
+      let submitData: CreateCalculationStandardData = {
         ...formData,
-        lme_ratio: lmeRatio,
         deviation: deviation,
       };
+
+      // 계산 타입별 유효성 검사 및 데이터 설정
+      if (formData.calculation_type === "lme_based") {
+        const lmeRatio = parseFloat(lmeRatioText) || 0;
+        if (lmeRatio < 0 || lmeRatio > 300) {
+          Alert.alert("오류", "LME 비율은 0-300 사이의 값이어야 합니다.");
+          return;
+        }
+        submitData.lme_ratio = lmeRatio;
+        submitData.fixed_price = undefined;
+      } else if (formData.calculation_type === "fixed_price") {
+        const fixedPrice = parseFloat(fixedPriceText) || 0;
+        if (fixedPrice <= 0) {
+          Alert.alert("오류", "고정가격은 0보다 큰 값이어야 합니다.");
+          return;
+        }
+        submitData.fixed_price = fixedPrice;
+        submitData.lme_ratio = undefined;
+      }
 
       if (editingStandard) {
         // 수정
         const result = await updateMutation.mutateAsync({
           ...submitData,
           id: editingStandard.id,
-        });
+        } as UpdateCalculationStandardData);
         if (result.success) {
           Alert.alert("성공", "계산 기준이 수정되었습니다.");
           resetForm();
@@ -2304,14 +2326,28 @@ const CalculationStandardsTabContent = () => {
 
   // 입력값 유효성 검사
   const isFormValid = () => {
-    return (
+    const basicValid =
       formData.metal_type.trim() !== "" &&
       formData.category.trim() !== "" &&
-      formData.lme_ratio >= 0 &&
-      formData.lme_ratio <= 100 &&
       formData.deviation >= 0 &&
-      formData.deviation <= 100
-    );
+      formData.deviation <= 100;
+
+    if (formData.calculation_type === "lme_based") {
+      return (
+        basicValid &&
+        formData.lme_ratio !== undefined &&
+        formData.lme_ratio >= 0 &&
+        formData.lme_ratio <= 300
+      );
+    } else if (formData.calculation_type === "fixed_price") {
+      return (
+        basicValid &&
+        formData.fixed_price !== undefined &&
+        formData.fixed_price > 0
+      );
+    }
+
+    return false;
   };
 
   if (isLoading) {
@@ -2421,37 +2457,134 @@ const CalculationStandardsTabContent = () => {
                 />
               </VStack>
 
+              {/* 계산 타입 선택 */}
+              <VStack space="xs">
+                <Text className="text-sm font-medium text-gray-700">
+                  계산 타입
+                </Text>
+                <HStack space="sm">
+                  <Pressable
+                    onPress={() => {
+                      setFormData({
+                        ...formData,
+                        calculation_type: "lme_based",
+                      });
+                      setFixedPriceText("");
+                    }}
+                    className={`flex-1 p-3 rounded-lg border ${
+                      formData.calculation_type === "lme_based"
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-center font-medium ${
+                        formData.calculation_type === "lme_based"
+                          ? "text-blue-700"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      📈 LME 기반
+                    </Text>
+                    <Text className="text-xs text-center text-gray-500 mt-1">
+                      LME 시세 × 비율
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setFormData({
+                        ...formData,
+                        calculation_type: "fixed_price",
+                      });
+                      setLmeRatioText("");
+                    }}
+                    className={`flex-1 p-3 rounded-lg border ${
+                      formData.calculation_type === "fixed_price"
+                        ? "border-green-500 bg-green-50"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    <Text
+                      className={`text-center font-medium ${
+                        formData.calculation_type === "fixed_price"
+                          ? "text-green-700"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      💰 고정가격
+                    </Text>
+                    <Text className="text-xs text-center text-gray-500 mt-1">
+                      특정 값 고정
+                    </Text>
+                  </Pressable>
+                </HStack>
+              </VStack>
+
+              {/* 조건부 입력 필드 */}
               <HStack space="sm">
-                <VStack space="xs" className="flex-1">
-                  <Text className="text-sm font-medium text-gray-700">
-                    LME 비율 (0-300%)
-                  </Text>
-                  <TextInput
-                    value={lmeRatioText}
-                    onChangeText={(text) => {
-                      // 숫자와 소수점만 허용
-                      const numericText = text.replace(/[^0-9.]/g, "");
+                {formData.calculation_type === "lme_based" ? (
+                  <VStack space="xs" className="flex-1">
+                    <Text className="text-sm font-medium text-gray-700">
+                      LME 비율 (0-300%)
+                    </Text>
+                    <TextInput
+                      value={lmeRatioText}
+                      onChangeText={(text) => {
+                        // 숫자와 소수점만 허용
+                        const numericText = text.replace(/[^0-9.]/g, "");
 
-                      // 소수점이 여러 개 있으면 첫 번째만 유지
-                      const parts = numericText.split(".");
-                      const cleanText =
-                        parts.length > 2
-                          ? parts[0] + "." + parts.slice(1).join("")
-                          : numericText;
+                        // 소수점이 여러 개 있으면 첫 번째만 유지
+                        const parts = numericText.split(".");
+                        const cleanText =
+                          parts.length > 2
+                            ? parts[0] + "." + parts.slice(1).join("")
+                            : numericText;
 
-                      setLmeRatioText(cleanText);
-                    }}
-                    placeholder="95.00"
-                    keyboardType="decimal-pad"
-                    style={{
-                      borderWidth: 1,
-                      borderColor: "#D1D5DB",
-                      borderRadius: 8,
-                      padding: 12,
-                      fontSize: 16,
-                    }}
-                  />
-                </VStack>
+                        setLmeRatioText(cleanText);
+                      }}
+                      placeholder="95.00"
+                      keyboardType="decimal-pad"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#D1D5DB",
+                        borderRadius: 8,
+                        padding: 12,
+                        fontSize: 16,
+                      }}
+                    />
+                  </VStack>
+                ) : (
+                  <VStack space="xs" className="flex-1">
+                    <Text className="text-sm font-medium text-gray-700">
+                      고정가격 (원/kg)
+                    </Text>
+                    <TextInput
+                      value={fixedPriceText}
+                      onChangeText={(text) => {
+                        // 숫자와 소수점만 허용
+                        const numericText = text.replace(/[^0-9.]/g, "");
+
+                        // 소수점이 여러 개 있으면 첫 번째만 유지
+                        const parts = numericText.split(".");
+                        const cleanText =
+                          parts.length > 2
+                            ? parts[0] + "." + parts.slice(1).join("")
+                            : numericText;
+
+                        setFixedPriceText(cleanText);
+                      }}
+                      placeholder="8500.00"
+                      keyboardType="decimal-pad"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: "#D1D5DB",
+                        borderRadius: 8,
+                        padding: 12,
+                        fontSize: 16,
+                      }}
+                    />
+                  </VStack>
+                )}
 
                 <VStack space="xs" className="flex-1">
                   <Text className="text-sm font-medium text-gray-700">
@@ -2533,8 +2666,11 @@ const CalculationStandardsTabContent = () => {
                 <Text className="flex-1 text-sm font-medium text-gray-700">
                   구분
                 </Text>
+                <Text className="w-16 text-sm font-medium text-gray-700 text-center">
+                  타입
+                </Text>
                 <Text className="w-20 text-sm font-medium text-gray-700 text-center">
-                  LME비율
+                  비율/가격
                 </Text>
                 <Text className="w-16 text-sm font-medium text-gray-700 text-center">
                   편차
@@ -2556,8 +2692,19 @@ const CalculationStandardsTabContent = () => {
                   <Text className="flex-1 text-sm text-gray-700">
                     {standard.category}
                   </Text>
+                  <Text
+                    className={`w-16 text-xs text-center px-1 py-1 rounded ${
+                      standard.calculation_type === "lme_based"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                    }`}
+                  >
+                    {standard.calculation_type === "lme_based" ? "LME" : "고정"}
+                  </Text>
                   <Text className="w-20 text-sm text-gray-700 text-center">
-                    {standard.lme_ratio}%
+                    {standard.calculation_type === "lme_based"
+                      ? `${standard.lme_ratio}%`
+                      : `${standard.fixed_price?.toLocaleString()}원`}
                   </Text>
                   <Text className="w-16 text-sm text-gray-700 text-center">
                     ±{standard.deviation}%

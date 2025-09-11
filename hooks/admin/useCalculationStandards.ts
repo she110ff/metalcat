@@ -6,7 +6,9 @@ export interface CalculationStandard {
   id: string;
   metal_type: string;
   category: string;
-  lme_ratio: number;
+  calculation_type: "lme_based" | "fixed_price";
+  lme_ratio?: number;
+  fixed_price?: number;
   deviation: number;
   created_at: string;
   updated_at: string;
@@ -15,7 +17,9 @@ export interface CalculationStandard {
 export interface CreateCalculationStandardData {
   metal_type: string;
   category: string;
-  lme_ratio: number;
+  calculation_type: "lme_based" | "fixed_price";
+  lme_ratio?: number;
+  fixed_price?: number;
   deviation: number;
 }
 
@@ -53,7 +57,9 @@ export const useCreateCalculationStandard = () => {
           p_user_id: user.id,
           p_metal_type: standard.metal_type,
           p_category: standard.category,
-          p_lme_ratio: standard.lme_ratio,
+          p_calculation_type: standard.calculation_type,
+          p_lme_ratio: standard.lme_ratio || null,
+          p_fixed_price: standard.fixed_price || null,
           p_deviation: standard.deviation,
         }
       );
@@ -84,7 +90,9 @@ export const useUpdateCalculationStandard = () => {
           p_id: standard.id,
           p_metal_type: standard.metal_type,
           p_category: standard.category,
-          p_lme_ratio: standard.lme_ratio,
+          p_calculation_type: standard.calculation_type,
+          p_lme_ratio: standard.lme_ratio || null,
+          p_fixed_price: standard.fixed_price || null,
           p_deviation: standard.deviation,
         }
       );

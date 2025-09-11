@@ -6,13 +6,21 @@ CREATE TABLE calculation_standards (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     metal_type VARCHAR(50) NOT NULL,           -- 종류 (구리, 알루미늄, 아연 등)
     category VARCHAR(50) NOT NULL,             -- 구분 (A동, B동, 1급 등)
-    lme_ratio DECIMAL(5,2) NOT NULL CHECK (lme_ratio >= 0 AND lme_ratio <= 300),  -- LME비율 (0-300%)
+    calculation_type VARCHAR(20) DEFAULT 'lme_based' CHECK (calculation_type IN ('lme_based', 'fixed_price')), -- 계산 타입
+    lme_ratio DECIMAL(5,2) CHECK (lme_ratio >= 0 AND lme_ratio <= 300),  -- LME비율 (0-300%, LME 기반일 때만 필수)
+    fixed_price DECIMAL(10,2) CHECK (fixed_price >= 0),  -- 고정 가격 (고정가격 타입일 때 사용)
     deviation DECIMAL(5,2) NOT NULL CHECK (deviation >= 0 AND deviation <= 100),  -- 편차 (0-100%)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     
     -- 중복 방지를 위한 유니크 제약조건
-    UNIQUE(metal_type, category)
+    UNIQUE(metal_type, category),
+    
+    -- 계산 타입별 필수 필드 검증
+    CHECK (
+        (calculation_type = 'lme_based' AND lme_ratio IS NOT NULL AND fixed_price IS NULL) OR
+        (calculation_type = 'fixed_price' AND fixed_price IS NOT NULL AND lme_ratio IS NULL)
+    )
 );
 
 -- 업데이트 시간 자동 갱신 트리거 (기존 함수 재사용)
@@ -48,5 +56,7 @@ CREATE INDEX idx_calculation_standards_metal_category ON calculation_standards(m
 COMMENT ON TABLE calculation_standards IS '비철 계산기 계산 기준 관리 테이블';
 COMMENT ON COLUMN calculation_standards.metal_type IS '금속 종류 (구리, 알루미늄, 아연 등)';
 COMMENT ON COLUMN calculation_standards.category IS '금속 구분 (A동, B동, 1급 등)';
-COMMENT ON COLUMN calculation_standards.lme_ratio IS 'LME 가격 적용 비율 (0-300%)';
+COMMENT ON COLUMN calculation_standards.calculation_type IS '계산 타입 (lme_based: LME 기반, fixed_price: 고정가격)';
+COMMENT ON COLUMN calculation_standards.lme_ratio IS 'LME 가격 적용 비율 (0-300%, LME 기반 타입에서만 사용)';
+COMMENT ON COLUMN calculation_standards.fixed_price IS '고정 가격 (고정가격 타입에서만 사용)';
 COMMENT ON COLUMN calculation_standards.deviation IS '가격 편차 범위 (0-100%)';
