@@ -422,8 +422,8 @@ export const getAuctionDurationInfo = (
     endTime: "오후 6시 종료",
     fullDescription:
       transactionType === "urgent"
-        ? "긴급 경매는 2일간 진행되며, 종료일 오후 6시에 마감됩니다."
-        : "일반 경매는 7일간 진행되며, 종료일 오후 6시에 마감됩니다.",
+        ? "긴급 경매는 2일간 진행되며, 등록 승인에 최대 1시간 소요됩니다."
+        : "일반 경매는 7일간 진행되며, 등록 승인에 최대 1시간 소요됩니다.",
   };
 };
 
