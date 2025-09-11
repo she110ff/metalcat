@@ -686,7 +686,10 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
             <MetalPriceChart
               data={data.dailyData.map((item) => ({
                 ...item,
-                cashPrice: convertUsdPerTonToKrwPerKg(item.cashPrice),
+                cashPrice:
+                  data.unit === "원/KG"
+                    ? item.cashPrice
+                    : convertUsdPerTonToKrwPerKg(item.cashPrice),
               }))}
               chartType="line"
               metalName={data.metalName}
