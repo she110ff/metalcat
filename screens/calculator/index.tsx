@@ -6,6 +6,7 @@ import {
   TextInput,
   Alert,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
@@ -17,13 +18,18 @@ import {
   TrendingUp,
 } from "lucide-react-native";
 import { useLatestLmePricesCompatible } from "@/hooks/lme";
+import { useCalculationStandardsWithPrices } from "@/hooks/calculator/useCalculationStandards";
+import type { CalculationStandard } from "@/hooks/calculator/useCalculationStandards";
 
 interface CalculationResult {
-  metalType: string;
+  standard: CalculationStandard;
   weight: number;
-  purity: number;
-  pricePerUnit: number;
+  basePrice: number;
   totalValue: number;
+  priceRange: {
+    min: number;
+    max: number;
+  };
 }
 
 export const Calculator = () => {
@@ -31,11 +37,11 @@ export const Calculator = () => {
     "🧮 Calculator component rendering - 순수 React Native 스타일 버전"
   );
 
-  const [selectedMetal, setSelectedMetal] = useState("구리");
+  const [selectedStandard, setSelectedStandard] =
+    useState<CalculationStandard | null>(null);
   const [weight, setWeight] = useState("");
-  const [purity, setPurity] = useState("99");
   const [result, setResult] = useState<CalculationResult | null>(null);
-  const [showMetalPicker, setShowMetalPicker] = useState(false);
+  const [showStandardPicker, setShowStandardPicker] = useState(false);
 
   const router = useRouter();
 
@@ -46,10 +52,16 @@ export const Calculator = () => {
     error: lmeError,
   } = useLatestLmePricesCompatible();
 
+  // 모든 계산 기준 조회
+  const { data: calculationStandards, isLoading: isStandardsLoading } =
+    useCalculationStandardsWithPrices();
+
   // 금속 가격 데이터 (실시간 LME 데이터 또는 기본값)
   const getMetalPrices = () => {
     if (realTimeLmeData && realTimeLmeData.length > 0) {
-      const prices: { [key: string]: { price: number; unit: string } } = {};
+      const prices: {
+        [key: string]: { price: number; unit: string; priceKRW: number };
+      } = {};
 
       realTimeLmeData.forEach((item) => {
         // LME 가격을 원/kg으로 변환 (1달러 = 약 1300원 가정)
@@ -80,39 +92,71 @@ export const Calculator = () => {
   const metalPrices = getMetalPrices();
 
   const calculate = () => {
-    if (!weight || !purity) return;
-
-    const metalPrice = metalPrices[selectedMetal];
-    if (!metalPrice) return;
+    if (!weight || !selectedStandard) return;
 
     const weightNum = parseFloat(weight);
-    const purityNum = parseFloat(purity);
+    if (isNaN(weightNum)) return;
 
-    if (isNaN(weightNum) || isNaN(purityNum)) return;
+    let basePrice: number;
 
-    // 순도에 따른 가격 조정 (원/kg 기준)
-    const adjustedPrice = metalPrice.priceKRW * (purityNum / 100);
-    const totalValue = adjustedPrice * weightNum; // 모든 금속은 kg 단위
+    if (selectedStandard.calculation_type === "fixed_price") {
+      // 고정가격 타입: fixed_price 사용
+      basePrice = selectedStandard.fixed_price || 0;
+    } else {
+      // LME 기반 타입: LME 시세 × LME 비율
+      const metalPrice = metalPrices[selectedStandard.metal_type];
+      if (!metalPrice) return;
+
+      const lmeRatio = selectedStandard.lme_ratio || 100;
+      basePrice = metalPrice.priceKRW * (lmeRatio / 100);
+    }
+
+    const totalValue = basePrice * weightNum;
+
+    // 편차 계산
+    const deviationAmount = basePrice * (selectedStandard.deviation / 100);
+    const priceRange = {
+      min: basePrice - deviationAmount,
+      max: basePrice + deviationAmount,
+    };
 
     setResult({
-      metalType: selectedMetal,
+      standard: selectedStandard,
       weight: weightNum,
-      purity: purityNum,
-      pricePerUnit: adjustedPrice,
+      basePrice,
       totalValue,
+      priceRange,
     });
   };
 
   const reset = () => {
     setWeight("");
-    setPurity("99");
+    setSelectedStandard(null);
     setResult(null);
   };
 
-  // 금속 선택 핸들러
-  const handleMetalSelect = (metal: string) => {
-    setSelectedMetal(metal);
-    setShowMetalPicker(false);
+  // 계산 기준 선택 핸들러
+  const handleStandardSelect = (standard: CalculationStandard) => {
+    setSelectedStandard(standard);
+    setResult(null); // 선택 변경 시 결과 초기화
+    setShowStandardPicker(false);
+  };
+
+  // LME 가격 정보를 포함한 가격 표시 함수
+  const getPriceDisplay = (standard: CalculationStandard) => {
+    if (standard.calculation_type === "fixed_price") {
+      return `고정가격: ${standard.fixed_price?.toLocaleString()}원/kg`;
+    } else {
+      const metalPrice = metalPrices[standard.metal_type];
+      if (metalPrice) {
+        const calculatedPrice =
+          metalPrice.priceKRW * ((standard.lme_ratio || 100) / 100);
+        return `LME 기반: ${calculatedPrice.toLocaleString()}원/kg (${
+          standard.lme_ratio
+        }%)`;
+      }
+      return `LME 비율: ${standard.lme_ratio}%`;
+    }
   };
 
   return (
@@ -170,7 +214,8 @@ export const Calculator = () => {
                 금속 가격 계산기
               </Text>
             </View>
-            {/* Metal Selection */}
+
+            {/* Metal Standard Selection */}
             <View
               style={{
                 borderRadius: 24,
@@ -197,9 +242,9 @@ export const Calculator = () => {
                     letterSpacing: 2,
                   }}
                 >
-                  금속 종류
+                  금속 구분
                 </Text>
-                {isLmeLoading && (
+                {(isLmeLoading || isStandardsLoading) && (
                   <Text
                     style={{
                       color: "rgba(255,255,255,0.6)",
@@ -207,7 +252,7 @@ export const Calculator = () => {
                       fontStyle: "italic",
                     }}
                   >
-                    실시간 가격 로딩중...
+                    데이터 로딩중...
                   </Text>
                 )}
               </View>
@@ -223,13 +268,15 @@ export const Calculator = () => {
                   justifyContent: "space-between",
                   alignItems: "center",
                 }}
-                onPress={() => setShowMetalPicker(!showMetalPicker)}
+                onPress={() => setShowStandardPicker(!showStandardPicker)}
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: "white", fontSize: 16 }}>
-                    {selectedMetal}
+                    {selectedStandard
+                      ? `${selectedStandard.metal_type} ${selectedStandard.category}`
+                      : "금속 구분을 선택하세요"}
                   </Text>
-                  {metalPrices[selectedMetal] && (
+                  {selectedStandard && (
                     <Text
                       style={{
                         color: "rgba(255,255,255,0.6)",
@@ -237,8 +284,7 @@ export const Calculator = () => {
                         marginTop: 2,
                       }}
                     >
-                      {metalPrices[selectedMetal].priceKRW?.toLocaleString()}
-                      원/kg
+                      {getPriceDisplay(selectedStandard)}
                     </Text>
                   )}
                 </View>
@@ -247,53 +293,69 @@ export const Calculator = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Metal Picker */}
-              {showMetalPicker && (
-                <View
+              {/* Standard Picker */}
+              {showStandardPicker && calculationStandards && (
+                <ScrollView
                   style={{
                     backgroundColor: "rgba(26, 26, 26, 0.95)",
                     borderWidth: 1,
                     borderColor: "rgba(255, 255, 255, 0.1)",
                     borderRadius: 16,
                     marginTop: 8,
-                    overflow: "hidden",
+                    maxHeight: 300,
                   }}
+                  nestedScrollEnabled={true}
                 >
-                  {Object.keys(metalPrices).map((metal) => (
+                  {calculationStandards.map((standard, index) => (
                     <TouchableOpacity
-                      key={metal}
+                      key={standard.id}
                       style={{
                         padding: 16,
                         borderBottomWidth:
-                          metal !== Object.keys(metalPrices).slice(-1)[0]
-                            ? 1
-                            : 0,
+                          index !== calculationStandards.length - 1 ? 1 : 0,
                         borderBottomColor: "rgba(255,255,255,0.05)",
                       }}
-                      onPress={() => handleMetalSelect(metal)}
+                      onPress={() => handleStandardSelect(standard)}
                     >
                       <View
                         style={{
                           flexDirection: "row",
                           justifyContent: "space-between",
-                          alignItems: "center",
+                          alignItems: "flex-start",
                         }}
                       >
-                        <Text style={{ color: "white", fontSize: 16 }}>
-                          {metal}
-                        </Text>
-                        <Text
-                          style={{
-                            color: "rgba(255,255,255,0.6)",
-                            fontSize: 14,
-                          }}
-                        >
-                          {metalPrices[metal].priceKRW?.toLocaleString()}원/kg
-                        </Text>
+                        <View style={{ flex: 1 }}>
+                          <Text
+                            style={{
+                              color: "white",
+                              fontSize: 16,
+                              marginBottom: 4,
+                            }}
+                          >
+                            {standard.metal_type} {standard.category}
+                          </Text>
+                          <Text
+                            style={{
+                              color: "rgba(255,255,255,0.6)",
+                              fontSize: 13,
+                              marginBottom: 2,
+                            }}
+                          >
+                            {getPriceDisplay(standard)}
+                          </Text>
+                          <Text
+                            style={{
+                              color: "rgba(255,255,255,0.4)",
+                              fontSize: 12,
+                            }}
+                          >
+                            편차: ±{standard.deviation}%
+                          </Text>
+                        </View>
                       </View>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               )}
             </View>
 
@@ -321,7 +383,7 @@ export const Calculator = () => {
               </Text>
 
               {/* Weight Input */}
-              <View style={{ marginBottom: 20 }}>
+              <View style={{ marginBottom: 24 }}>
                 <Text
                   style={{
                     color: "rgba(255,255,255,0.8)",
@@ -352,38 +414,6 @@ export const Calculator = () => {
                 />
               </View>
 
-              {/* Purity Input */}
-              <View style={{ marginBottom: 24 }}>
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.8)",
-                    fontSize: 14,
-                    fontWeight: "600",
-                    marginBottom: 8,
-                    letterSpacing: 1,
-                  }}
-                >
-                  순도 (%)
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    borderRadius: 16,
-                    color: "white",
-                    fontSize: 16,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                  }}
-                  placeholder="순도를 입력하세요 (예: 99)"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  value={purity}
-                  onChangeText={setPurity}
-                  keyboardType="numeric"
-                />
-              </View>
-
               {/* Buttons */}
               <View style={{ flexDirection: "row", gap: 12 }}>
                 <TouchableOpacity
@@ -397,8 +427,10 @@ export const Calculator = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     flexDirection: "row",
+                    opacity: !weight || !selectedStandard ? 0.5 : 1,
                   }}
                   onPress={calculate}
+                  disabled={!weight || !selectedStandard}
                 >
                   <TrendingUp size={20} color="#22C55E" strokeWidth={2.5} />
                   <Text
@@ -481,7 +513,7 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      금속 종류:
+                      금속 구분:
                     </Text>
                     <Text
                       style={{
@@ -490,7 +522,7 @@ export const Calculator = () => {
                         fontSize: 16,
                       }}
                     >
-                      {result.metalType}
+                      {result.standard.metal_type} {result.standard.category}
                     </Text>
                   </View>
 
@@ -529,7 +561,7 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      순도:
+                      계산 방식:
                     </Text>
                     <Text
                       style={{
@@ -538,7 +570,59 @@ export const Calculator = () => {
                         fontSize: 16,
                       }}
                     >
-                      {result.purity}%
+                      {result.standard.calculation_type === "fixed_price"
+                        ? "고정가격"
+                        : "LME 기반"}
+                    </Text>
+                  </View>
+
+                  {result.standard.calculation_type === "lme_based" && (
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        paddingVertical: 8,
+                      }}
+                    >
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                      >
+                        LME 비율:
+                      </Text>
+                      <Text
+                        style={{
+                          color: "white",
+                          fontWeight: "600",
+                          fontSize: 16,
+                        }}
+                      >
+                        {result.standard.lme_ratio}%
+                      </Text>
+                    </View>
+                  )}
+
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
+                    >
+                      기준 단가:
+                    </Text>
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 16,
+                      }}
+                    >
+                      {result.basePrice.toLocaleString()}원/kg
                     </Text>
                   </View>
 
@@ -553,17 +637,20 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      단가:
+                      가격 범위 (±{result.standard.deviation}%):
                     </Text>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontWeight: "600",
-                        fontSize: 16,
-                      }}
-                    >
-                      {result.pricePerUnit.toLocaleString()}원/kg
-                    </Text>
+                    <View style={{ alignItems: "flex-end" }}>
+                      <Text
+                        style={{
+                          color: "#FCD34D",
+                          fontWeight: "600",
+                          fontSize: 14,
+                        }}
+                      >
+                        {result.priceRange.min.toLocaleString()} ~{" "}
+                        {result.priceRange.max.toLocaleString()}원/kg
+                      </Text>
+                    </View>
                   </View>
 
                   <View
