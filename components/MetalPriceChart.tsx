@@ -1,78 +1,157 @@
-import React from "react";
-import { View, Text, Dimensions, StyleSheet } from "react-native";
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  Dimensions,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { LineChart } from "react-native-chart-kit";
-import { DailyPriceData } from "../data/types/metal-price";
+import {
+  PeriodSelector,
+  ChartPeriod,
+  getPeriodDescription,
+} from "./ui/PeriodSelector";
+import { useChartStats } from "../hooks/lme/useChartStats";
+import {
+  processChartLabels,
+  analyzeLabelOverlap,
+} from "../utils/chartLabelUtils";
 
 interface MetalPriceChartProps {
-  data: DailyPriceData[];
-  chartType: "line" | "bar";
+  metalCode: string;
   metalName: string;
+  chartType?: "line" | "bar";
+  selectedPeriod?: ChartPeriod;
+  onPeriodChange?: (period: ChartPeriod) => void;
 }
 
 const { width } = Dimensions.get("window");
 const chartWidth = width - 120; // 좌우 패딩 60씩 확보 (날짜 잘림 방지)
 
 export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
-  data,
-  chartType,
+  metalCode,
   metalName,
+  chartType = "line",
+  selectedPeriod: externalSelectedPeriod,
+  onPeriodChange: externalOnPeriodChange,
 }) => {
-  // 날짜 포맷팅 (간격 조정으로 겹침 방지)
-  const formatDate = (
-    dateString: string,
-    index: number,
-    totalLength: number
-  ) => {
-    const date = new Date(dateString);
-    // 데이터 길이에 따라 적응적 간격 설정 (더 넓은 간격으로 조정)
-    let interval = 4;
-    if (totalLength > 30) interval = 8;
-    else if (totalLength > 20) interval = 6;
-    else if (totalLength > 15) interval = 5;
+  // 내부 상태 또는 외부 상태 사용
+  const [internalSelectedPeriod, setInternalSelectedPeriod] =
+    useState<ChartPeriod>("daily");
+  const selectedPeriod = externalSelectedPeriod || internalSelectedPeriod;
+  const setSelectedPeriod = externalOnPeriodChange || setInternalSelectedPeriod;
 
-    // 마지막 바로 전 날짜는 제거 (겹침 방지)
-    if (index === totalLength - 2) {
-      return "";
-    }
+  console.log("🔍 MetalPriceChart 렌더링:", {
+    metalCode,
+    metalName,
+    selectedPeriod,
+  });
 
-    // 첫 번째, 마지막, 간격에 맞는 날짜만 표시
-    if (index !== 0 && index !== totalLength - 1 && index % interval !== 0) {
-      return ""; // 간격에 맞지 않으면 빈 문자열
-    }
+  // 차트 통계 데이터 조회
+  const {
+    data: chartData,
+    isLoading,
+    error,
+    isSuccess,
+  } = useChartStats(metalCode, selectedPeriod);
 
-    // 마지막 날짜는 더 짧게 표시
-    if (index === totalLength - 1) {
-      return `${date.getMonth() + 1}/${date.getDate()}`;
-    }
+  console.log("📊 차트 데이터 상태:", {
+    hasData: !!chartData,
+    dataLength: chartData?.length || 0,
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    cacheVersion: "v2", // 캐시 버전 확인용
+  });
 
-    return `${date.getMonth() + 1}/${date.getDate()}`;
+  // 라벨 겹침 분석 (개발 모드에서만)
+  if (chartData && chartData.length > 0 && __DEV__) {
+    const rawLabels = chartData.map((item) => item.period_label);
+    const analysis = analyzeLabelOverlap(rawLabels, selectedPeriod, chartWidth);
+
+    console.log("🔍 라벨 겹침 분석:", {
+      기간: selectedPeriod,
+      사용가능너비: analysis.availableWidth,
+      필요너비: analysis.requiredWidth,
+      겹침비율: `${(analysis.overlapRatio * 100).toFixed(1)}%`,
+      권장라벨수: analysis.recommendedLabelCount,
+      현재라벨수: analysis.currentLabelCount,
+      겹침여부: analysis.overlapRatio > 1 ? "⚠️ 겹침" : "✅ 정상",
+    });
+  }
+
+  // 고급 라벨 처리 (겹침 방지 및 반응형)
+  const processLabels = (rawLabels: string[]) => {
+    // 새로운 스마트 라벨 처리 시스템 사용
+    const { labels, config } = processChartLabels(
+      rawLabels,
+      selectedPeriod,
+      chartWidth
+    );
+
+    console.log("📊 라벨 처리 결과:", {
+      원본라벨수: rawLabels.length,
+      처리된라벨수: labels.filter((l) => l).length,
+      화면너비: chartWidth,
+      기간: selectedPeriod,
+      설정: config,
+    });
+
+    return { labels, config };
   };
 
-  // 메인 가격 차트 데이터 (CASH 가격만)
-  const mainPriceData = {
-    labels: data.map((item, index) =>
-      formatDate(item.date, index, data.length)
-    ),
-    datasets: [
-      {
-        data: data.map((item) => item.cashPrice),
-        color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`, // 노란색 (시세 화면과 일치)
-        strokeWidth: 4,
-      },
-    ],
+  // 차트 데이터 준비
+  const prepareChartData = () => {
+    if (!chartData || chartData.length === 0) {
+      return {
+        labels: [],
+        datasets: [
+          {
+            data: [],
+            color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`,
+            strokeWidth: 4,
+          },
+        ],
+      };
+    }
+
+    const rawLabels = chartData.map((item) => item.period_label);
+    const prices = chartData.map((item) => item.avg_price);
+
+    // 스마트 라벨 처리
+    const { labels, config } = processLabels(rawLabels);
+
+    return {
+      labels,
+      datasets: [
+        {
+          data: prices,
+          color: (opacity = 1) => `rgba(255, 193, 7, ${opacity})`, // 노란색 (시세 화면과 일치)
+          strokeWidth: 4,
+        },
+      ],
+      labelConfig: config, // 라벨 설정 정보 추가
+    };
   };
+
+  const mainPriceData = prepareChartData();
 
   // Y축 범위 계산 (실제 최저가/최고가 사용)
   const calculateYAxisRange = () => {
-    const prices = data.map((item) => item.cashPrice);
+    if (!chartData || chartData.length === 0) {
+      return { min: 0, max: 100 };
+    }
+
+    const prices = chartData.map((item) => item.avg_price);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
 
-    console.log(`📊 ${metalName} 차트 가격 범위:`, {
+    console.log(`📊 ${metalName} 차트 가격 범위 (${selectedPeriod}):`, {
       최저가: `${minPrice.toLocaleString("ko-KR")}원/KG`,
       최고가: `${maxPrice.toLocaleString("ko-KR")}원/KG`,
       데이터개수: prices.length,
-      전체가격: prices.slice(0, 5).map((p) => `${p.toLocaleString("ko-KR")}원`),
+      기간: selectedPeriod,
     });
 
     return {
@@ -94,57 +173,195 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
     return numValue.toLocaleString("ko-KR");
   };
 
-  // 다크 테마 차트 설정
-  const darkChartConfig = {
-    backgroundColor: "transparent",
-    backgroundGradientFrom: "transparent",
-    backgroundGradientTo: "transparent",
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.7})`,
-    formatYLabel: formatYLabel, // Y축 값 포맷팅 함수 추가
-    yAxisInterval: 1, // Y축 간격 설정
-    fromZero: false, // 0부터 시작하지 않음
-    yAxisSuffix: "", // Y축 접미사 제거
-    yLabelsOffset: 0, // Y축 라벨 오프셋
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: "4",
-      strokeWidth: "2",
-      stroke: "#FFC107", // 노란색
-      fill: "#FFC107",
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: "",
-      stroke: "rgba(255, 255, 255, 0.1)",
-      strokeWidth: 1,
-    },
-    // 라벨이 잘리지 않도록 패딩 설정
-    paddingLeft: 30,
-    paddingRight: 50, // 우측 패딩으로 날짜 잘림 방지
-    paddingTop: 20,
-    paddingBottom: 15,
+  // 동적 차트 설정 (라벨 설정에 따라 조정)
+  const getDynamicChartConfig = () => {
+    const labelConfig = mainPriceData.labelConfig || { fontSize: 12 };
+
+    return {
+      backgroundColor: "transparent",
+      backgroundGradientFrom: "transparent",
+      backgroundGradientTo: "transparent",
+      decimalPlaces: 0,
+      color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+      labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity * 0.7})`,
+      formatYLabel: formatYLabel,
+      yAxisInterval: 1,
+      fromZero: false,
+      yAxisSuffix: "",
+      yLabelsOffset: 0,
+      style: {
+        borderRadius: 16,
+      },
+      propsForDots: {
+        r: "2",
+        strokeWidth: "1",
+        stroke: "#FFC107",
+        fill: "#FFC107",
+      },
+      propsForBackgroundLines: {
+        strokeDasharray: "",
+        stroke: "rgba(255, 255, 255, 0.1)",
+        strokeWidth: 1,
+      },
+      // 동적 패딩 및 폰트 크기 조정
+      paddingLeft: 30,
+      paddingRight: selectedPeriod === "monthly" ? 60 : 50, // 월별은 더 넓은 패딩
+      paddingTop: 20,
+      paddingBottom: labelConfig.fontSize < 12 ? 12 : 15, // 작은 폰트는 패딩 줄임
+
+      // X축 라벨 설정
+      propsForLabels: {
+        fontSize: labelConfig.fontSize,
+        fontFamily: "System", // 시스템 폰트 사용
+      },
+    };
   };
 
-  // 메인 가격 차트 (CASH 가격만) - 상위 컨테이너 제거
+  // 로딩 상태 처리
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>가격 추이 차트</Text>
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          disabled={true}
+        />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FFC107" />
+          <Text style={styles.loadingText}>차트 데이터 로딩 중...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // 에러 상태 처리
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>가격 추이 차트</Text>
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+          disabled={true}
+        />
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>차트 데이터를 불러올 수 없습니다</Text>
+          <Text style={styles.errorSubText}>네트워크 연결을 확인해주세요</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // 데이터가 없는 경우
+  if (!chartData || chartData.length === 0) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.title}>가격 추이 차트</Text>
+        <PeriodSelector
+          selectedPeriod={selectedPeriod}
+          onPeriodChange={setSelectedPeriod}
+        />
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>표시할 데이터가 없습니다</Text>
+          <Text style={styles.noDataSubText}>
+            {getPeriodDescription(selectedPeriod)}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // 메인 차트 렌더링
   return (
-    <LineChart
-      data={mainPriceData}
-      width={chartWidth}
-      height={220}
-      chartConfig={darkChartConfig}
-      bezier
-      withHorizontalLabels={true}
-      withVerticalLabels={true}
-      withInnerLines={true}
-      withOuterLines={false}
-      verticalLabelRotation={0}
-      horizontalLabelRotation={0}
-      withVerticalLines={false}
-    />
+    <View style={styles.container}>
+      <Text style={styles.title}>가격 추이 차트</Text>
+
+      <PeriodSelector
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+      />
+
+      {mainPriceData.datasets[0].data.length > 0 ? (
+        <LineChart
+          data={mainPriceData}
+          width={chartWidth}
+          height={220}
+          chartConfig={getDynamicChartConfig()}
+          bezier
+          withHorizontalLabels={true}
+          withVerticalLabels={true}
+          withInnerLines={true}
+          withOuterLines={false}
+          verticalLabelRotation={0}
+          horizontalLabelRotation={0}
+          withVerticalLines={false}
+        />
+      ) : (
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>차트 데이터를 준비 중입니다</Text>
+          <Text style={styles.noDataSubText}>
+            {selectedPeriod} 데이터를 불러오는 중...
+          </Text>
+        </View>
+      )}
+    </View>
   );
 };
 
-// 스타일 제거 (더 이상 사용하지 않음)
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  title: {
+    color: "#FCD34D",
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 220,
+  },
+  loadingText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 14,
+    marginTop: 12,
+  },
+  errorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 220,
+  },
+  errorText: {
+    color: "#ff6b6b",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  errorSubText: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 12,
+  },
+  noDataContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 220,
+  },
+  noDataText: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  noDataSubText: {
+    color: "rgba(255, 255, 255, 0.5)",
+    fontSize: 12,
+    textAlign: "center",
+  },
+});

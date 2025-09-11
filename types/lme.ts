@@ -59,3 +59,18 @@ export interface LmeError {
   message: string;
   details?: any;
 }
+
+// 차트 통계 데이터 인터페이스
+export interface ChartStatsData {
+  period_start: string;
+  period_label: string;
+  avg_price: number;
+  min_price: number;
+  max_price: number;
+  change_percent: number;
+  change_type: "positive" | "negative" | "unchanged";
+  data_points: number;
+}
+
+// 차트 기간 타입
+export type ChartPeriod = "daily" | "weekly" | "monthly";

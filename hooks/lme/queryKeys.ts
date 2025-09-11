@@ -31,6 +31,10 @@ export const lmeKeys = {
   analytics: () => [...lmeKeys.all, "analytics"] as const,
   priceStats: (period: string) =>
     [...lmeKeys.analytics(), "stats", period] as const,
+
+  // 차트 통계 관련 쿼리 (v2: 30개 데이터 지원)
+  chartStats: (metalCode: string, period: string, limit = 30) =>
+    [...lmeKeys.metal(metalCode), "chart-stats", "v2", period, limit] as const,
 } as const;
 
 // 쿼리 키 타입 추출 (타입 안전성 확보)
@@ -49,4 +53,10 @@ export const lmeQueryUtils = {
 
   // 상태 데이터만 무효화
   invalidateStatus: () => lmeKeys.status(),
+
+  // 차트 통계 데이터 무효화 (v2 포함)
+  invalidateChartStats: (metalCode: string) => [
+    ...lmeKeys.metal(metalCode),
+    "chart-stats",
+  ],
 } as const;

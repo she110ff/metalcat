@@ -30,6 +30,9 @@ import { Text as UIText } from "@/components/ui/text";
 import { MetalDetailData, DailyPriceData } from "../data/types/metal-price";
 import { MetalPriceChart } from "./MetalPriceChart";
 import { formatMetalPrice } from "@/data/utils/metal-price-utils";
+import { getMetalCode } from "../hooks/lme/api";
+import { ChartPeriod } from "./ui/PeriodSelector";
+import { useChartStats } from "../hooks/lme/useChartStats";
 
 // 금속별 아이콘 매핑 (MetalPriceCard와 동일)
 const getMetalIcon = (metalName: string) => {
@@ -82,6 +85,9 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   error = null,
   isRealtimeData = false,
 }) => {
+  // 차트 기간 상태 (차트와 데이터 테이블 동기화용)
+  const [selectedPeriod, setSelectedPeriod] = useState<ChartPeriod>("daily");
+
   console.log("🔍 MetalDetailScreen 렌더링 시작", {
     metalName: data?.metalName,
     hasData: !!data,
@@ -89,14 +95,21 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
     isLoading,
     hasError: !!error,
     isRealtimeData,
+    selectedPeriod,
   });
 
   const IconComponent = getMetalIcon(data.metalName);
   const metalColorClass = getMetalColorClass(data.metalName);
 
+  // 차트 데이터 조회 (선택된 기간에 따라)
+  const metalCode = getMetalCode(data.metalName);
+  const { data: chartData } = useChartStats(metalCode, selectedPeriod);
+
   console.log("📋 MetalDetailScreen 아이콘/색상 설정", {
     IconComponent: IconComponent?.name,
     metalColorClass,
+    metalCode,
+    chartDataLength: chartData?.length || 0,
   });
 
   // 로딩 상태 처리
@@ -447,21 +460,213 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
   };
 
   const renderPriceChart = () => {
-    console.log("📉 renderPriceChart 호출됨");
+    console.log("📉 renderPriceChart 호출됨", { selectedPeriod });
+    const metalCode = getMetalCode(data.metalName);
+
     return (
-      <Box className="rounded-2xl p-6 mb-6 bg-white/4 border border-white/8 shadow-lg animate-slide-up">
-        <UIText className="text-yellow-300 text-xl font-black tracking-[2px] uppercase mb-4 font-nanum-bold">
-          가격 추이
-        </UIText>
-        <MetalPriceChart
-          data={data.dailyData.map((item) => ({
-            ...item,
-            cashPrice: convertUsdPerTonToKrwPerKg(item.cashPrice),
-          }))}
-          chartType="line"
-          metalName={data.metalName}
-        />
-      </Box>
+      <MetalPriceChart
+        metalCode={metalCode}
+        metalName={data.metalName}
+        chartType="line"
+        selectedPeriod={selectedPeriod}
+        onPeriodChange={setSelectedPeriod}
+      />
+    );
+  };
+
+  // 동적 가격 데이터 테이블 렌더링
+  const renderDynamicPriceTable = () => {
+    console.log("📊 renderDynamicPriceTable 호출됨", {
+      selectedPeriod,
+      chartDataLength: chartData?.length,
+    });
+
+    // 기간별 제목 설정
+    const getPeriodTitle = () => {
+      switch (selectedPeriod) {
+        case "daily":
+          return "일별 가격 데이터";
+        case "weekly":
+          return "주별 가격 데이터";
+        case "monthly":
+          return "월별 가격 데이터";
+        default:
+          return "가격 데이터";
+      }
+    };
+
+    // 기간별 데이터 소스 결정
+    const getDataSource = () => {
+      if (selectedPeriod === "daily") {
+        // 일별은 기존 dailyData 사용 (최신 30개)
+        return data.dailyData?.slice().reverse().slice(0, 30) || [];
+      } else {
+        // 주별/월별은 차트 데이터 사용
+        return chartData?.slice().reverse() || [];
+      }
+    };
+
+    const dataSource = getDataSource();
+    const periodTitle = getPeriodTitle();
+
+    return (
+      <View
+        style={{
+          backgroundColor: "rgba(255, 255, 255, 0.04)",
+          borderRadius: 16,
+          padding: 24,
+          borderWidth: 1,
+          borderColor: "rgba(255, 255, 255, 0.08)",
+          marginTop: 16,
+        }}
+      >
+        <Text
+          style={{
+            color: "#FCD34D",
+            fontSize: 20,
+            fontWeight: "bold",
+            marginBottom: 16,
+          }}
+        >
+          {periodTitle}
+        </Text>
+        <Text style={{ color: "white", fontSize: 14, marginBottom: 12 }}>
+          총 {dataSource.length}개 데이터 (
+          {selectedPeriod === "daily"
+            ? "최근 30일간"
+            : selectedPeriod === "weekly"
+            ? "최근 30주간"
+            : "최근 30개월간"}
+          )
+        </Text>
+
+        {/* 테이블 헤더 */}
+        <View
+          style={{
+            flexDirection: "row",
+            paddingVertical: 8,
+            borderBottomWidth: 1,
+            borderBottomColor: "rgba(255,255,255,0.1)",
+            marginBottom: 8,
+          }}
+        >
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 12,
+              flex: 1,
+            }}
+          >
+            {selectedPeriod === "daily"
+              ? "날짜"
+              : selectedPeriod === "weekly"
+              ? "주"
+              : "월"}
+          </Text>
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 12,
+              flex: 1,
+              textAlign: "center",
+            }}
+          >
+            {selectedPeriod === "daily" ? "CASH (원/KG)" : "평균가 (원/KG)"}
+          </Text>
+          <Text
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: 12,
+              flex: 1,
+              textAlign: "center",
+            }}
+          >
+            변동률
+          </Text>
+        </View>
+
+        {/* 데이터 행들 */}
+        {dataSource.map((item, index) => {
+          // 일별 데이터와 차트 데이터 구조 통합 처리
+          const isDaily = selectedPeriod === "daily";
+          const date = isDaily
+            ? (item as any).date
+            : (item as any).period_start;
+          const price = isDaily
+            ? (item as any).cashPrice
+            : (item as any).avg_price;
+          const changePercent = isDaily
+            ? (item as any).changePercent
+            : (item as any).change_percent;
+          const changeType = isDaily
+            ? (item as any).changeType
+            : (item as any).change_type;
+
+          const ChangeIconComponent = getChangeIcon(changeType);
+
+          return (
+            <View
+              key={index}
+              style={{
+                flexDirection: "row",
+                paddingVertical: 8,
+                borderBottomWidth: index < dataSource.length - 1 ? 1 : 0,
+                borderBottomColor: "rgba(255,255,255,0.05)",
+              }}
+            >
+              <Text
+                style={{
+                  color: "rgba(255,255,255,0.8)",
+                  fontSize: 12,
+                  flex: 1,
+                }}
+              >
+                {isDaily ? formatDate(date) : (item as any).period_label}
+              </Text>
+              <Text
+                style={{
+                  color: "white",
+                  fontSize: 12,
+                  fontWeight: "bold",
+                  flex: 1,
+                  textAlign: "center",
+                }}
+              >
+                ₩
+                {isDaily
+                  ? formatCashPrice(price)
+                  : Math.round(price).toLocaleString("ko-KR")}
+              </Text>
+
+              <View
+                style={{
+                  flex: 1,
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  alignItems: "center",
+                }}
+              >
+                <ChangeIconComponent
+                  size={10}
+                  color={changeType === "positive" ? "#22C55E" : "#EF4444"}
+                  strokeWidth={2}
+                />
+                <Text
+                  style={{
+                    color: changeType === "positive" ? "#22C55E" : "#EF4444",
+                    fontSize: 12,
+                    fontWeight: "bold",
+                    marginLeft: 4,
+                  }}
+                >
+                  {changePercent > 0 ? "+" : ""}
+                  {changePercent.toFixed(2)}%
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
     );
   };
 
@@ -584,257 +789,11 @@ export const MetalDetailScreen: React.FC<MetalDetailScreenProps> = ({
           contentContainerStyle={{ paddingTop: 24, paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.04)",
-              borderRadius: 16,
-              padding: 24,
-              marginBottom: 24,
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.08)",
-            }}
-          >
-            <Text
-              style={{
-                color: "white",
-                fontSize: 20,
-                fontWeight: "bold",
-                marginBottom: 16,
-              }}
-            >
-              통계 분석
-            </Text>
+          {/* 가격 추이 차트 */}
+          {renderPriceChart()}
 
-            <View style={{ flexDirection: "row", marginBottom: 16 }}>
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.02)",
-                  borderRadius: 12,
-                  padding: 16,
-                  marginRight: 8,
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
-              >
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: 12,
-                    marginBottom: 8,
-                  }}
-                >
-                  최고가
-                </Text>
-                <Text
-                  style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
-                >
-                  ₩{formatPriceInKrw(data.statistics.highestPrice)}
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  flex: 1,
-                  backgroundColor: "rgba(255, 255, 255, 0.02)",
-                  borderRadius: 12,
-                  padding: 16,
-                  marginLeft: 8,
-                  borderWidth: 1,
-                  borderColor: "rgba(255, 255, 255, 0.05)",
-                }}
-              >
-                <Text
-                  style={{
-                    color: "rgba(255,255,255,0.6)",
-                    fontSize: 12,
-                    marginBottom: 8,
-                  }}
-                >
-                  최저가
-                </Text>
-                <Text
-                  style={{ color: "white", fontSize: 18, fontWeight: "bold" }}
-                >
-                  ₩{formatPriceInKrw(data.statistics.lowestPrice)}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.04)",
-              borderRadius: 16,
-              padding: 24,
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.08)",
-            }}
-          >
-            <Text
-              style={{
-                color: "#FCD34D",
-                fontSize: 20,
-                fontWeight: "bold",
-                marginBottom: 16,
-              }}
-            >
-              가격 추이 차트
-            </Text>
-
-            {/* 차트 컴포넌트 추가 */}
-            <MetalPriceChart
-              data={data.dailyData.map((item) => ({
-                ...item,
-                cashPrice:
-                  data.unit === "원/KG"
-                    ? item.cashPrice
-                    : convertUsdPerTonToKrwPerKg(item.cashPrice),
-              }))}
-              chartType="line"
-              metalName={data.metalName}
-            />
-          </View>
-
-          {/* 일별 데이터 테이블 */}
-          <View
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.04)",
-              borderRadius: 16,
-              padding: 24,
-              borderWidth: 1,
-              borderColor: "rgba(255, 255, 255, 0.08)",
-              marginTop: 16,
-            }}
-          >
-            <Text
-              style={{
-                color: "#FCD34D",
-                fontSize: 20,
-                fontWeight: "bold",
-                marginBottom: 16,
-              }}
-            >
-              일별 가격 데이터
-            </Text>
-            <Text style={{ color: "white", fontSize: 14, marginBottom: 12 }}>
-              총 {data.dailyData?.length || 0}일 데이터
-            </Text>
-
-            {/* 테이블 헤더 */}
-            <View
-              style={{
-                flexDirection: "row",
-                paddingVertical: 8,
-                borderBottomWidth: 1,
-                borderBottomColor: "rgba(255,255,255,0.1)",
-                marginBottom: 8,
-              }}
-            >
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontSize: 12,
-                  flex: 1,
-                }}
-              >
-                날짜
-              </Text>
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontSize: 12,
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                CASH (원/KG)
-              </Text>
-
-              <Text
-                style={{
-                  color: "rgba(255,255,255,0.6)",
-                  fontSize: 12,
-                  flex: 1,
-                  textAlign: "center",
-                }}
-              >
-                변동률
-              </Text>
-            </View>
-
-            {/* 데이터 행들 */}
-            {data.dailyData
-              ?.slice()
-              .reverse()
-              .map((item, index) => {
-                const ChangeIconComponent = getChangeIcon(item.changeType);
-                return (
-                  <View
-                    key={index}
-                    style={{
-                      flexDirection: "row",
-                      paddingVertical: 8,
-                      borderBottomWidth:
-                        index < data.dailyData.length - 1 ? 1 : 0,
-                      borderBottomColor: "rgba(255,255,255,0.05)",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: "rgba(255,255,255,0.8)",
-                        fontSize: 12,
-                        flex: 1,
-                      }}
-                    >
-                      {formatDate(item.date)}
-                    </Text>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        flex: 1,
-                        textAlign: "center",
-                      }}
-                    >
-                      ₩{formatCashPrice(item.cashPrice)}
-                    </Text>
-
-                    <View
-                      style={{
-                        flex: 1,
-                        flexDirection: "row",
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <ChangeIconComponent
-                        size={10}
-                        color={
-                          item.changeType === "positive" ? "#22C55E" : "#EF4444"
-                        }
-                        strokeWidth={2}
-                      />
-                      <Text
-                        style={{
-                          color:
-                            item.changeType === "positive"
-                              ? "#22C55E"
-                              : "#EF4444",
-                          fontSize: 12,
-                          fontWeight: "bold",
-                          marginLeft: 4,
-                        }}
-                      >
-                        {item.changePercent > 0 ? "+" : ""}
-                        {item.changePercent.toFixed(2)}%
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-          </View>
+          {/* 동적 가격 데이터 테이블 */}
+          {renderDynamicPriceTable()}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
