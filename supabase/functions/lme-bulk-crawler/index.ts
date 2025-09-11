@@ -247,6 +247,16 @@ Deno.serve(async (req) => {
     const maxPages = parseInt(
       requestBody.maxPages?.toString() || url.searchParams.get("pages") || "10"
     );
+    const startPage = parseInt(
+      requestBody.startPage?.toString() ||
+        url.searchParams.get("startPage") ||
+        "1"
+    );
+    const endPage = parseInt(
+      requestBody.endPage?.toString() ||
+        url.searchParams.get("endPage") ||
+        maxPages.toString()
+    );
 
     // Supabase 클라이언트 생성
     const supabaseUrl = Deno.env.get("EXPO_PUBLIC_SUPABASE_URL");
@@ -265,12 +275,15 @@ Deno.serve(async (req) => {
     const startTime = Date.now();
     const now = new Date().toISOString();
 
+    // 실제 크롤링할 페이지 수 계산
+    const actualPages = endPage - startPage + 1;
+
     // 크롤링 로그 시작
     const { data: logData, error: logError } = await supabase
       .from("crawling_logs")
       .insert({
         status: "running",
-        total_metals_attempted: maxPages * 6,
+        total_metals_attempted: actualPages * 6,
         successful_extractions: 0,
         failed_extractions: 0,
         started_at: now,
@@ -297,9 +310,11 @@ Deno.serve(async (req) => {
       const allLmeData: LmeData[] = [];
       const crawlResults: CrawlResult[] = [];
 
-      console.log(`🚀 ${maxPages}페이지 크롤링 시작...`);
+      console.log(
+        `🚀 ${startPage}-${endPage}페이지 크롤링 시작... (총 ${actualPages}페이지)`
+      );
 
-      for (let page = 1; page <= maxPages; page++) {
+      for (let page = startPage; page <= endPage; page++) {
         try {
           const result = await crawlSinglePage(page, exchangeRate);
 
@@ -333,7 +348,7 @@ Deno.serve(async (req) => {
         }
 
         // 페이지 간 딜레이 (서버 부하 방지)
-        if (page < maxPages) {
+        if (page < endPage) {
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
       }
@@ -396,7 +411,7 @@ Deno.serve(async (req) => {
         JSON.stringify(
           {
             success: true,
-            message: `✅ ${
+            message: `✅ ${startPage}-${endPage}페이지 중 ${
               crawlResults.filter((r) => r.success).length
             }페이지 크롤링 성공!`,
             data: {
@@ -440,7 +455,7 @@ Deno.serve(async (req) => {
             crawlError instanceof Error
               ? crawlError.message
               : "알 수 없는 오류",
-          failed_extractions: maxPages * 6,
+          failed_extractions: actualPages * 6,
         })
         .eq("id", logId);
 
