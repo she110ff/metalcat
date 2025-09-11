@@ -37,8 +37,8 @@ export function formatChartDate(
         .padStart(2, "0")}/${weekStart.getDate().toString().padStart(2, "0")}`;
 
     case "monthly":
-      // 월별: YYYY/MM 형식
-      return `${date.getFullYear()}/${(date.getMonth() + 1)
+      // 월별: YY/MM 형식 (2023/04 -> 23/04)
+      return `${date.getFullYear().toString().slice(-2)}/${(date.getMonth() + 1)
         .toString()
         .padStart(2, "0")}`;
 

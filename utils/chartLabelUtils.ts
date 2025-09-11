@@ -21,7 +21,7 @@ const LABEL_WIDTH_MAP = {
  */
 const CHART_CONFIG = {
   paddingLeft: 30,
-  paddingRight: 50,
+  paddingRight: 90, // 우측 여백 증가 (날짜 잘림 방지, 데이터 영역은 유지)
   minLabelSpacing: 8, // 라벨 간 최소 간격
   fontSize: 12,
 } as const;
@@ -115,6 +115,12 @@ export function optimizeLabelFormat(
   period: ChartPeriod,
   isCompact: boolean = false
 ): string {
+  // 월별 데이터의 경우 YYYY/MM 형식을 YY/MM로 변환
+  if (period === "monthly" && dateString.match(/^\d{4}\/\d{2}$/)) {
+    const [year, month] = dateString.split("/");
+    return `${year.slice(-2)}/${month}`;
+  }
+
   const date = new Date(dateString);
 
   if (isNaN(date.getTime())) {
@@ -199,11 +205,22 @@ export function processChartLabels(
   const optimalLabels = selectOptimalLabels(rawLabels, period, chartWidth);
 
   // 라벨 포맷 최적화
-  const processedLabels = optimalLabels.map((label) =>
-    label
-      ? optimizeLabelFormat(label, period, responsiveConfig.useCompactFormat)
-      : ""
-  );
+  const processedLabels = optimalLabels.map((label, index) => {
+    if (!label) return "";
+
+    const formattedLabel = optimizeLabelFormat(
+      label,
+      period,
+      responsiveConfig.useCompactFormat
+    );
+
+    // 마지막 라벨에 공백 4칸 추가 (잘림 방지)
+    if (index === optimalLabels.length - 1 && formattedLabel) {
+      return formattedLabel + "      "; // 공백 4칸 추가
+    }
+
+    return formattedLabel;
+  });
 
   return {
     labels: processedLabels,

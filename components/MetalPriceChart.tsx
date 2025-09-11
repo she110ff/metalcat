@@ -205,7 +205,7 @@ export const MetalPriceChart: React.FC<MetalPriceChartProps> = ({
       },
       // 동적 패딩 및 폰트 크기 조정
       paddingLeft: 30,
-      paddingRight: selectedPeriod === "monthly" ? 60 : 50, // 월별은 더 넓은 패딩
+      paddingRight: selectedPeriod === "monthly" ? 100 : 90, // 우측 여백만 증가하여 날짜 잘림 방지
       paddingTop: 20,
       paddingBottom: labelConfig.fontSize < 12 ? 12 : 15, // 작은 폰트는 패딩 줄임
 
