@@ -196,6 +196,13 @@ export type AuctionFormData =
 
 // ===== 경매 아이템 타입 =====
 
+// 승인 상태 타입
+export type ApprovalStatus =
+  | "pending_approval" // 관리자 승인 대기
+  | "approved" // 승인됨 (일반 공개)
+  | "hidden" // 히든 경매
+  | "rejected"; // 거부됨
+
 // 고철 경매 아이템
 export interface ScrapAuctionItem {
   id: string;
@@ -222,6 +229,7 @@ export interface ScrapAuctionItem {
   userId: string;
   sellerName?: string;
   sellerPhone?: string;
+  approvalStatus: ApprovalStatus;
 }
 
 // 중고 기계 경매 아이템
@@ -254,6 +262,7 @@ export interface MachineryAuctionItem {
   userId: string;
   sellerName?: string;
   sellerPhone?: string;
+  approvalStatus: ApprovalStatus;
 }
 
 // 중고 자재 경매 아이템
@@ -282,6 +291,7 @@ export interface MaterialAuctionItem {
   userId: string;
   sellerName?: string;
   sellerPhone?: string;
+  approvalStatus: ApprovalStatus;
 }
 
 // 철거 경매 아이템
@@ -308,6 +318,7 @@ export interface DemolitionAuctionItem {
   userId: string;
   sellerName?: string;
   sellerPhone?: string;
+  approvalStatus: ApprovalStatus;
 }
 
 // 경매 아이템 통합 타입

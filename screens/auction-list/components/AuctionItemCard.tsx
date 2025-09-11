@@ -5,19 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAuctionResult } from "@/hooks/useAuctions";
 
 import { formatAuctionPrice } from "@/data";
+import { AuctionItem } from "@/data/types/auction";
+import {
+  adaptAuctionItemForUI,
+  LegacyAuctionItemFormat,
+} from "@/utils/auctionItemAdapter";
 
 interface AuctionItemProps {
-  item: {
-    id: string;
-    title: string;
-    metalType: string;
-    weight: string;
-    currentBid: string;
-    endTime: string;
-    status: "active" | "ending" | "ended";
-    bidders: number;
-    address?: string;
-  };
+  item: AuctionItem;
   onPress: (id: string) => void;
 }
 
@@ -28,12 +23,15 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
   const { user } = useAuth();
   const { data: result } = useAuctionResult(item.id);
 
+  // AuctionItem을 기존 UI 형태로 변환
+  const adaptedItem = adaptAuctionItemForUI(item);
+
   // 현재 사용자가 낙찰자인지 확인
   const isWinner =
     result?.result === "successful" && result?.winningUserId === user?.id;
 
   // 경매가 종료되었는지 확인
-  const isEnded = item.status === "ended";
+  const isEnded = adaptedItem.status === "ended";
 
   return (
     <TouchableOpacity
@@ -76,7 +74,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                   marginBottom: 2,
                 }}
               >
-                {item.title}
+                {adaptedItem.title}
               </Text>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
@@ -89,9 +87,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                     fontSize: 13,
                   }}
                 >
-                  {item.metalType} • {item.weight}
+                  {adaptedItem.metalType} • {adaptedItem.weight}
                 </Text>
-                {item.address && (
+                {adaptedItem.address && (
                   <View
                     style={{
                       flexDirection: "row",
@@ -116,7 +114,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                         fontSize: 12,
                       }}
                     >
-                      {item.address}
+                      {adaptedItem.address}
                     </Text>
                   </View>
                 )}
@@ -130,9 +128,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                 paddingVertical: 4,
                 borderRadius: 12,
                 backgroundColor:
-                  item.status === "active"
+                  adaptedItem.status === "active"
                     ? "rgba(34, 197, 94, 0.2)"
-                    : item.status === "ending"
+                    : adaptedItem.status === "ending"
                     ? "rgba(251, 191, 36, 0.2)"
                     : result?.result === "successful"
                     ? "rgba(34, 197, 94, 0.2)"
@@ -144,9 +142,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
               <Text
                 style={{
                   color:
-                    item.status === "active"
+                    adaptedItem.status === "active"
                       ? "#22C55E"
-                      : item.status === "ending"
+                      : adaptedItem.status === "ending"
                       ? "#FBBF24"
                       : result?.result === "successful"
                       ? "#22C55E"
@@ -157,9 +155,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                   fontWeight: "600",
                 }}
               >
-                {item.status === "active"
+                {adaptedItem.status === "active"
                   ? "진행중"
-                  : item.status === "ending"
+                  : adaptedItem.status === "ending"
                   ? "마감임박"
                   : result?.result === "successful"
                   ? "낙찰"
@@ -203,9 +201,10 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                   marginLeft: 6,
                 }}
               >
-                {item.status === "ended" && result?.result === "successful"
+                {adaptedItem.status === "ended" &&
+                result?.result === "successful"
                   ? formatAuctionPrice(result.winningAmount || 0)
-                  : item.currentBid}
+                  : adaptedItem.currentBid}
               </Text>
             </View>
 
@@ -236,7 +235,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                     marginLeft: 3,
                   }}
                 >
-                  {item.bidders}
+                  {adaptedItem.bidders}
                 </Text>
               </View>
 
@@ -263,7 +262,9 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                     marginLeft: 3,
                   }}
                 >
-                  {item.status === "ended" ? "종료됨" : item.endTime}
+                  {adaptedItem.status === "ended"
+                    ? "종료됨"
+                    : adaptedItem.endTime}
                 </Text>
               </View>
             </View>

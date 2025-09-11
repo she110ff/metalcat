@@ -47,6 +47,7 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
     endTime: new Date(row.end_time),
     bidders: row.bidder_count,
     viewCount: row.view_count,
+    approvalStatus: row.approval_status,
 
     // 공통 필드 (안전하게 변환)
     productType: details.productType,

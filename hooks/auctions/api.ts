@@ -363,6 +363,7 @@ function transformViewRowToAuctionItem(row: any): AuctionItem {
     endTime: new Date(row.end_time),
     bidders: row.bidder_count,
     viewCount: row.view_count,
+    approvalStatus: row.approval_status,
 
     // 공통 필드 (안전하게 변환)
     productType: details.productType,
@@ -497,11 +498,11 @@ export async function getAuctions(filters?: {
     // 새로운 통합 뷰 사용
     let query = supabase.from("auction_list_view").select("*");
 
-    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 승인된/히든 경매만
+    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 모든 경매 (승인 대기 포함)
     if (filters?.userId) {
-      // 로그인한 사용자: 승인된 경매 + 자신의 승인된/히든 경매 (승인 대기/거부 제외)
+      // 로그인한 사용자: 승인된 경매 + 자신의 모든 경매 (승인 대기, 승인됨, 히든 포함, 거부 제외)
       query = query.or(
-        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden))`
+        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden,pending_approval))`
       );
     } else {
       // 비로그인 사용자: 승인된 경매만
@@ -598,11 +599,11 @@ export async function getAuctionsWithPagination(
       .from("auction_list_view")
       .select("*", { count: "exact" });
 
-    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 승인된/히든 경매만
+    // 🔒 승인 상태 필터링: 승인된 경매 + 자신의 모든 경매 (승인 대기 포함)
     if (filters?.userId) {
-      // 로그인한 사용자: 승인된 경매 + 자신의 승인된/히든 경매 (승인 대기/거부 제외)
+      // 로그인한 사용자: 승인된 경매 + 자신의 모든 경매 (승인 대기, 승인됨, 히든 포함, 거부 제외)
       query = query.or(
-        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden))`
+        `approval_status.eq.approved,and(user_id.eq.${filters.userId},approval_status.in.(approved,hidden,pending_approval))`
       );
     } else {
       // 비로그인 사용자: 승인된 경매만

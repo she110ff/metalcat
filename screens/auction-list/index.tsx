@@ -274,49 +274,7 @@ export const AuctionList = () => {
             // 기본 등록일 정렬 (ID 순서로 가정)
             return parseInt(a.id) - parseInt(b.id);
           })
-      : auctionItems.map((auction) => ({
-          id: auction.id,
-          title:
-            (auction as any).auctionCategory === "demolition" &&
-            (auction as any).demolitionInfo?.demolitionTitle
-              ? (auction as any).demolitionInfo.demolitionTitle
-              : (auction as any).title ||
-                (auction as any).productName ||
-                "고철 경매",
-          metalType:
-            (auction as any).auctionCategory === "demolition"
-              ? "철거"
-              : auction.productType?.name || "고철",
-          weight:
-            (auction as any).auctionCategory === "demolition"
-              ? `${
-                  (auction as any)?.demolitionArea &&
-                  (auction as any).demolitionArea > 0
-                    ? (auction as any).demolitionArea.toLocaleString()
-                    : (
-                        auction as any
-                      )?.demolitionInfo?.demolitionArea?.toLocaleString() ||
-                      "미상"
-                } ${
-                  (auction as any)?.areaUnit === "sqm"
-                    ? "㎡"
-                    : (auction as any)?.demolitionInfo?.areaUnit === "sqm"
-                    ? "㎡"
-                    : "평"
-                }`
-              : (auction as any).quantity?.quantity
-              ? `${(auction as any).quantity.quantity}${
-                  (auction as any).auctionCategory === "machinery" ? "대" : "kg"
-                }`
-              : "1건",
-          currentBid: formatAuctionPrice(auction.currentBid || 0),
-          endTime: getCompactRemainingTime(auction.endTime),
-          status: auction.status as "active" | "ending" | "ended",
-          bidders: auction.bidders || 0,
-          address: auction.address?.address
-            ? formatAddressForList(auction.address.address)
-            : undefined,
-        }));
+      : auctionItems;
 
   const auctionTypes = [
     { id: "scrap", name: "비철", IconComponent: Hammer, enabled: true },
