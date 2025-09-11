@@ -21,7 +21,7 @@ const LABEL_WIDTH_MAP = {
  */
 const CHART_CONFIG = {
   paddingLeft: 30,
-  paddingRight: 90, // 우측 여백 증가 (날짜 잘림 방지, 데이터 영역은 유지)
+  paddingRight: 50, // 적절한 우측 여백 (라벨 공백으로 잘림 방지)
   minLabelSpacing: 8, // 라벨 간 최소 간격
   fontSize: 12,
 } as const;
