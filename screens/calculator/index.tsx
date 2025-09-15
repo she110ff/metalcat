@@ -201,19 +201,17 @@ export const Calculator = () => {
   // 계산된 가격 정보 가져오기
   const getCalculatedPrice = (standard: CalculationStandard): string => {
     if (standard.calculation_type === "fixed_price") {
-      // 고정가격 타입: LME 가격 정보가 없어도 고정가격 표시
-      return `고정 ${standard.fixed_price?.toLocaleString()}원/kg`;
+      // 고정가격 타입: 가격만 표시
+      return `${standard.fixed_price?.toLocaleString()}원/kg`;
     } else {
-      // LME 기반 타입: LME 가격 정보 필요
+      // LME 기반 타입: 계산된 가격만 표시
       const lmePrice = metalPrices[standard.lme_type];
       if (!lmePrice) return "가격 정보 없음";
 
       const calculatedPrice = Math.round(
         lmePrice.priceKRW * ((standard.lme_ratio || 0) / 100)
       );
-      return `LME ${
-        standard.lme_ratio
-      }% = ${calculatedPrice.toLocaleString()}원/kg`;
+      return `${calculatedPrice.toLocaleString()}원/kg`;
     }
   };
 
@@ -297,11 +295,11 @@ export const Calculator = () => {
       totalValueType: typeof totalValue,
     });
 
-    // 편차 계산
+    // 편차 계산 (-편차% ~ 기준단가)
     const deviationAmount = basePrice * (selectedStandard.deviation / 100);
     const priceRange = {
       min: basePrice - deviationAmount,
-      max: basePrice + deviationAmount,
+      max: basePrice,
     };
 
     setResult({
@@ -547,17 +545,6 @@ export const Calculator = () => {
                             >
                               {getCalculatedPrice(standard)}
                             </Text>
-                            {standard.lme_type !== "특수금속" && lmePrice && (
-                              <Text
-                                style={{
-                                  color: "rgba(255, 211, 77, 0.8)",
-                                  fontSize: 11,
-                                }}
-                              >
-                                현재 LME: {lmePrice.priceKRW.toLocaleString()}
-                                원/kg
-                              </Text>
-                            )}
                           </View>
                         </View>
                       </TouchableOpacity>
@@ -774,58 +761,6 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      계산 방식:
-                    </Text>
-                    <Text
-                      style={{
-                        color: "white",
-                        fontWeight: "600",
-                        fontSize: 16,
-                      }}
-                    >
-                      {result.standard.calculation_type === "fixed_price"
-                        ? "고정가격"
-                        : "LME 기반"}
-                    </Text>
-                  </View>
-
-                  {result.standard.calculation_type === "lme_based" && (
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        paddingVertical: 8,
-                      }}
-                    >
-                      <Text
-                        style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
-                      >
-                        LME 비율:
-                      </Text>
-                      <Text
-                        style={{
-                          color: "white",
-                          fontWeight: "600",
-                          fontSize: 16,
-                        }}
-                      >
-                        {String(result.standard.lme_ratio)}%
-                      </Text>
-                    </View>
-                  )}
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      paddingVertical: 8,
-                    }}
-                  >
-                    <Text
-                      style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
-                    >
                       기준 단가:
                     </Text>
                     <Text
@@ -853,7 +788,7 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      가격 범위 (±{String(result.standard.deviation)}%):
+                      가격 범위:
                     </Text>
                     <View style={{ alignItems: "flex-end" }}>
                       <Text
