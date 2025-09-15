@@ -44,6 +44,8 @@ import {
   getRemainingTime,
   getCompactRemainingTime,
   getAuctionStatusColor,
+  isFerrousAuction,
+  isNonferrousAuction,
 } from "@/data";
 import { AuctionCategory } from "@/data/types/auction";
 import { ResultBadge } from "@/components/auction/ui/ResultBadge";
@@ -67,7 +69,8 @@ type SortFilter = "createdAt" | "endTime";
 type StatusFilter = "active" | "ended" | "all";
 type AuctionCategoryFilter =
   | "all"
-  | "scrap"
+  | "ferrous"
+  | "nonferrous"
   | "machinery"
   | "materials"
   | "demolition";
@@ -129,12 +132,19 @@ export const AuctionList = () => {
     return selectedStatus !== "all" ? selectedStatus : undefined;
   };
 
+  // 카테고리 필터 매핑 (ferrous/nonferrous는 scrap으로 변환)
+  const getEffectiveCategory = (): AuctionCategory | undefined => {
+    if (selectedCategory === "all") return undefined;
+    if (selectedCategory === "ferrous" || selectedCategory === "nonferrous") {
+      return "scrap";
+    }
+    return selectedCategory as AuctionCategory;
+  };
+
   const filters: AuctionFilters = {
     sortBy: selectedSort,
     ...(getEffectiveStatus() && { status: getEffectiveStatus() }),
-    ...(selectedCategory !== "all" && {
-      category: selectedCategory as AuctionCategory,
-    }),
+    ...(getEffectiveCategory() && { category: getEffectiveCategory() }),
   };
 
   // Infinity Query 사용
@@ -274,7 +284,15 @@ export const AuctionList = () => {
             // 기본 등록일 정렬 (ID 순서로 가정)
             return parseInt(a.id) - parseInt(b.id);
           })
-      : auctionItems;
+      : auctionItems?.filter((item) => {
+          // 고철/비철 필터링 추가
+          if (selectedCategory === "ferrous") {
+            return isFerrousAuction(item);
+          } else if (selectedCategory === "nonferrous") {
+            return isNonferrousAuction(item);
+          }
+          return true;
+        }) || [];
 
   const auctionTypes = [
     { id: "nonferrous", name: "비철", IconComponent: Hammer, enabled: true },
@@ -338,10 +356,16 @@ export const AuctionList = () => {
       description: "모든 종류",
     },
     {
-      id: "scrap" as AuctionCategoryFilter,
+      id: "ferrous" as AuctionCategoryFilter,
       name: "고철",
       IconComponent: Hammer,
       description: "고철 스크랩",
+    },
+    {
+      id: "nonferrous" as AuctionCategoryFilter,
+      name: "비철",
+      IconComponent: Hammer,
+      description: "비철 스크랩",
     },
     {
       id: "machinery" as AuctionCategoryFilter,
