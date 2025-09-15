@@ -7,6 +7,7 @@ import {
   Alert,
   Dimensions,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { LinearGradient } from "expo-linear-gradient";
@@ -20,6 +21,11 @@ import {
 import { useLatestLmePricesCompatible } from "@/hooks/lme";
 import { useCalculationStandardsWithPrices } from "@/hooks/calculator/useCalculationStandards";
 import type { CalculationStandard } from "@/hooks/calculator/useCalculationStandards";
+import {
+  useRelatedAuctionsByMetalType,
+  formatAuctionPrice,
+  getAuctionStatusText,
+} from "@/hooks/calculator/useRelatedAuctions";
 
 interface CalculationResult {
   standard: CalculationStandard;
@@ -56,6 +62,10 @@ export const Calculator = () => {
   const { data: calculationStandards, isLoading: isStandardsLoading } =
     useCalculationStandardsWithPrices();
 
+  // 관련 경매 목록 조회 (선택된 계산 기준의 metal_type 기준)
+  const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
+    useRelatedAuctionsByMetalType(selectedStandard?.metal_type || "");
+
   // 금속 가격 데이터 (실시간 LME 데이터 또는 기본값)
   const getMetalPrices = () => {
     if (realTimeLmeData && realTimeLmeData.length > 0) {
@@ -86,6 +96,7 @@ export const Calculator = () => {
       납: { price: 2.16, unit: "원/kg", priceKRW: 2808 },
       주석: { price: 35.15, unit: "원/kg", priceKRW: 45695 },
       니켈: { price: 15.91, unit: "원/kg", priceKRW: 20683 },
+      특수금속: { price: 25.0, unit: "원/kg", priceKRW: 32500 }, // 특수금속 기본가
     };
   };
 
@@ -103,8 +114,8 @@ export const Calculator = () => {
       // 고정가격 타입: fixed_price 사용
       basePrice = selectedStandard.fixed_price || 0;
     } else {
-      // LME 기반 타입: LME 시세 × LME 비율
-      const metalPrice = metalPrices[selectedStandard.metal_type];
+      // LME 기반 타입: LME 시세 × LME 비율 (lme_type 기준으로 가격 조회)
+      const metalPrice = metalPrices[selectedStandard.lme_type];
       if (!metalPrice) return;
 
       const lmeRatio = selectedStandard.lme_ratio || 100;
@@ -142,20 +153,22 @@ export const Calculator = () => {
     setShowStandardPicker(false);
   };
 
-  // LME 가격 정보를 포함한 가격 표시 함수
+  // LME 가격 정보를 포함한 가격 표시 함수 (lme_type 기준)
   const getPriceDisplay = (standard: CalculationStandard) => {
     if (standard.calculation_type === "fixed_price") {
       return `고정가격: ${standard.fixed_price?.toLocaleString()}원/kg`;
     } else {
-      const metalPrice = metalPrices[standard.metal_type];
+      const metalPrice = metalPrices[standard.lme_type];
       if (metalPrice) {
         const calculatedPrice =
           metalPrice.priceKRW * ((standard.lme_ratio || 100) / 100);
-        return `LME 기반: ${calculatedPrice.toLocaleString()}원/kg (${
+        return `${
+          standard.lme_type
+        } LME: ${calculatedPrice.toLocaleString()}원/kg (${
           standard.lme_ratio
         }%)`;
       }
-      return `LME 비율: ${standard.lme_ratio}%`;
+      return `${standard.lme_type} LME 비율: ${standard.lme_ratio}%`;
     }
   };
 
@@ -306,55 +319,98 @@ export const Calculator = () => {
                   }}
                   nestedScrollEnabled={true}
                 >
-                  {calculationStandards.map((standard, index) => (
-                    <TouchableOpacity
-                      key={standard.id}
-                      style={{
-                        padding: 16,
-                        borderBottomWidth:
-                          index !== calculationStandards.length - 1 ? 1 : 0,
-                        borderBottomColor: "rgba(255,255,255,0.05)",
-                      }}
-                      onPress={() => handleStandardSelect(standard)}
-                    >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
-                        }}
-                      >
-                        <View style={{ flex: 1 }}>
-                          <Text
+                  {(() => {
+                    // LME 타입별로 그룹화
+                    const groupedStandards = calculationStandards.reduce(
+                      (acc, standard) => {
+                        const lmeType = standard.lme_type;
+                        if (!acc[lmeType]) {
+                          acc[lmeType] = [];
+                        }
+                        acc[lmeType].push(standard);
+                        return acc;
+                      },
+                      {} as Record<string, CalculationStandard[]>
+                    );
+
+                    return Object.entries(groupedStandards).map(
+                      ([lmeType, standards]) => (
+                        <View key={lmeType}>
+                          {/* LME 타입 헤더 */}
+                          <View
                             style={{
-                              color: "white",
-                              fontSize: 16,
-                              marginBottom: 4,
+                              backgroundColor: "rgba(252, 211, 77, 0.1)",
+                              padding: 12,
+                              borderBottomWidth: 1,
+                              borderBottomColor: "rgba(252, 211, 77, 0.2)",
                             }}
                           >
-                            {standard.metal_type} {standard.category}
-                          </Text>
-                          <Text
-                            style={{
-                              color: "rgba(255,255,255,0.6)",
-                              fontSize: 13,
-                              marginBottom: 2,
-                            }}
-                          >
-                            {getPriceDisplay(standard)}
-                          </Text>
-                          <Text
-                            style={{
-                              color: "rgba(255,255,255,0.4)",
-                              fontSize: 12,
-                            }}
-                          >
-                            편차: ±{standard.deviation}%
-                          </Text>
+                            <Text
+                              style={{
+                                color: "#FCD34D",
+                                fontSize: 14,
+                                fontWeight: "bold",
+                                letterSpacing: 1,
+                              }}
+                            >
+                              {lmeType} LME
+                            </Text>
+                          </View>
+
+                          {/* 해당 LME 타입의 계산 기준들 */}
+                          {standards.map((standard, index) => (
+                            <TouchableOpacity
+                              key={standard.id}
+                              style={{
+                                padding: 16,
+                                borderBottomWidth:
+                                  index !== standards.length - 1 ? 1 : 0,
+                                borderBottomColor: "rgba(255,255,255,0.05)",
+                              }}
+                              onPress={() => handleStandardSelect(standard)}
+                            >
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  justifyContent: "space-between",
+                                  alignItems: "flex-start",
+                                }}
+                              >
+                                <View style={{ flex: 1 }}>
+                                  <Text
+                                    style={{
+                                      color: "white",
+                                      fontSize: 16,
+                                      marginBottom: 4,
+                                    }}
+                                  >
+                                    {standard.metal_type} {standard.category}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      color: "rgba(255,255,255,0.6)",
+                                      fontSize: 13,
+                                      marginBottom: 2,
+                                    }}
+                                  >
+                                    {getPriceDisplay(standard)}
+                                  </Text>
+                                  <Text
+                                    style={{
+                                      color: "rgba(255,255,255,0.4)",
+                                      fontSize: 12,
+                                    }}
+                                  >
+                                    편차: ±{standard.deviation}%
+                                  </Text>
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+                          ))}
                         </View>
-                      </View>
-                    </TouchableOpacity>
-                  ))}
+                      )
+                    );
+                  })()}
                 </ScrollView>
               )}
             </View>
@@ -691,6 +747,159 @@ export const Calculator = () => {
                 </View>
               </View>
             )}
+
+            {/* 관련 경매 목록 */}
+            {selectedStandard &&
+              relatedAuctions &&
+              relatedAuctions.length > 0 && (
+                <View
+                  style={{
+                    borderRadius: 24,
+                    padding: 24,
+                    backgroundColor: "rgba(59, 130, 246, 0.08)",
+                    borderWidth: 1,
+                    borderColor: "rgba(59, 130, 246, 0.15)",
+                    marginTop: 24,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "#60A5FA",
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      letterSpacing: 2,
+                      marginBottom: 20,
+                    }}
+                  >
+                    관련 경매 (최고가 3개)
+                  </Text>
+
+                  <Text
+                    style={{
+                      color: "rgba(255,255,255,0.6)",
+                      fontSize: 14,
+                      marginBottom: 16,
+                    }}
+                  >
+                    "{selectedStandard.metal_type}" 관련 경매 목록
+                  </Text>
+
+                  {isRelatedAuctionsLoading ? (
+                    <View style={{ alignItems: "center", padding: 20 }}>
+                      <ActivityIndicator size="small" color="#60A5FA" />
+                      <Text
+                        style={{ color: "rgba(255,255,255,0.6)", marginTop: 8 }}
+                      >
+                        관련 경매를 찾는 중...
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ gap: 12 }}>
+                      {relatedAuctions.map((auction, index) => (
+                        <View
+                          key={auction.id}
+                          style={{
+                            backgroundColor: "rgba(255, 255, 255, 0.04)",
+                            borderRadius: 16,
+                            padding: 16,
+                            borderWidth: 1,
+                            borderColor: "rgba(255, 255, 255, 0.08)",
+                          }}
+                        >
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "flex-start",
+                              marginBottom: 8,
+                            }}
+                          >
+                            <View style={{ flex: 1, marginRight: 12 }}>
+                              <Text
+                                style={{
+                                  color: "white",
+                                  fontSize: 16,
+                                  fontWeight: "600",
+                                  marginBottom: 4,
+                                }}
+                                numberOfLines={2}
+                              >
+                                {auction.title}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: "rgba(255,255,255,0.6)",
+                                  fontSize: 13,
+                                }}
+                              >
+                                {auction.seller_name} • {auction.address_info}
+                              </Text>
+                            </View>
+
+                            <View style={{ alignItems: "flex-end" }}>
+                              <View
+                                style={{
+                                  backgroundColor:
+                                    getAuctionStatusText(auction.status) ===
+                                    "진행중"
+                                      ? "rgba(34, 197, 94, 0.2)"
+                                      : "rgba(156, 163, 175, 0.2)",
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
+                                  borderRadius: 8,
+                                  marginBottom: 4,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color:
+                                      getAuctionStatusText(auction.status) ===
+                                      "진행중"
+                                        ? "#22C55E"
+                                        : "#9CA3AF",
+                                    fontSize: 12,
+                                    fontWeight: "600",
+                                  }}
+                                >
+                                  {getAuctionStatusText(auction.status)}
+                                </Text>
+                              </View>
+                            </View>
+                          </View>
+
+                          <View
+                            style={{
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: "rgba(255,255,255,0.8)",
+                                fontSize: 14,
+                              }}
+                            >
+                              현재가:
+                            </Text>
+                            <Text
+                              style={{
+                                color: "#FCD34D",
+                                fontSize: 16,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {formatAuctionPrice(
+                                auction.current_bid || auction.starting_price
+                              )}
+                            </Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
           </View>
         </KeyboardAwareScrollView>
       </SafeAreaView>

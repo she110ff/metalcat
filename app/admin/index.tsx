@@ -2136,6 +2136,7 @@ const CalculationStandardsTabContent = () => {
     {
       metal_type: "",
       category: "",
+      lme_type: "구리", // 기본값
       calculation_type: "lme_based",
       lme_ratio: 95,
       fixed_price: undefined,
@@ -2153,6 +2154,7 @@ const CalculationStandardsTabContent = () => {
     setFormData({
       metal_type: "",
       category: "",
+      lme_type: "구리", // 기본값
       calculation_type: "lme_based",
       lme_ratio: 95,
       fixed_price: undefined,
@@ -2170,6 +2172,7 @@ const CalculationStandardsTabContent = () => {
     setFormData({
       metal_type: standard.metal_type,
       category: standard.category,
+      lme_type: standard.lme_type,
       calculation_type: standard.calculation_type,
       lme_ratio: standard.lme_ratio,
       fixed_price: standard.fixed_price,
@@ -2369,24 +2372,112 @@ const CalculationStandardsTabContent = () => {
             </HStack>
 
             <VStack space="sm">
+              {/* LME 타입 선택 (위로 이동) */}
               <VStack space="xs">
                 <Text className="text-sm font-medium text-gray-700">
-                  금속 종류
+                  LME 타입 (계산용)
                 </Text>
-                <TextInput
-                  value={formData.metal_type}
-                  onChangeText={(text) =>
-                    setFormData({ ...formData, metal_type: text })
-                  }
-                  placeholder="예: 구리, 알루미늄, 아연"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: "#D1D5DB",
-                    borderRadius: 8,
-                    padding: 12,
-                    fontSize: 16,
-                  }}
-                />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <HStack space="xs">
+                    {[
+                      "구리",
+                      "알루미늄",
+                      "아연",
+                      "납",
+                      "주석",
+                      "니켈",
+                      "특수금속",
+                    ].map((lmeType) => (
+                      <Pressable
+                        key={lmeType}
+                        onPress={() => {
+                          const newFormData = {
+                            ...formData,
+                            lme_type: lmeType,
+                          };
+                          // 특수금속 선택 시 고정가격 자동 선택, 나머지는 LME 기반 자동 선택
+                          if (lmeType === "특수금속") {
+                            newFormData.calculation_type = "fixed_price";
+                            newFormData.lme_ratio = undefined;
+                            if (!newFormData.fixed_price) {
+                              newFormData.fixed_price = 0;
+                              setFixedPriceText("0");
+                            }
+                          } else {
+                            newFormData.calculation_type = "lme_based";
+                            newFormData.fixed_price = undefined;
+                            if (!newFormData.lme_ratio) {
+                              newFormData.lme_ratio = 95;
+                              setLmeRatioText("95");
+                            }
+                          }
+                          setFormData(newFormData);
+                        }}
+                        className={`px-3 py-2 rounded-lg border ${
+                          formData.lme_type === lmeType
+                            ? "border-purple-500 bg-purple-50"
+                            : "border-gray-300 bg-white"
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm font-medium ${
+                            formData.lme_type === lmeType
+                              ? "text-purple-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {lmeType}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </HStack>
+                </ScrollView>
+                <Text className="text-xs text-gray-500">
+                  계산기에서 LME 가격을 조회할 때 사용할 금속 타입을 선택하세요
+                </Text>
+              </VStack>
+
+              <VStack space="xs">
+                <Text className="text-sm font-medium text-gray-700">
+                  경매 종류
+                </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <HStack space="xs">
+                    {[
+                      "구리",
+                      "알루미늄",
+                      "납",
+                      "스테인레스",
+                      "특수금속",
+                      "없음",
+                    ].map((metalType) => (
+                      <Pressable
+                        key={metalType}
+                        onPress={() => {
+                          setFormData({ ...formData, metal_type: metalType });
+                        }}
+                        className={`px-3 py-2 rounded-lg border ${
+                          formData.metal_type === metalType
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-300 bg-white"
+                        }`}
+                      >
+                        <Text
+                          className={`text-sm font-medium ${
+                            formData.metal_type === metalType
+                              ? "text-blue-700"
+                              : "text-gray-700"
+                          }`}
+                        >
+                          {metalType}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </HStack>
+                </ScrollView>
+                <Text className="text-xs text-gray-500">
+                  경매에서 사용할 경매 종류를 선택하세요
+                </Text>
               </VStack>
 
               <VStack space="xs">
@@ -2633,73 +2724,73 @@ const CalculationStandardsTabContent = () => {
 
           {standards && standards.length > 0 ? (
             <VStack space="sm">
-              {/* 헤더 */}
-              <HStack className="py-2 px-3 bg-gray-50 rounded-lg">
-                <Text className="flex-1 text-sm font-medium text-gray-700">
-                  금속 종류
-                </Text>
-                <Text className="flex-1 text-sm font-medium text-gray-700">
-                  구분
-                </Text>
-                <Text className="w-16 text-sm font-medium text-gray-700 text-center">
-                  타입
-                </Text>
-                <Text className="w-20 text-sm font-medium text-gray-700 text-center">
-                  비율/가격
-                </Text>
-                <Text className="w-16 text-sm font-medium text-gray-700 text-center">
-                  편차
-                </Text>
-                <Text className="w-20 text-sm font-medium text-gray-700 text-center">
-                  작업
-                </Text>
-              </HStack>
-
-              {/* 데이터 행들 */}
+              {/* 데이터 카드들 */}
               {standards.map((standard) => (
-                <HStack
+                <Box
                   key={standard.id}
-                  className="py-3 px-3 border-b border-gray-100 items-center"
+                  className="bg-white border border-gray-200 rounded-lg p-4"
                 >
-                  <Text className="flex-1 text-sm text-gray-900 font-medium">
-                    {standard.metal_type}
-                  </Text>
-                  <Text className="flex-1 text-sm text-gray-700">
-                    {standard.category}
-                  </Text>
-                  <Text
-                    className={`w-16 text-xs text-center px-1 py-1 rounded ${
-                      standard.calculation_type === "lme_based"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-green-100 text-green-700"
-                    }`}
-                  >
-                    {standard.calculation_type === "lme_based" ? "LME" : "고정"}
-                  </Text>
-                  <Text className="w-20 text-sm text-gray-700 text-center">
-                    {standard.calculation_type === "lme_based"
-                      ? `${standard.lme_ratio}%`
-                      : `${standard.fixed_price?.toLocaleString()}원`}
-                  </Text>
-                  <Text className="w-16 text-sm text-gray-700 text-center">
-                    ±{standard.deviation}%
-                  </Text>
-                  <HStack space="xs" className="w-20 justify-center">
-                    <Pressable
-                      onPress={() => handleEdit(standard)}
-                      className="p-1"
-                    >
-                      <Edit3 size={14} color="#3B82F6" />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleDelete(standard)}
-                      className="p-1"
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Text className="text-red-500 text-sm">🗑</Text>
-                    </Pressable>
-                  </HStack>
-                </HStack>
+                  <VStack space="sm">
+                    {/* 첫 번째 줄: LME 타입, 경매 종류, 작업 버튼 */}
+                    <HStack className="items-center justify-between">
+                      <HStack space="md" className="items-center flex-1">
+                        <Text className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-700 font-medium">
+                          {standard.lme_type}
+                        </Text>
+                        <Text className="text-base text-gray-900 font-semibold flex-1">
+                          {standard.metal_type}
+                        </Text>
+                      </HStack>
+                      <HStack space="xs">
+                        <Pressable
+                          onPress={() => handleEdit(standard)}
+                          className="p-2 rounded-lg bg-blue-50"
+                        >
+                          <Edit3 size={16} color="#3B82F6" />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDelete(standard)}
+                          className="p-2 rounded-lg bg-red-50"
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Text className="text-red-500 text-base">🗑</Text>
+                        </Pressable>
+                      </HStack>
+                    </HStack>
+
+                    {/* 두 번째 줄: 구분, 비율/가격, 편차 */}
+                    <HStack space="lg" className="items-center">
+                      <VStack space="xs" className="flex-1">
+                        <Text className="text-xs text-gray-500 font-medium">
+                          구분
+                        </Text>
+                        <Text className="text-sm text-gray-700">
+                          {standard.category}
+                        </Text>
+                      </VStack>
+                      <VStack space="xs" className="flex-1">
+                        <Text className="text-xs text-gray-500 font-medium">
+                          {standard.calculation_type === "lme_based"
+                            ? "LME 비율"
+                            : "고정 가격"}
+                        </Text>
+                        <Text className="text-sm text-gray-700 font-medium">
+                          {standard.calculation_type === "lme_based"
+                            ? `${standard.lme_ratio}%`
+                            : `${standard.fixed_price?.toLocaleString()}원`}
+                        </Text>
+                      </VStack>
+                      <VStack space="xs" className="flex-1">
+                        <Text className="text-xs text-gray-500 font-medium">
+                          편차
+                        </Text>
+                        <Text className="text-sm text-gray-700">
+                          ±{standard.deviation}%
+                        </Text>
+                      </VStack>
+                    </HStack>
+                  </VStack>
+                </Box>
               ))}
             </VStack>
           ) : (

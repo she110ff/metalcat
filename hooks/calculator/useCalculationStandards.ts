@@ -5,6 +5,7 @@ export interface CalculationStandard {
   id: string;
   metal_type: string;
   category: string;
+  lme_type: string; // LME 계산용 금속 타입 (구리, 알루미늄, 아연, 납, 주석, 니켈)
   calculation_type: "lme_based" | "fixed_price";
   lme_ratio?: number;
   fixed_price?: number;
@@ -57,6 +58,24 @@ export const useCategoriesByMetal = (metalType: string) => {
       return data || [];
     },
     enabled: !!metalType,
+  });
+};
+
+// LME 타입별 계산 기준 조회 (계산기용)
+export const useCalculationStandardsByLmeType = (lmeType: string) => {
+  return useQuery({
+    queryKey: ["calculation-standards-by-lme-type", lmeType],
+    queryFn: async (): Promise<CalculationStandard[]> => {
+      const { data, error } = await supabase.rpc(
+        "get_calculation_standards_by_lme_type",
+        {
+          p_lme_type: lmeType,
+        }
+      );
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!lmeType,
   });
 };
 

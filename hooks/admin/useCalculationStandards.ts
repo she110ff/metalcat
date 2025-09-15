@@ -6,6 +6,7 @@ export interface CalculationStandard {
   id: string;
   metal_type: string;
   category: string;
+  lme_type: string; // LME 계산용 금속 타입 (구리, 알루미늄, 아연, 납, 주석, 니켈)
   calculation_type: "lme_based" | "fixed_price";
   lme_ratio?: number;
   fixed_price?: number;
@@ -17,6 +18,7 @@ export interface CalculationStandard {
 export interface CreateCalculationStandardData {
   metal_type: string;
   category: string;
+  lme_type: string; // LME 계산용 금속 타입
   calculation_type: "lme_based" | "fixed_price";
   lme_ratio?: number;
   fixed_price?: number;
@@ -57,6 +59,7 @@ export const useCreateCalculationStandard = () => {
           p_user_id: user.id,
           p_metal_type: standard.metal_type,
           p_category: standard.category,
+          p_lme_type: standard.lme_type,
           p_calculation_type: standard.calculation_type,
           p_lme_ratio: standard.lme_ratio || null,
           p_fixed_price: standard.fixed_price || null,
@@ -87,9 +90,10 @@ export const useUpdateCalculationStandard = () => {
         "update_calculation_standard",
         {
           p_user_id: user.id,
-          p_id: standard.id,
+          p_standard_id: standard.id,
           p_metal_type: standard.metal_type,
           p_category: standard.category,
+          p_lme_type: standard.lme_type,
           p_calculation_type: standard.calculation_type,
           p_lme_ratio: standard.lme_ratio || null,
           p_fixed_price: standard.fixed_price || null,
