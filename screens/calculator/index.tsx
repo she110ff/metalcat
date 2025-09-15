@@ -875,7 +875,7 @@ export const Calculator = () => {
                       marginBottom: 20,
                     }}
                   >
-                    {selectedStandard.lme_type} 관련 경매 (최고가 3개)
+                    {selectedStandard.lme_type} 관련 경매 (낙찰가 높은 순)
                   </Text>
 
                   <Text
@@ -885,7 +885,7 @@ export const Calculator = () => {
                       marginBottom: 16,
                     }}
                   >
-                    "{selectedStandard.lme_type}" LME 타입 관련 경매 목록
+                    "{selectedStandard.lme_type}" 관련 종료된 경매 목록
                   </Text>
 
                   {isRelatedAuctionsLoading ? (
@@ -910,73 +910,32 @@ export const Calculator = () => {
                             borderColor: "rgba(255, 255, 255, 0.08)",
                           }}
                         >
-                          <View
+                          {/* 제목 */}
+                          <Text
                             style={{
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "flex-start",
+                              color: "white",
+                              fontSize: 16,
+                              fontWeight: "600",
                               marginBottom: 8,
                             }}
+                            numberOfLines={2}
                           >
-                            <View style={{ flex: 1, marginRight: 12 }}>
-                              <Text
-                                style={{
-                                  color: "white",
-                                  fontSize: 16,
-                                  fontWeight: "600",
-                                  marginBottom: 4,
-                                }}
-                                numberOfLines={2}
-                              >
-                                {auction.title}
-                              </Text>
-                              <Text
-                                style={{
-                                  color: "rgba(255,255,255,0.6)",
-                                  fontSize: 13,
-                                }}
-                              >
-                                {auction.seller_name} •{" "}
-                                {typeof auction.address_info === "object" &&
-                                auction.address_info?.address
-                                  ? auction.address_info.address
-                                  : typeof auction.address_info === "string"
-                                  ? auction.address_info
-                                  : "주소 정보 없음"}
-                              </Text>
-                            </View>
+                            {auction.title}
+                          </Text>
 
-                            <View style={{ alignItems: "flex-end" }}>
-                              <View
-                                style={{
-                                  backgroundColor:
-                                    getAuctionStatusText(auction.status) ===
-                                    "진행중"
-                                      ? "rgba(34, 197, 94, 0.2)"
-                                      : "rgba(156, 163, 175, 0.2)",
-                                  paddingHorizontal: 8,
-                                  paddingVertical: 4,
-                                  borderRadius: 8,
-                                  marginBottom: 4,
-                                }}
-                              >
-                                <Text
-                                  style={{
-                                    color:
-                                      getAuctionStatusText(auction.status) ===
-                                      "진행중"
-                                        ? "#22C55E"
-                                        : "#9CA3AF",
-                                    fontSize: 12,
-                                    fontWeight: "600",
-                                  }}
-                                >
-                                  {getAuctionStatusText(auction.status)}
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
+                          {/* 설명 */}
+                          <Text
+                            style={{
+                              color: "rgba(255,255,255,0.6)",
+                              fontSize: 13,
+                              marginBottom: 12,
+                            }}
+                            numberOfLines={2}
+                          >
+                            {auction.description}
+                          </Text>
 
+                          {/* 낙찰 가격 */}
                           <View
                             style={{
                               flexDirection: "row",
@@ -990,7 +949,7 @@ export const Calculator = () => {
                                 fontSize: 14,
                               }}
                             >
-                              현재가:
+                              낙찰가:
                             </Text>
                             <Text
                               style={{

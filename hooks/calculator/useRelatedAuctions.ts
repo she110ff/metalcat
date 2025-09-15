@@ -4,6 +4,7 @@ import { supabase } from "@/hooks/auth/api";
 export interface RelatedAuction {
   id: string;
   title: string;
+  description: string;
   current_bid: number;
   starting_price: number;
   end_time: string;
@@ -42,6 +43,7 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
           `
           id,
           title,
+          description,
           current_bid,
           starting_price,
           end_time,
@@ -51,7 +53,7 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
         `
         )
         .eq("approval_status", "approved") // 승인된 경매만
-        .in("status", ["active", "ending", "ended"]) // 진행중이거나 종료된 경매
+        .eq("status", "ended") // 종료된 경매만
         .order("current_bid", { ascending: false }) // 최고가 순
         .limit(3); // 최대 3개
 
