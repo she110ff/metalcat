@@ -62,9 +62,9 @@ export const Calculator = () => {
   const { data: calculationStandards, isLoading: isStandardsLoading } =
     useCalculationStandardsWithPrices();
 
-  // 관련 경매 목록 조회 (선택된 계산 기준의 metal_type 기준)
+  // 관련 경매 목록 조회 (선택된 계산 기준의 LME 타입 기준)
   const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
-    useRelatedAuctionsByMetalType(selectedStandard?.metal_type || "");
+    useRelatedAuctionsByMetalType(selectedStandard?.lme_type || "");
 
   // 금속 가격 데이터 (실시간 LME 데이터 또는 기본값)
   const getMetalPrices = () => {
@@ -102,8 +102,63 @@ export const Calculator = () => {
 
   const metalPrices = getMetalPrices();
 
+  // 텍스트 처리 함수: 중복 단어 제거 및 '없음' 단어 숨기기
+  const processDisplayText = (
+    lmeType: string,
+    metalType: string,
+    category: string
+  ): string => {
+    // 모든 단어를 배열로 분리
+    const allWords = [lmeType, metalType, category]
+      .join(" ")
+      .split(" ")
+      .filter((word) => word.trim() !== "" && word !== "없음"); // 빈 문자열과 '없음' 제거
+
+    // 중복 제거 (첫 번째 등장하는 단어만 유지)
+    const uniqueWords = [];
+    const seenWords = new Set();
+
+    for (const word of allWords) {
+      if (!seenWords.has(word)) {
+        uniqueWords.push(word);
+        seenWords.add(word);
+      }
+    }
+
+    return uniqueWords.join(" ");
+  };
+
+  // 계산 기준 선택 핸들러
+  const handleStandardSelect = (standard: CalculationStandard) => {
+    setSelectedStandard(standard);
+    setResult(null);
+    setShowStandardPicker(false);
+  };
+
+  // 계산된 가격 정보 가져오기
+  const getCalculatedPrice = (standard: CalculationStandard): string => {
+    const lmePrice = metalPrices[standard.lme_type];
+    if (!lmePrice) return "가격 정보 없음";
+
+    if (standard.calculation_type === "fixed_price") {
+      return `고정 ${standard.fixed_price?.toLocaleString()}원/kg`;
+    } else {
+      const calculatedPrice = Math.round(
+        lmePrice.priceKRW * ((standard.lme_ratio || 0) / 100)
+      );
+      return `LME ${
+        standard.lme_ratio
+      }% = ${calculatedPrice.toLocaleString()}원/kg`;
+    }
+  };
+
   const calculate = () => {
-    if (!weight || !selectedStandard) return;
+    if (
+      !weight ||
+      !selectedStandard ||
+      selectedStandard.lme_type === "특수금속"
+    )
+      return;
 
     const weightNum = parseFloat(weight);
     if (isNaN(weightNum)) return;
@@ -144,13 +199,6 @@ export const Calculator = () => {
     setWeight("");
     setSelectedStandard(null);
     setResult(null);
-  };
-
-  // 계산 기준 선택 핸들러
-  const handleStandardSelect = (standard: CalculationStandard) => {
-    setSelectedStandard(standard);
-    setResult(null); // 선택 변경 시 결과 초기화
-    setShowStandardPicker(false);
   };
 
   // LME 가격 정보를 포함한 가격 표시 함수 (lme_type 기준)
@@ -270,6 +318,7 @@ export const Calculator = () => {
                 )}
               </View>
 
+              {/* 계산 기준 선택 */}
               <TouchableOpacity
                 style={{
                   backgroundColor: "rgba(255, 255, 255, 0.04)",
@@ -286,18 +335,27 @@ export const Calculator = () => {
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: "white", fontSize: 16 }}>
                     {selectedStandard
-                      ? `${selectedStandard.metal_type} ${selectedStandard.category}`
-                      : "금속 구분을 선택하세요"}
+                      ? processDisplayText(
+                          selectedStandard.lme_type,
+                          selectedStandard.metal_type,
+                          selectedStandard.category
+                        )
+                      : "계산 기준을 선택하세요"}
                   </Text>
                   {selectedStandard && (
                     <Text
                       style={{
-                        color: "rgba(255,255,255,0.6)",
+                        color:
+                          selectedStandard.lme_type === "특수금속"
+                            ? "rgba(255, 165, 0, 0.8)"
+                            : "rgba(255,255,255,0.6)",
                         fontSize: 12,
                         marginTop: 2,
                       }}
                     >
-                      {getPriceDisplay(selectedStandard)}
+                      {selectedStandard.lme_type === "특수금속"
+                        ? "⚠️ 특수금속은 계산 기능이 제한됩니다"
+                        : getCalculatedPrice(selectedStandard)}
                     </Text>
                   )}
                 </View>
@@ -306,7 +364,7 @@ export const Calculator = () => {
                 </Text>
               </TouchableOpacity>
 
-              {/* Standard Picker */}
+              {/* 계산 기준 선택 피커 */}
               {showStandardPicker && calculationStandards && (
                 <ScrollView
                   style={{
@@ -315,102 +373,94 @@ export const Calculator = () => {
                     borderColor: "rgba(255, 255, 255, 0.1)",
                     borderRadius: 16,
                     marginTop: 8,
-                    maxHeight: 300,
+                    maxHeight: 400,
                   }}
                   nestedScrollEnabled={true}
                 >
-                  {(() => {
-                    // LME 타입별로 그룹화
-                    const groupedStandards = calculationStandards.reduce(
-                      (acc, standard) => {
-                        const lmeType = standard.lme_type;
-                        if (!acc[lmeType]) {
-                          acc[lmeType] = [];
-                        }
-                        acc[lmeType].push(standard);
-                        return acc;
-                      },
-                      {} as Record<string, CalculationStandard[]>
-                    );
+                  {calculationStandards.map((standard, index) => {
+                    const lmePrice = metalPrices[standard.lme_type];
 
-                    return Object.entries(groupedStandards).map(
-                      ([lmeType, standards]) => (
-                        <View key={lmeType}>
-                          {/* LME 타입 헤더 */}
+                    return (
+                      <TouchableOpacity
+                        key={standard.id}
+                        style={{
+                          padding: 16,
+                          borderBottomWidth:
+                            index !== calculationStandards.length - 1 ? 1 : 0,
+                          borderBottomColor: "rgba(255,255,255,0.05)",
+                        }}
+                        onPress={() => handleStandardSelect(standard)}
+                      >
+                        <View>
+                          {/* 첫 번째 줄: LME 타입 + 경매 종류 + 구분 */}
                           <View
                             style={{
-                              backgroundColor: "rgba(252, 211, 77, 0.1)",
-                              padding: 12,
-                              borderBottomWidth: 1,
-                              borderBottomColor: "rgba(252, 211, 77, 0.2)",
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              marginBottom: 8,
                             }}
                           >
                             <Text
                               style={{
-                                color: "#FCD34D",
-                                fontSize: 14,
-                                fontWeight: "bold",
-                                letterSpacing: 1,
+                                color: "white",
+                                fontSize: 16,
+                                fontWeight:
+                                  selectedStandard?.id === standard.id
+                                    ? "bold"
+                                    : "normal",
                               }}
                             >
-                              {lmeType} LME
+                              {processDisplayText(
+                                standard.lme_type,
+                                standard.metal_type,
+                                standard.category
+                              )}
                             </Text>
+                            {selectedStandard?.id === standard.id && (
+                              <Text style={{ color: "#FCD34D", fontSize: 16 }}>
+                                ✓
+                              </Text>
+                            )}
                           </View>
 
-                          {/* 해당 LME 타입의 계산 기준들 */}
-                          {standards.map((standard, index) => (
-                            <TouchableOpacity
-                              key={standard.id}
+                          {/* 두 번째 줄: 계산된 가격 정보 */}
+                          {standard.lme_type === "특수금속" ? (
+                            <Text
                               style={{
-                                padding: 16,
-                                borderBottomWidth:
-                                  index !== standards.length - 1 ? 1 : 0,
-                                borderBottomColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255, 165, 0, 0.8)",
+                                fontSize: 12,
                               }}
-                              onPress={() => handleStandardSelect(standard)}
                             >
-                              <View
+                              ⚠️ 계산 기능 제한 - 경매 정보만 제공
+                            </Text>
+                          ) : (
+                            <View style={{ gap: 4 }}>
+                              <Text
                                 style={{
-                                  flexDirection: "row",
-                                  justifyContent: "space-between",
-                                  alignItems: "flex-start",
+                                  color: "rgba(255,255,255,0.6)",
+                                  fontSize: 12,
                                 }}
                               >
-                                <View style={{ flex: 1 }}>
-                                  <Text
-                                    style={{
-                                      color: "white",
-                                      fontSize: 16,
-                                      marginBottom: 4,
-                                    }}
-                                  >
-                                    {standard.metal_type} {standard.category}
-                                  </Text>
-                                  <Text
-                                    style={{
-                                      color: "rgba(255,255,255,0.6)",
-                                      fontSize: 13,
-                                      marginBottom: 2,
-                                    }}
-                                  >
-                                    {getPriceDisplay(standard)}
-                                  </Text>
-                                  <Text
-                                    style={{
-                                      color: "rgba(255,255,255,0.4)",
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    편차: ±{standard.deviation}%
-                                  </Text>
-                                </View>
-                              </View>
-                            </TouchableOpacity>
-                          ))}
+                                {getCalculatedPrice(standard)}
+                              </Text>
+                              {lmePrice && (
+                                <Text
+                                  style={{
+                                    color: "rgba(255, 211, 77, 0.8)",
+                                    fontSize: 11,
+                                  }}
+                                >
+                                  현재 LME: {lmePrice.priceKRW.toLocaleString()}
+                                  원/kg
+                                </Text>
+                              )}
+                            </View>
+                          )}
                         </View>
-                      )
+                      </TouchableOpacity>
                     );
-                  })()}
+                  })}
                 </ScrollView>
               )}
             </View>
@@ -420,15 +470,25 @@ export const Calculator = () => {
               style={{
                 borderRadius: 24,
                 padding: 24,
-                backgroundColor: "rgba(255, 255, 255, 0.04)",
+                backgroundColor:
+                  selectedStandard?.lme_type === "특수금속"
+                    ? "rgba(255, 255, 255, 0.02)"
+                    : "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
-                borderColor: "rgba(255, 255, 255, 0.08)",
+                borderColor:
+                  selectedStandard?.lme_type === "특수금속"
+                    ? "rgba(255, 255, 255, 0.04)"
+                    : "rgba(255, 255, 255, 0.08)",
                 marginBottom: 24,
+                opacity: selectedStandard?.lme_type === "특수금속" ? 0.5 : 1,
               }}
             >
               <Text
                 style={{
-                  color: "#FCD34D",
+                  color:
+                    selectedStandard?.lme_type === "특수금속"
+                      ? "rgba(252, 211, 77, 0.5)"
+                      : "#FCD34D",
                   fontSize: 20,
                   fontWeight: "bold",
                   letterSpacing: 2,
@@ -438,100 +498,139 @@ export const Calculator = () => {
                 계산 정보
               </Text>
 
-              {/* Weight Input */}
-              <View style={{ marginBottom: 24 }}>
-                <Text
+              {selectedStandard?.lme_type === "특수금속" && (
+                <View
                   style={{
-                    color: "rgba(255,255,255,0.8)",
-                    fontSize: 14,
-                    fontWeight: "600",
-                    marginBottom: 8,
-                    letterSpacing: 1,
+                    backgroundColor: "rgba(255, 165, 0, 0.1)",
+                    borderRadius: 12,
+                    padding: 16,
+                    marginBottom: 24,
+                    borderWidth: 1,
+                    borderColor: "rgba(255, 165, 0, 0.2)",
                   }}
                 >
-                  중량
-                </Text>
-                <TextInput
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 255, 255, 0.08)",
-                    borderRadius: 16,
-                    color: "white",
-                    fontSize: 16,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                  }}
-                  placeholder="킬로그램 단위로 입력"
-                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                  value={weight}
-                  onChangeText={setWeight}
-                  keyboardType="numeric"
-                />
-              </View>
+                  <Text
+                    style={{
+                      color: "rgba(255, 165, 0, 0.9)",
+                      fontSize: 14,
+                      textAlign: "center",
+                      fontWeight: "600",
+                    }}
+                  >
+                    ⚠️ 특수금속은 시세 변동이 크고 복잡하여 자동 계산을 지원하지
+                    않습니다.
+                  </Text>
+                  <Text
+                    style={{
+                      color: "rgba(255, 165, 0, 0.7)",
+                      fontSize: 12,
+                      textAlign: "center",
+                      marginTop: 4,
+                    }}
+                  >
+                    관련 경매 정보를 참고하여 직접 문의해 주세요.
+                  </Text>
+                </View>
+              )}
+
+              {/* Weight Input */}
+              {selectedStandard?.lme_type !== "특수금속" && (
+                <View style={{ marginBottom: 24 }}>
+                  <Text
+                    style={{
+                      color: "rgba(255,255,255,0.8)",
+                      fontSize: 14,
+                      fontWeight: "600",
+                      marginBottom: 8,
+                      letterSpacing: 1,
+                    }}
+                  >
+                    중량
+                  </Text>
+                  <TextInput
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.04)",
+                      borderWidth: 1,
+                      borderColor: "rgba(255, 255, 255, 0.08)",
+                      borderRadius: 16,
+                      color: "white",
+                      fontSize: 16,
+                      paddingHorizontal: 16,
+                      paddingVertical: 12,
+                    }}
+                    placeholder="킬로그램 단위로 입력"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                    value={weight}
+                    onChangeText={setWeight}
+                    keyboardType="numeric"
+                  />
+                </View>
+              )}
 
               {/* Buttons */}
-              <View style={{ flexDirection: "row", gap: 12 }}>
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: "rgba(34, 197, 94, 0.15)",
-                    borderColor: "rgba(34, 197, 94, 0.3)",
-                    borderRadius: 18,
-                    borderWidth: 1.5,
-                    minHeight: 56,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    flexDirection: "row",
-                    opacity: !weight || !selectedStandard ? 0.5 : 1,
-                  }}
-                  onPress={calculate}
-                  disabled={!weight || !selectedStandard}
-                >
-                  <TrendingUp size={20} color="#22C55E" strokeWidth={2.5} />
-                  <Text
+              {selectedStandard?.lme_type !== "특수금속" && (
+                <View style={{ flexDirection: "row", gap: 12 }}>
+                  <TouchableOpacity
                     style={{
-                      color: "#22C55E",
-                      fontWeight: "bold",
-                      fontSize: 16,
-                      marginLeft: 8,
+                      flex: 1,
+                      backgroundColor: "rgba(34, 197, 94, 0.15)",
+                      borderColor: "rgba(34, 197, 94, 0.3)",
+                      borderRadius: 18,
+                      borderWidth: 1.5,
+                      minHeight: 56,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexDirection: "row",
+                      opacity: !weight || !selectedStandard ? 0.5 : 1,
                     }}
+                    onPress={calculate}
+                    disabled={!weight || !selectedStandard}
                   >
-                    계산하기
-                  </Text>
-                </TouchableOpacity>
+                    <TrendingUp size={20} color="#22C55E" strokeWidth={2.5} />
+                    <Text
+                      style={{
+                        color: "#22C55E",
+                        fontWeight: "bold",
+                        fontSize: 16,
+                        marginLeft: 8,
+                      }}
+                    >
+                      계산하기
+                    </Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={{
-                    flex: 1,
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
-                    borderColor: "rgba(255, 255, 255, 0.12)",
-                    borderRadius: 16,
-                    borderWidth: 1,
-                    minHeight: 56,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    flexDirection: "row",
-                  }}
-                  onPress={reset}
-                >
-                  <RotateCcw
-                    size={18}
-                    color="rgba(255,255,255,0.7)"
-                    strokeWidth={2}
-                  />
-                  <Text
+                  <TouchableOpacity
                     style={{
-                      color: "rgba(255,255,255,0.7)",
-                      fontWeight: "600",
-                      fontSize: 14,
-                      marginLeft: 8,
+                      flex: 1,
+                      backgroundColor: "rgba(255, 255, 255, 0.03)",
+                      borderColor: "rgba(255, 255, 255, 0.12)",
+                      borderRadius: 16,
+                      borderWidth: 1,
+                      minHeight: 56,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexDirection: "row",
                     }}
+                    onPress={reset}
                   >
-                    초기화
-                  </Text>
-                </TouchableOpacity>
-              </View>
+                    <RotateCcw
+                      size={18}
+                      color="rgba(255,255,255,0.7)"
+                      strokeWidth={2}
+                    />
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontWeight: "600",
+                        fontSize: 14,
+                        marginLeft: 8,
+                      }}
+                    >
+                      초기화
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )}
             </View>
 
             {/* Result */}
@@ -771,7 +870,7 @@ export const Calculator = () => {
                       marginBottom: 20,
                     }}
                   >
-                    관련 경매 (최고가 3개)
+                    {selectedStandard.lme_type} 관련 경매 (최고가 3개)
                   </Text>
 
                   <Text
@@ -781,7 +880,7 @@ export const Calculator = () => {
                       marginBottom: 16,
                     }}
                   >
-                    "{selectedStandard.metal_type}" 관련 경매 목록
+                    "{selectedStandard.lme_type}" LME 타입 관련 경매 목록
                   </Text>
 
                   {isRelatedAuctionsLoading ? (
@@ -795,7 +894,7 @@ export const Calculator = () => {
                     </View>
                   ) : (
                     <View style={{ gap: 12 }}>
-                      {relatedAuctions.map((auction, index) => (
+                      {relatedAuctions.slice(0, 3).map((auction, index) => (
                         <View
                           key={auction.id}
                           style={{
