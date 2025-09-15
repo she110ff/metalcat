@@ -874,18 +874,6 @@ export const Calculator = () => {
                 >
                   <Text
                     style={{
-                      color: "#60A5FA",
-                      fontSize: 20,
-                      fontWeight: "bold",
-                      letterSpacing: 2,
-                      marginBottom: 20,
-                    }}
-                  >
-                    {selectedStandard.lme_type} 관련 경매 (낙찰가 높은 순)
-                  </Text>
-
-                  <Text
-                    style={{
                       color: "rgba(255,255,255,0.6)",
                       fontSize: 14,
                       marginBottom: 16,
@@ -906,8 +894,12 @@ export const Calculator = () => {
                   ) : (
                     <View style={{ gap: 12 }}>
                       {relatedAuctions.slice(0, 3).map((auction, index) => (
-                        <View
+                        <TouchableOpacity
                           key={auction.id}
+                          onPress={() =>
+                            router.push(`/auction-detail/${auction.id}`)
+                          }
+                          activeOpacity={0.7}
                           style={{
                             backgroundColor: "rgba(255, 255, 255, 0.04)",
                             borderRadius: 16,
@@ -969,7 +961,7 @@ export const Calculator = () => {
                               )}
                             </Text>
                           </View>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   )}

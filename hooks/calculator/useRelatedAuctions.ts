@@ -143,13 +143,7 @@ function getLmeTypeToProductCategory(lmeType: string): string[] {
  * 경매 가격 포맷팅 (원 단위)
  */
 export const formatAuctionPrice = (price: number): string => {
-  if (price >= 100000000) {
-    return `${(price / 100000000).toFixed(1)}억원`;
-  } else if (price >= 10000) {
-    return `${(price / 10000).toFixed(0)}만원`;
-  } else {
-    return `${price.toLocaleString()}원`;
-  }
+  return `${price.toLocaleString()}원`;
 };
 
 /**
