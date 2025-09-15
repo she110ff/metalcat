@@ -277,7 +277,7 @@ export const AuctionList = () => {
       : auctionItems;
 
   const auctionTypes = [
-    { id: "scrap", name: "비철", IconComponent: Hammer, enabled: true },
+    { id: "scrap", name: "고철", IconComponent: Hammer, enabled: true },
 
     {
       id: "materials",
