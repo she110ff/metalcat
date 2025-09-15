@@ -264,7 +264,7 @@ export const AuctionItemCard: React.FC<AuctionItemProps> = ({
                 >
                   {adaptedItem.status === "ended"
                     ? "종료됨"
-                    : adaptedItem.endTime}
+                    : adaptedItem.endTime || "시간 미정"}
                 </Text>
               </View>
             </View>

@@ -453,13 +453,28 @@ export const getTimeUntilAuctionEnd = (endTime: Date): string => {
 };
 
 // 목록용 간결한 남은 시간 표시 (일/시간/분 단위로 단순하게)
-export const getCompactRemainingTime = (endTime: Date | undefined): string => {
+export const getCompactRemainingTime = (
+  endTime: Date | string | undefined
+): string => {
   if (!endTime) {
     return "종료됨";
   }
 
+  // Date 객체로 변환 시도
+  let dateObj: Date;
+  try {
+    dateObj = endTime instanceof Date ? endTime : new Date(endTime);
+
+    // 유효한 Date인지 확인
+    if (isNaN(dateObj.getTime())) {
+      return "종료됨";
+    }
+  } catch (error) {
+    return "종료됨";
+  }
+
   const now = new Date();
-  const diff = endTime.getTime() - now.getTime();
+  const diff = dateObj.getTime() - now.getTime();
 
   if (diff <= 0) {
     return "종료됨";

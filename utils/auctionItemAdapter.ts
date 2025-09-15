@@ -27,7 +27,9 @@ export function adaptAuctionItemForUI(
     metalType: getMetalType(auction),
     weight: getWeight(auction),
     currentBid: formatAuctionPrice(auction.currentBid || 0),
-    endTime: getCompactRemainingTime(auction.endTime),
+    endTime: auction.endTime
+      ? getCompactRemainingTime(auction.endTime)
+      : "종료됨",
     status: auction.status as "active" | "ending" | "ended",
     bidders: auction.bidders || 0,
     address: auction.address?.address
