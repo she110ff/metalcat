@@ -6,9 +6,11 @@ import { Box } from "@/components/ui/box";
 import { useBids } from "@/hooks/useAuctions";
 import { formatAuctionPrice } from "@/data/utils/auction-utils";
 import { maskBidderName } from "@/utils/nameUtils";
+import { AuctionItem } from "@/data/types/auction";
 
 interface BidHistorySectionProps {
   auctionId: string;
+  auction?: AuctionItem; // 경매 정보 (단위 정보 접근용)
   maxItems?: number; // 표시할 최대 항목 수
   showTitle?: boolean; // 제목 표시 여부
 }
@@ -35,10 +37,15 @@ const getTimeAgo = (date: Date) => {
 
 export const BidHistorySection: React.FC<BidHistorySectionProps> = ({
   auctionId,
+  auction,
   maxItems,
   showTitle = true,
 }) => {
   const { data: bids = [], isLoading } = useBids(auctionId);
+
+  // 고철 경매인지 확인
+  const isScrapAuction = auction?.auctionCategory === "scrap";
+  const unit = auction?.quantity?.unit;
 
   // 입찰 기록을 UI에 맞게 변환
   const bidHistory = bids
@@ -46,6 +53,7 @@ export const BidHistorySection: React.FC<BidHistorySectionProps> = ({
       id: bid.id,
       bidder: maskBidderName(bid.userName || "익명"),
       amount: formatAuctionPrice(bid.amount),
+      pricePerUnit: bid.pricePerUnit,
       time: getTimeAgo(bid.bidTime),
     }))
     .slice(0, maxItems); // maxItems가 있으면 해당 개수만큼만 표시
@@ -76,9 +84,17 @@ export const BidHistorySection: React.FC<BidHistorySectionProps> = ({
                 </Text>
                 <Text className="text-white/60 text-xs">{bid.time}</Text>
               </VStack>
-              <Text className="text-yellow-300 font-bold text-lg">
-                {bid.amount}
-              </Text>
+              <VStack space="xs" className="items-end">
+                <Text className="text-yellow-300 font-bold text-lg">
+                  {bid.amount}
+                </Text>
+                {/* 고철 경매이고 단위가격이 있는 경우에만 표시 */}
+                {isScrapAuction && bid.pricePerUnit && unit && (
+                  <Text className="text-cyan-300 text-sm font-medium">
+                    {formatAuctionPrice(bid.pricePerUnit)}/{unit}
+                  </Text>
+                )}
+              </VStack>
             </HStack>
           ))}
         </VStack>

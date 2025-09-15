@@ -1034,7 +1034,10 @@ export const AuctionDetail = () => {
               )}
 
               {/* 입찰 히스토리 */}
-              <BidHistorySection auctionId={auctionId || ""} />
+              <BidHistorySection
+                auctionId={auctionId || ""}
+                auction={auction}
+              />
             </VStack>
           </KeyboardAwareScrollView>
         )}
