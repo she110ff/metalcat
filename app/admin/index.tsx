@@ -1048,7 +1048,7 @@ const AuctionTabContent = () => {
   const getCategoryText = (category: string) => {
     switch (category) {
       case "scrap":
-        return "고철";
+        return "고철/비철";
       case "machinery":
         return "중고기계";
       case "materials":

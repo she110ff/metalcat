@@ -26,11 +26,20 @@ export default function SlaveAuctionTypeSelection() {
 
   const auctionTypes = [
     {
-      id: "scrap",
-      name: "고철",
+      id: "nonferrous",
+      name: "비철",
       icon: Wrench,
-      description: "고철, 철근, 철판 등",
+      description:
+        "A동, 상동, 파동, 황동, 알루미늄, 납, 스테인레스, 전자스크랩, 특수금속",
       color: "#FF6B35",
+    },
+    {
+      id: "ferrous",
+      name: "고철",
+      icon: Hammer,
+      description:
+        "생철, 중량고철, 경량고철, 가공고철, 선반철, 금형고철, 작업철",
+      color: "#E74C3C",
     },
     {
       id: "machinery",
@@ -41,7 +50,7 @@ export default function SlaveAuctionTypeSelection() {
     },
     {
       id: "materials",
-      name: "자재",
+      name: "중고자재",
       icon: Package,
       description: "H빔, 각파이프, 철근 등",
       color: "#45B7D1",
@@ -67,10 +76,18 @@ export default function SlaveAuctionTypeSelection() {
       slaveName,
     });
 
-    // 선택된 타입에 따라 해당 경매 등록 화면으로 이동
-    const targetUrl = `/auction-create/${type}?slaveUserId=${slaveUserId}&slaveName=${encodeURIComponent(
-      (slaveName as string) || ""
-    )}`;
+    // 비철/고철의 경우 scrap 경로로 이동하되 ferrousType 파라미터 추가
+    let targetUrl: string;
+    if (type === "ferrous" || type === "nonferrous") {
+      targetUrl = `/auction-create/scrap?slaveUserId=${slaveUserId}&slaveName=${encodeURIComponent(
+        (slaveName as string) || ""
+      )}&ferrousType=${type}`;
+    } else {
+      // 기존 로직 유지 (중고기계, 중고자재, 철거)
+      targetUrl = `/auction-create/${type}?slaveUserId=${slaveUserId}&slaveName=${encodeURIComponent(
+        (slaveName as string) || ""
+      )}`;
+    }
 
     console.log("🔗 [타입 선택] 이동할 URL:", targetUrl);
 
