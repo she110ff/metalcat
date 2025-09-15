@@ -2491,6 +2491,15 @@ const CalculationStandardsTabContent = () => {
                             : numericText;
 
                         setLmeRatioText(cleanText);
+
+                        // formData도 함께 업데이트
+                        const numericValue = parseFloat(cleanText);
+                        setFormData({
+                          ...formData,
+                          lme_ratio: isNaN(numericValue)
+                            ? undefined
+                            : numericValue,
+                        });
                       }}
                       placeholder="95.00"
                       keyboardType="decimal-pad"
@@ -2522,6 +2531,15 @@ const CalculationStandardsTabContent = () => {
                             : numericText;
 
                         setFixedPriceText(cleanText);
+
+                        // formData도 함께 업데이트
+                        const numericValue = parseFloat(cleanText);
+                        setFormData({
+                          ...formData,
+                          fixed_price: isNaN(numericValue)
+                            ? undefined
+                            : numericValue,
+                        });
                       }}
                       placeholder="8500.00"
                       keyboardType="decimal-pad"
@@ -2554,6 +2572,13 @@ const CalculationStandardsTabContent = () => {
                           : numericText;
 
                       setDeviationText(cleanText);
+
+                      // formData도 함께 업데이트
+                      const numericValue = parseFloat(cleanText);
+                      setFormData({
+                        ...formData,
+                        deviation: isNaN(numericValue) ? 0 : numericValue,
+                      });
                     }}
                     placeholder="10.00"
                     keyboardType="decimal-pad"
