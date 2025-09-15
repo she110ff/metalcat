@@ -29,33 +29,12 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
     queryFn: async (): Promise<RelatedAuction[]> => {
       if (!metalType) return [];
 
-      // metal_type을 포함하는 경매 제목으로 검색
-      // 예: "구리" -> "구리", "동" 등을 포함하는 제목
-      const searchTerms = getMetalSearchTerms(metalType);
-
       console.log("🔎 경매 검색 시작");
-      console.log("📝 검색할 metal_type:", metalType);
-      console.log("🏷️ 생성된 검색어들:", searchTerms);
+      console.log("📝 검색할 lme_type:", metalType);
 
-      // 특정 경매 ID로 직접 조회해서 데이터 확인
-      if (metalType.includes("알루미늄")) {
-        const specificAuction = await supabase
-          .from("auction_list_view")
-          .select("*")
-          .eq("id", "auction_1757924067914_ffd72424")
-          .single();
-
-        console.log("🔍 특정 알루미늄 경매 조회 결과:", specificAuction);
-
-        // 모든 알루미늄 관련 경매 조회 (제목에 알루미늄이 포함된)
-        const allAluminumAuctions = await supabase
-          .from("auction_list_view")
-          .select("id, title, approval_status, status")
-          .or("title.ilike.%알루미늄%,title.ilike.%알미늄%")
-          .limit(10);
-
-        console.log("📋 모든 알루미늄 관련 경매:", allAluminumAuctions);
-      }
+      // LME 타입에서 영어 카테고리 매핑
+      const productCategories = getLmeTypeToProductCategory(metalType);
+      console.log("🏷️ 매핑된 영어 카테고리들:", productCategories);
 
       let query = supabase
         .from("auction_list_view")
@@ -76,40 +55,25 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
         .order("current_bid", { ascending: false }) // 최고가 순
         .limit(3); // 최대 3개
 
-      // metal_type에 따른 필터링 (제목 + category_details)
-      if (searchTerms.length > 0) {
-        const titleFilter = searchTerms
-          .map((term) => `title.ilike.%${term}%`)
-          .join(",");
-
-        const categoryFilter = searchTerms
-          .map((term) => `category_details->productType->>name.ilike.%${term}%`)
-          .join(",");
-
-        const productCategoryFilter = searchTerms
+      // 영어 카테고리로 정확 매칭 (가장 확실한 검색 방법)
+      if (productCategories.length > 0) {
+        const exactCategoryFilter = productCategories
           .map(
-            (term) => `category_details->productType->>category.ilike.%${term}%`
+            (category) =>
+              `category_details->productType->>category.eq.${category}`
           )
           .join(",");
 
-        // 제목, 상품명, 상품 카테고리 중 하나라도 매칭되면 검색
-        const combinedFilter = `${titleFilter},${categoryFilter},${productCategoryFilter}`;
+        console.log("🔍 영어 카테고리 필터:", exactCategoryFilter);
 
-        console.log("🔍 생성된 필터 쿼리 (제목):", titleFilter);
-        console.log("🔍 생성된 필터 쿼리 (상품명):", categoryFilter);
-        console.log(
-          "🔍 생성된 필터 쿼리 (상품카테고리):",
-          productCategoryFilter
-        );
-        console.log("🔍 최종 결합 필터:", combinedFilter);
-
-        query = query.or(combinedFilter);
+        query = query.or(exactCategoryFilter);
       }
 
       const { data, error } = await query;
 
       if (error) {
         console.error("❌ 관련 경매 조회 실패:", error);
+        console.error("❌ 오류 상세:", JSON.stringify(error, null, 2));
         throw error;
       }
 
@@ -137,94 +101,40 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
 };
 
 /**
- * metal_type에 따른 검색어 매핑
- * 예: "A동" -> ["구리", "동", "A동"]
+ * LME 타입에서 product_category 영어 값으로 매핑
  */
-function getMetalSearchTerms(metalType: string): string[] {
-  const terms: string[] = [metalType]; // 기본적으로 metal_type 자체 포함
+function getLmeTypeToProductCategory(lmeType: string): string[] {
+  const categories: string[] = [];
 
-  // 구리 관련 (A동, B동, 1급동, 2급동 등)
-  if (metalType.includes("구리") || metalType.includes("동")) {
-    terms.push(
-      "구리",
-      "동",
-      "Cu",
-      "copper",
-      "A동",
-      "B동",
-      "1급동",
-      "2급동",
-      "전선",
-      "케이블"
-    );
-  }
-
-  // 알루미늄 관련 (1급, 2급, 캔, 호일 등)
-  if (metalType.includes("알루미늄") || metalType.includes("알미늄")) {
-    terms.push(
-      "알루미늄",
-      "알미늄",
-      "Al",
-      "aluminum",
-      "1급",
-      "2급",
-      "캔",
-      "호일",
-      "압연"
-    );
+  switch (lmeType) {
+    case "구리":
+      categories.push("copper");
+      break;
+    case "알루미늄":
+      categories.push("aluminum");
+      break;
+    case "아연":
+      categories.push("zinc");
+      break;
+    case "납":
+      categories.push("lead");
+      break;
+    case "주석":
+      categories.push("tin");
+      break;
+    case "니켈":
+      categories.push("nickel");
+      break;
+    case "특수금속":
+      categories.push("special");
+      break;
+    default:
+      // 기본적으로 소문자 영어로 변환 시도
+      categories.push(lmeType.toLowerCase());
+      break;
   }
 
-  // 아연 관련
-  if (metalType.includes("아연")) {
-    terms.push("아연", "Zn", "zinc", "도금", "합금");
-  }
-
-  // 납 관련
-  if (metalType.includes("납")) {
-    terms.push("납", "Pb", "lead", "배터리", "축전지");
-  }
-
-  // 주석 관련
-  if (metalType.includes("주석")) {
-    terms.push("주석", "Sn", "tin", "솔더", "땜납");
-  }
-
-  // 니켈 관련
-  if (metalType.includes("니켈")) {
-    terms.push("니켈", "Ni", "nickel", "합금", "도금");
-  }
-
-  // 스테인레스 관련
-  if (metalType.includes("스테인레스") || metalType.includes("스텐")) {
-    terms.push("스테인레스", "스텐", "STS", "stainless", "304", "316", "430");
-  }
-
-  // 특수금속 관련
-  if (metalType.includes("특수금속") || metalType.includes("특수")) {
-    terms.push(
-      "특수금속",
-      "특수",
-      "합금",
-      "티타늄",
-      "텅스텐",
-      "몰리브덴",
-      "코발트",
-      "희토류"
-    );
-  }
-
-  // 구체적인 등급이나 종류가 포함된 경우 추가 검색어
-  if (metalType.includes("1급")) {
-    terms.push("1급", "특급", "고급");
-  }
-  if (metalType.includes("2급")) {
-    terms.push("2급", "중급");
-  }
-  if (metalType.includes("스크랩")) {
-    terms.push("스크랩", "고철", "폐금속");
-  }
-
-  return [...new Set(terms)]; // 중복 제거
+  return categories;
 }
 
 /**

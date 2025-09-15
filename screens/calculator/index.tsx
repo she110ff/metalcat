@@ -62,14 +62,14 @@ export const Calculator = () => {
   const { data: calculationStandards, isLoading: isStandardsLoading } =
     useCalculationStandardsWithPrices();
 
-  // 관련 경매 목록 조회 (선택된 계산 기준의 metal_type 기준)
+  // 관련 경매 목록 조회 (선택된 계산 기준의 lme_type 기준)
   const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
-    useRelatedAuctionsByMetalType(selectedStandard?.metal_type || "");
+    useRelatedAuctionsByMetalType(selectedStandard?.lme_type || "");
 
   // 경매 데이터 디버깅 로그
   useEffect(() => {
-    if (selectedStandard?.metal_type && relatedAuctions) {
-      console.log("🔍 검색된 metal_type:", selectedStandard.metal_type);
+    if (selectedStandard?.lme_type && relatedAuctions) {
+      console.log("🔍 검색된 lme_type:", selectedStandard.lme_type);
       console.log("📊 가져온 경매 개수:", relatedAuctions.length);
       console.log(
         "💰 관련 경매 목록:",
@@ -83,13 +83,10 @@ export const Calculator = () => {
           종료시간: auction.end_time,
         }))
       );
-    } else if (selectedStandard?.metal_type && !isRelatedAuctionsLoading) {
-      console.log(
-        "⚠️ 검색 결과 없음 - metal_type:",
-        selectedStandard.metal_type
-      );
+    } else if (selectedStandard?.lme_type && !isRelatedAuctionsLoading) {
+      console.log("⚠️ 검색 결과 없음 - lme_type:", selectedStandard.lme_type);
     }
-  }, [selectedStandard?.metal_type, relatedAuctions, isRelatedAuctionsLoading]);
+  }, [selectedStandard?.lme_type, relatedAuctions, isRelatedAuctionsLoading]);
 
   // 금속 가격 데이터 (실시간 LME 데이터 또는 기본값)
   const getMetalPrices = () => {
@@ -916,7 +913,7 @@ export const Calculator = () => {
                       marginBottom: 20,
                     }}
                   >
-                    {selectedStandard.metal_type} 관련 경매 (최고가 3개)
+                    {selectedStandard.lme_type} 관련 경매 (최고가 3개)
                   </Text>
 
                   <Text
@@ -926,7 +923,7 @@ export const Calculator = () => {
                       marginBottom: 16,
                     }}
                   >
-                    "{selectedStandard.metal_type}" 경매 종류 관련 경매 목록
+                    "{selectedStandard.lme_type}" LME 타입 관련 경매 목록
                   </Text>
 
                   {isRelatedAuctionsLoading ? (
