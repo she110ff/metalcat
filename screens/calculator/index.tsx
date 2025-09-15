@@ -62,6 +62,47 @@ export const Calculator = () => {
   const { data: calculationStandards, isLoading: isStandardsLoading } =
     useCalculationStandardsWithPrices();
 
+  // 계산 기준 데이터 디버깅
+  useEffect(() => {
+    if (calculationStandards) {
+      console.log(
+        "🔧 전체 계산 기준 데이터:",
+        calculationStandards.length,
+        "개"
+      );
+      console.log(
+        "📋 계산 기준 목록:",
+        calculationStandards.map((s) => ({
+          metal_type: s.metal_type,
+          category: s.category,
+          lme_type: s.lme_type,
+          calculation_type: s.calculation_type,
+          fixed_price: s.fixed_price,
+          lme_ratio: s.lme_ratio,
+        }))
+      );
+
+      // 특수금속 관련 데이터 찾기 (lme_type 기준)
+      const specialMetalStandards = calculationStandards.filter(
+        (s) => s.lme_type === "특수금속"
+      );
+      console.log("🔍 특수금속 관련 계산 기준:", specialMetalStandards);
+
+      // 특수금속 카테고리별 분류
+      const specialMetalCategories = specialMetalStandards.reduce(
+        (acc, standard) => {
+          if (!acc[standard.category]) {
+            acc[standard.category] = [];
+          }
+          acc[standard.category].push(standard);
+          return acc;
+        },
+        {} as Record<string, typeof specialMetalStandards>
+      );
+      console.log("📂 특수금속 카테고리별 분류:", specialMetalCategories);
+    }
+  }, [calculationStandards]);
+
   // 관련 경매 목록 조회 (선택된 계산 기준의 lme_type 기준)
   const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
     useRelatedAuctionsByMetalType(selectedStandard?.lme_type || "");
@@ -159,12 +200,14 @@ export const Calculator = () => {
 
   // 계산된 가격 정보 가져오기
   const getCalculatedPrice = (standard: CalculationStandard): string => {
-    const lmePrice = metalPrices[standard.lme_type];
-    if (!lmePrice) return "가격 정보 없음";
-
     if (standard.calculation_type === "fixed_price") {
+      // 고정가격 타입: LME 가격 정보가 없어도 고정가격 표시
       return `고정 ${standard.fixed_price?.toLocaleString()}원/kg`;
     } else {
+      // LME 기반 타입: LME 가격 정보 필요
+      const lmePrice = metalPrices[standard.lme_type];
+      if (!lmePrice) return "가격 정보 없음";
+
       const calculatedPrice = Math.round(
         lmePrice.priceKRW * ((standard.lme_ratio || 0) / 100)
       );
@@ -175,28 +218,73 @@ export const Calculator = () => {
   };
 
   const calculate = () => {
-    if (
-      !weight ||
-      !selectedStandard ||
-      selectedStandard.lme_type === "특수금속"
-    )
+    console.log("🧮 계산 시작 - 입력값 확인:", {
+      weight,
+      selectedStandard: selectedStandard
+        ? {
+            id: selectedStandard.id,
+            metal_type: selectedStandard.metal_type,
+            category: selectedStandard.category,
+            lme_type: selectedStandard.lme_type,
+            calculation_type: selectedStandard.calculation_type,
+            fixed_price: selectedStandard.fixed_price,
+            lme_ratio: selectedStandard.lme_ratio,
+          }
+        : null,
+    });
+
+    // 특수금속 타입 확인
+    if (selectedStandard?.lme_type === "특수금속") {
+      console.log(
+        `✅ 특수금속 데이터가 선택됨! (카테고리: ${selectedStandard.category})`
+      );
+    }
+
+    if (!weight || !selectedStandard) {
+      console.log("❌ 계산 중단: 필수값 누락", {
+        weight: !!weight,
+        selectedStandard: !!selectedStandard,
+      });
       return;
+    }
 
     const weightNum = parseFloat(weight);
-    if (isNaN(weightNum)) return;
+    if (isNaN(weightNum)) {
+      console.log("❌ 계산 중단: 무게 값이 숫자가 아님", { weight });
+      return;
+    }
 
     let basePrice: number;
 
     if (selectedStandard.calculation_type === "fixed_price") {
-      // 고정가격 타입: fixed_price 사용
+      // 고정가격 타입: fixed_price 사용 (특수금속 포함)
       basePrice = selectedStandard.fixed_price || 0;
+      console.log("💰 고정가격 계산:", {
+        fixed_price: selectedStandard.fixed_price,
+        basePrice,
+      });
     } else {
       // LME 기반 타입: LME 시세 × LME 비율 (lme_type 기준으로 가격 조회)
       const metalPrice = metalPrices[selectedStandard.lme_type];
-      if (!metalPrice) return;
+      console.log("📊 LME 기반 계산:", {
+        lme_type: selectedStandard.lme_type,
+        metalPrice,
+        lme_ratio: selectedStandard.lme_ratio,
+        availableMetalPrices: Object.keys(metalPrices),
+      });
+
+      if (!metalPrice) {
+        console.log("❌ 계산 중단: 해당 금속의 LME 가격 정보 없음");
+        return;
+      }
 
       const lmeRatio = selectedStandard.lme_ratio || 100;
       basePrice = metalPrice.priceKRW * (lmeRatio / 100);
+      console.log("💰 LME 기반 계산 결과:", {
+        basePrice,
+        priceKRW: metalPrice.priceKRW,
+        lmeRatio,
+      });
     }
 
     const totalValue = basePrice * weightNum;
@@ -375,17 +463,12 @@ export const Calculator = () => {
                   {selectedStandard && (
                     <Text
                       style={{
-                        color:
-                          selectedStandard.lme_type === "특수금속"
-                            ? "rgba(255, 165, 0, 0.8)"
-                            : "rgba(255,255,255,0.6)",
+                        color: "rgba(255,255,255,0.6)",
                         fontSize: 12,
                         marginTop: 2,
                       }}
                     >
-                      {selectedStandard.lme_type === "특수금속"
-                        ? "⚠️ 특수금속은 계산 기능이 제한됩니다"
-                        : getCalculatedPrice(selectedStandard)}
+                      {getCalculatedPrice(selectedStandard)}
                     </Text>
                   )}
                 </View>
@@ -455,38 +538,27 @@ export const Calculator = () => {
                           </View>
 
                           {/* 두 번째 줄: 계산된 가격 정보 */}
-                          {standard.lme_type === "특수금속" ? (
+                          <View style={{ gap: 4 }}>
                             <Text
                               style={{
-                                color: "rgba(255, 165, 0, 0.8)",
+                                color: "rgba(255,255,255,0.6)",
                                 fontSize: 12,
                               }}
                             >
-                              ⚠️ 계산 기능 제한 - 경매 정보만 제공
+                              {getCalculatedPrice(standard)}
                             </Text>
-                          ) : (
-                            <View style={{ gap: 4 }}>
+                            {standard.lme_type !== "특수금속" && lmePrice && (
                               <Text
                                 style={{
-                                  color: "rgba(255,255,255,0.6)",
-                                  fontSize: 12,
+                                  color: "rgba(255, 211, 77, 0.8)",
+                                  fontSize: 11,
                                 }}
                               >
-                                {getCalculatedPrice(standard)}
+                                현재 LME: {lmePrice.priceKRW.toLocaleString()}
+                                원/kg
                               </Text>
-                              {lmePrice && (
-                                <Text
-                                  style={{
-                                    color: "rgba(255, 211, 77, 0.8)",
-                                    fontSize: 11,
-                                  }}
-                                >
-                                  현재 LME: {lmePrice.priceKRW.toLocaleString()}
-                                  원/kg
-                                </Text>
-                              )}
-                            </View>
-                          )}
+                            )}
+                          </View>
                         </View>
                       </TouchableOpacity>
                     );
@@ -500,25 +572,15 @@ export const Calculator = () => {
               style={{
                 borderRadius: 24,
                 padding: 24,
-                backgroundColor:
-                  selectedStandard?.lme_type === "특수금속"
-                    ? "rgba(255, 255, 255, 0.02)"
-                    : "rgba(255, 255, 255, 0.04)",
+                backgroundColor: "rgba(255, 255, 255, 0.04)",
                 borderWidth: 1,
-                borderColor:
-                  selectedStandard?.lme_type === "특수금속"
-                    ? "rgba(255, 255, 255, 0.04)"
-                    : "rgba(255, 255, 255, 0.08)",
+                borderColor: "rgba(255, 255, 255, 0.08)",
                 marginBottom: 24,
-                opacity: selectedStandard?.lme_type === "특수금속" ? 0.5 : 1,
               }}
             >
               <Text
                 style={{
-                  color:
-                    selectedStandard?.lme_type === "특수금속"
-                      ? "rgba(252, 211, 77, 0.5)"
-                      : "#FCD34D",
+                  color: "#FCD34D",
                   fontSize: 20,
                   fontWeight: "bold",
                   letterSpacing: 2,
@@ -528,43 +590,8 @@ export const Calculator = () => {
                 계산 정보
               </Text>
 
-              {selectedStandard?.lme_type === "특수금속" && (
-                <View
-                  style={{
-                    backgroundColor: "rgba(255, 165, 0, 0.1)",
-                    borderRadius: 12,
-                    padding: 16,
-                    marginBottom: 24,
-                    borderWidth: 1,
-                    borderColor: "rgba(255, 165, 0, 0.2)",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "rgba(255, 165, 0, 0.9)",
-                      fontSize: 14,
-                      textAlign: "center",
-                      fontWeight: "600",
-                    }}
-                  >
-                    ⚠️ 특수금속은 시세 변동이 크고 복잡하여 자동 계산을 지원하지
-                    않습니다.
-                  </Text>
-                  <Text
-                    style={{
-                      color: "rgba(255, 165, 0, 0.7)",
-                      fontSize: 12,
-                      textAlign: "center",
-                      marginTop: 4,
-                    }}
-                  >
-                    관련 경매 정보를 참고하여 직접 문의해 주세요.
-                  </Text>
-                </View>
-              )}
-
               {/* Weight Input */}
-              {selectedStandard?.lme_type !== "특수금속" && (
+              {selectedStandard && (
                 <View style={{ marginBottom: 24 }}>
                   <Text
                     style={{
@@ -598,7 +625,7 @@ export const Calculator = () => {
               )}
 
               {/* Buttons */}
-              {selectedStandard?.lme_type !== "특수금속" && (
+              {selectedStandard && (
                 <View style={{ flexDirection: "row", gap: 12 }}>
                   <TouchableOpacity
                     style={{
