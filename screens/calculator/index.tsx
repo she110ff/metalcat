@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -62,9 +62,34 @@ export const Calculator = () => {
   const { data: calculationStandards, isLoading: isStandardsLoading } =
     useCalculationStandardsWithPrices();
 
-  // 관련 경매 목록 조회 (선택된 계산 기준의 LME 타입 기준)
+  // 관련 경매 목록 조회 (선택된 계산 기준의 metal_type 기준)
   const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
-    useRelatedAuctionsByMetalType(selectedStandard?.lme_type || "");
+    useRelatedAuctionsByMetalType(selectedStandard?.metal_type || "");
+
+  // 경매 데이터 디버깅 로그
+  useEffect(() => {
+    if (selectedStandard?.metal_type && relatedAuctions) {
+      console.log("🔍 검색된 metal_type:", selectedStandard.metal_type);
+      console.log("📊 가져온 경매 개수:", relatedAuctions.length);
+      console.log(
+        "💰 관련 경매 목록:",
+        relatedAuctions.map((auction, index) => ({
+          순번: index + 1,
+          제목: auction.title,
+          현재가: `${auction.current_bid.toLocaleString()}원`,
+          시작가: `${auction.starting_price.toLocaleString()}원`,
+          상태: auction.status,
+          판매자: auction.seller_name,
+          종료시간: auction.end_time,
+        }))
+      );
+    } else if (selectedStandard?.metal_type && !isRelatedAuctionsLoading) {
+      console.log(
+        "⚠️ 검색 결과 없음 - metal_type:",
+        selectedStandard.metal_type
+      );
+    }
+  }, [selectedStandard?.metal_type, relatedAuctions, isRelatedAuctionsLoading]);
 
   // 금속 가격 데이터 (실시간 LME 데이터 또는 기본값)
   const getMetalPrices = () => {
@@ -178,6 +203,14 @@ export const Calculator = () => {
     }
 
     const totalValue = basePrice * weightNum;
+
+    // 계산 결과 디버깅
+    console.log("🧮 계산 결과:", {
+      basePrice,
+      weightNum,
+      totalValue,
+      totalValueType: typeof totalValue,
+    });
 
     // 편차 계산
     const deviationAmount = basePrice * (selectedStandard.deviation / 100);
@@ -677,7 +710,8 @@ export const Calculator = () => {
                         fontSize: 16,
                       }}
                     >
-                      {result.standard.metal_type} {result.standard.category}
+                      {String(result.standard.metal_type)}{" "}
+                      {String(result.standard.category)}
                     </Text>
                   </View>
 
@@ -701,7 +735,7 @@ export const Calculator = () => {
                         fontSize: 16,
                       }}
                     >
-                      {result.weight} kg
+                      {String(result.weight)} kg
                     </Text>
                   </View>
 
@@ -752,7 +786,7 @@ export const Calculator = () => {
                           fontSize: 16,
                         }}
                       >
-                        {result.standard.lme_ratio}%
+                        {String(result.standard.lme_ratio)}%
                       </Text>
                     </View>
                   )}
@@ -777,7 +811,10 @@ export const Calculator = () => {
                         fontSize: 16,
                       }}
                     >
-                      {result.basePrice.toLocaleString()}원/kg
+                      {typeof result.basePrice === "number"
+                        ? result.basePrice.toLocaleString()
+                        : "0"}
+                      원/kg
                     </Text>
                   </View>
 
@@ -792,7 +829,7 @@ export const Calculator = () => {
                     <Text
                       style={{ color: "rgba(255,255,255,0.8)", fontSize: 16 }}
                     >
-                      가격 범위 (±{result.standard.deviation}%):
+                      가격 범위 (±{String(result.standard.deviation)}%):
                     </Text>
                     <View style={{ alignItems: "flex-end" }}>
                       <Text
@@ -802,8 +839,14 @@ export const Calculator = () => {
                           fontSize: 14,
                         }}
                       >
-                        {result.priceRange.min.toLocaleString()} ~{" "}
-                        {result.priceRange.max.toLocaleString()}원/kg
+                        {typeof result.priceRange.min === "number"
+                          ? result.priceRange.min.toLocaleString()
+                          : "0"}{" "}
+                        ~{" "}
+                        {typeof result.priceRange.max === "number"
+                          ? result.priceRange.max.toLocaleString()
+                          : "0"}
+                        원/kg
                       </Text>
                     </View>
                   </View>
@@ -839,7 +882,10 @@ export const Calculator = () => {
                           color: "#22C55E",
                         }}
                       >
-                        {result.totalValue.toLocaleString()}원
+                        {typeof result.totalValue === "number"
+                          ? result.totalValue.toLocaleString()
+                          : "0"}
+                        원
                       </Text>
                     </View>
                   </View>
@@ -870,7 +916,7 @@ export const Calculator = () => {
                       marginBottom: 20,
                     }}
                   >
-                    {selectedStandard.lme_type} 관련 경매 (최고가 3개)
+                    {selectedStandard.metal_type} 관련 경매 (최고가 3개)
                   </Text>
 
                   <Text
@@ -880,7 +926,7 @@ export const Calculator = () => {
                       marginBottom: 16,
                     }}
                   >
-                    "{selectedStandard.lme_type}" LME 타입 관련 경매 목록
+                    "{selectedStandard.metal_type}" 경매 종류 관련 경매 목록
                   </Text>
 
                   {isRelatedAuctionsLoading ? (
@@ -931,7 +977,13 @@ export const Calculator = () => {
                                   fontSize: 13,
                                 }}
                               >
-                                {auction.seller_name} • {auction.address_info}
+                                {auction.seller_name} •{" "}
+                                {typeof auction.address_info === "object" &&
+                                auction.address_info?.address
+                                  ? auction.address_info.address
+                                  : typeof auction.address_info === "string"
+                                  ? auction.address_info
+                                  : "주소 정보 없음"}
                               </Text>
                             </View>
 
