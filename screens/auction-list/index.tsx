@@ -277,8 +277,8 @@ export const AuctionList = () => {
       : auctionItems;
 
   const auctionTypes = [
-    { id: "scrap", name: "고철", IconComponent: Hammer, enabled: true },
-
+    { id: "nonferrous", name: "비철", IconComponent: Hammer, enabled: true },
+    { id: "ferrous", name: "고철", IconComponent: Hammer, enabled: true },
     {
       id: "materials",
       name: "중고자재",
@@ -464,8 +464,35 @@ export const AuctionList = () => {
       useNativeDriver: false,
     }).start();
 
-    // 현재는 고철 경매만 활성화
-    if (auctionType === "scrap") {
+    // 고철/비철 경매 처리
+    if (auctionType === "ferrous" || auctionType === "nonferrous") {
+      console.log(`🚀 ${auctionType} 경매 생성 화면으로 이동 시도 중...`);
+
+      // 고철/비철 경매 플로우 - ferrousType을 쿼리 파라미터로 전달
+      const routes = [
+        `/auction-create/scrap?ferrousType=${auctionType}`, // 1순위: 고철/비철 경매 생성 화면
+        "/auction-create", // 2순위: 메인 경매 생성 화면 (대안)
+      ];
+
+      let routeSuccess = false;
+
+      for (const route of routes) {
+        try {
+          console.log("📁 시도하는 라우팅 경로:", route);
+          router.push(route as any);
+          console.log("✅ 라우팅 성공:", route);
+          routeSuccess = true;
+          break;
+        } catch (error) {
+          console.error("❌ 라우팅 실패:", route, error);
+        }
+      }
+
+      if (!routeSuccess) {
+        console.error("❌ 모든 라우팅 시도 실패");
+        Alert.alert("오류", "경매 등록 화면으로 이동할 수 없습니다.");
+      }
+    } else if (auctionType === "scrap") {
       console.log("🚀 고철 경매 생성 화면으로 이동 시도 중...");
 
       // 원래 고철 경매 플로우로 복원

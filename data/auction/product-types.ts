@@ -6,8 +6,8 @@ import {
   AuctionCategory,
 } from "@/data/types/auction";
 
-// 고철 경매 제품 종류
-export const scrapProductTypes: ScrapProductType[] = [
+// 비철 제품 종류
+export const nonferrousProductTypes: ScrapProductType[] = [
   // 구리류
   {
     id: "a-dong",
@@ -15,6 +15,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "copper",
     description: "순도 99.98% 이상의 고순도 구리",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
   {
     id: "sang-dong",
@@ -22,6 +23,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "copper",
     description: "순도 96% 이상의 상급 구리",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
   {
     id: "pa-dong",
@@ -29,6 +31,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "copper",
     description: "일반 구리 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
 
   // 황동류
@@ -38,6 +41,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "brass",
     description: "새로운 황동 재료",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
 
   // 알루미늄류
@@ -47,6 +51,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "aluminum",
     description: "알루미늄 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
 
   // 기타 비철금속
@@ -56,6 +61,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "lead",
     description: "납 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
   {
     id: "stainless",
@@ -63,15 +69,35 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "stainless",
     description: "스테인레스 스틸",
     auctionCategory: "scrap",
+    ferrousType: "nonferrous",
   },
+  {
+    id: "electronic-scrap",
+    name: "전자스크랩",
+    category: "electronic",
+    description: "전자제품 스크랩",
+    auctionCategory: "scrap",
+    ferrousType: "nonferrous",
+  },
+  {
+    id: "special-metals",
+    name: "특수금속",
+    category: "special",
+    description: "특수 금속류",
+    auctionCategory: "scrap",
+    ferrousType: "nonferrous",
+  },
+];
 
-  // 철류
+// 고철 제품 종류
+export const ferrousProductTypes: ScrapProductType[] = [
   {
     id: "pig-iron",
     name: "생철",
     category: "iron",
     description: "생철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "heavy-scrap",
@@ -79,6 +105,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "중량 고철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "light-scrap",
@@ -86,6 +113,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "경량 고철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "processed-scrap",
@@ -93,6 +121,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "가공된 고철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "lathe-iron",
@@ -100,6 +129,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "선반 작업 철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "mold-scrap",
@@ -107,22 +137,7 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "금형 고철 스크랩",
     auctionCategory: "scrap",
-  },
-
-  // 특수류
-  {
-    id: "electronic-scrap",
-    name: "전자스크랩",
-    category: "electronic",
-    description: "전자제품 스크랩",
-    auctionCategory: "scrap",
-  },
-  {
-    id: "special-metals",
-    name: "특수 금속",
-    category: "special",
-    description: "특수 금속류",
-    auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
   {
     id: "work-iron",
@@ -130,7 +145,14 @@ export const scrapProductTypes: ScrapProductType[] = [
     category: "iron",
     description: "작업 철 스크랩",
     auctionCategory: "scrap",
+    ferrousType: "ferrous",
   },
+];
+
+// 통합 고철/비철 제품 종류 (하위 호환성)
+export const scrapProductTypes: ScrapProductType[] = [
+  ...nonferrousProductTypes,
+  ...ferrousProductTypes,
 ];
 
 // 중고 기계 제품 종류 (화면 분석 기반)

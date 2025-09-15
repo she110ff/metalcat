@@ -7,6 +7,9 @@ export type AuctionCategory =
   | "materials"
   | "demolition";
 
+// 금속 분류 타입 (scrap 카테고리 내에서 사용)
+export type FerrousType = "ferrous" | "nonferrous";
+
 // 거래 종류 타입
 export type TransactionType = "normal" | "urgent";
 
@@ -57,13 +60,14 @@ export interface SalesEnvironment {
 
 // ===== 카테고리별 제품 타입 =====
 
-// 제품 종류 타입 (고철)
+// 제품 종류 타입 (고철/비철)
 export interface ScrapProductType {
   id: string;
   name: string;
   category: string;
   description?: string;
   auctionCategory: "scrap";
+  ferrousType: FerrousType;
 }
 
 // 기계 종류 타입
@@ -121,7 +125,7 @@ export type ProductType =
 
 // ===== 경매 등록 폼 타입 =====
 
-// 고철 경매 등록 폼
+// 고철/비철 경매 등록 폼
 export interface ScrapAuctionFormData {
   title: string;
   productType: ScrapProductType;
@@ -203,7 +207,7 @@ export type ApprovalStatus =
   | "hidden" // 히든 경매
   | "rejected"; // 거부됨
 
-// 고철 경매 아이템
+// 고철/비철 경매 아이템
 export interface ScrapAuctionItem {
   id: string;
   title: string;

@@ -1017,6 +1017,16 @@ export async function createAuction(
 
     // 고철 특화 데이터 저장
     async function saveScrapSpecificData() {
+      // ferrousType 결정 로직
+      let ferrousType = "ferrous"; // 기본값
+
+      if (
+        auctionData.productType &&
+        (auctionData.productType as any).ferrousType
+      ) {
+        ferrousType = (auctionData.productType as any).ferrousType;
+      }
+
       const scrapData = {
         auction_id: auctionId,
         product_type: auctionData.productType || {},
@@ -1025,6 +1035,7 @@ export async function createAuction(
         price_per_unit: (auctionData as any).pricePerUnit || 0,
         sales_environment: (auctionData as any).salesEnvironment || {},
         special_notes: (auctionData as any).specialNotes || "",
+        ferrous_type: ferrousType, // 새로 추가된 컬럼
       };
 
       const { error } = await supabase.from("scrap_auctions").insert(scrapData);

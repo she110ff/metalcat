@@ -11,22 +11,59 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { scrapProductTypes } from "@/data";
+import {
+  scrapProductTypes,
+  ferrousProductTypes,
+  nonferrousProductTypes,
+} from "@/data";
 import { PhotoPicker, PhotoInfo } from "@/components/PhotoPicker";
 
 export default function ScrapAuctionCreate() {
   const router = useRouter();
-  const { slaveUserId, slaveName } = useLocalSearchParams();
+  const { slaveUserId, slaveName, ferrousType } = useLocalSearchParams();
   const [selectedProductType, setSelectedProductType] = useState<any>(null);
   const [weight, setWeight] = useState("1");
 
   console.log("📥 [고철 1단계] URL 파라미터 확인:", {
     slaveUserId,
     slaveName,
+    ferrousType,
   });
 
   // 빈 상태로 시작 - 사용자가 직접 사진을 선택해야 함
   const [photos, setPhotos] = useState<PhotoInfo[]>([]);
+
+  // ferrousType에 따라 적절한 제품 타입 필터링
+  const getAvailableProductTypes = () => {
+    if (ferrousType === "ferrous") {
+      return ferrousProductTypes;
+    } else if (ferrousType === "nonferrous") {
+      return nonferrousProductTypes;
+    }
+    // 기본값은 전체 제품 타입
+    return scrapProductTypes;
+  };
+
+  const availableProductTypes = getAvailableProductTypes();
+
+  // 화면 제목 결정
+  const getScreenTitle = () => {
+    if (ferrousType === "ferrous") {
+      return "고철 경매 등록";
+    } else if (ferrousType === "nonferrous") {
+      return "비철 경매 등록";
+    }
+    return "고철 경매 등록";
+  };
+
+  const getCategoryTitle = () => {
+    if (ferrousType === "ferrous") {
+      return "고철 종류 선택";
+    } else if (ferrousType === "nonferrous") {
+      return "비철 종류 선택";
+    }
+    return "고철 종류 선택";
+  };
 
   const handleBack = () => {
     router.back();
@@ -99,6 +136,10 @@ export default function ScrapAuctionCreate() {
     if (slaveName) {
       params.append("slaveName", slaveName as string);
     }
+    // ferrousType 파라미터 전달
+    if (ferrousType) {
+      params.append("ferrousType", ferrousType as string);
+    }
 
     console.log("🔗 [고철 1단계] 다음 단계로 이동:", {
       slaveUserId,
@@ -160,7 +201,7 @@ export default function ScrapAuctionCreate() {
                   className="text-white text-xl font-bold"
                   style={{ fontFamily: "NanumGothic" }}
                 >
-                  고철 경매 등록
+                  {getScreenTitle()}
                 </Text>
 
                 {/* 오른쪽 여백 (대칭을 위해) */}
@@ -174,7 +215,7 @@ export default function ScrapAuctionCreate() {
                 className="text-yellow-300 text-lg font-bold"
                 style={{ fontFamily: "NanumGothic" }}
               >
-                고철 종류 선택
+                {getCategoryTitle()}
               </Text>
 
               <VStack space="md">
@@ -223,8 +264,8 @@ export default function ScrapAuctionCreate() {
                     </Box>
                   </Pressable>
                 ) : (
-                  // 전체 고철 종류 표시
-                  scrapProductTypes.map((productType) => (
+                  // ferrousType에 따라 필터링된 제품 종류 표시
+                  availableProductTypes.map((productType) => (
                     <Pressable
                       key={productType.id}
                       onPress={() => handleProductTypeSelect(productType)}

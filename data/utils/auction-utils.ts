@@ -7,6 +7,7 @@ import {
   TransactionType,
   AuctionCategory,
   BidInfo,
+  FerrousType,
 } from "@/data/types/auction";
 
 // 경매 상태에 따른 색상 반환
@@ -65,6 +66,18 @@ export const getAuctionCategoryText = (category: AuctionCategory): string => {
   }
 };
 
+// 고철/비철 분류 텍스트 반환
+export const getFerrousTypeText = (ferrousType: FerrousType): string => {
+  switch (ferrousType) {
+    case "ferrous":
+      return "고철";
+    case "nonferrous":
+      return "비철";
+    default:
+      return "알 수 없음";
+  }
+};
+
 // 경매 아이템이 중고 기계인지 확인
 export const isMachineryAuction = (
   item: AuctionItem
@@ -72,9 +85,29 @@ export const isMachineryAuction = (
   return item.auctionCategory === "machinery";
 };
 
-// 경매 아이템이 고철인지 확인
+// 경매 아이템이 고철/비철인지 확인
 export const isScrapAuction = (item: AuctionItem): item is ScrapAuctionItem => {
   return item.auctionCategory === "scrap";
+};
+
+// 경매 아이템이 고철인지 확인
+export const isFerrousAuction = (
+  item: AuctionItem
+): item is ScrapAuctionItem => {
+  return (
+    item.auctionCategory === "scrap" &&
+    (item as ScrapAuctionItem).productType?.ferrousType === "ferrous"
+  );
+};
+
+// 경매 아이템이 비철인지 확인
+export const isNonferrousAuction = (
+  item: AuctionItem
+): item is ScrapAuctionItem => {
+  return (
+    item.auctionCategory === "scrap" &&
+    (item as ScrapAuctionItem).productType?.ferrousType === "nonferrous"
+  );
 };
 
 // 경매 아이템이 자재인지 확인
