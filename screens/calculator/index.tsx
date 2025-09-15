@@ -107,6 +107,16 @@ export const Calculator = () => {
   const { data: relatedAuctions, isLoading: isRelatedAuctionsLoading } =
     useRelatedAuctionsByMetalType(selectedStandard?.lme_type || "");
 
+  // 관련 경매 데이터 디버깅
+  useEffect(() => {
+    console.log("🎯 관련 경매 상태:", {
+      selectedStandard: selectedStandard?.lme_type,
+      relatedAuctionsCount: relatedAuctions?.length || 0,
+      isRelatedAuctionsLoading,
+      relatedAuctions: relatedAuctions?.slice(0, 1), // 첫 번째 경매만 로그
+    });
+  }, [relatedAuctions, isRelatedAuctionsLoading, selectedStandard]);
+
   // 경매 데이터 디버깅 로그
   useEffect(() => {
     if (selectedStandard?.lme_type && relatedAuctions) {
@@ -859,41 +869,68 @@ export const Calculator = () => {
             )}
 
             {/* 관련 경매 목록 */}
-            {selectedStandard &&
-              relatedAuctions &&
-              relatedAuctions.length > 0 && (
-                <View
+            {selectedStandard && (
+              <View
+                style={{
+                  borderRadius: 24,
+                  padding: 24,
+                  backgroundColor: "rgba(59, 130, 246, 0.08)",
+                  borderWidth: 1,
+                  borderColor: "rgba(59, 130, 246, 0.15)",
+                  marginTop: 24,
+                }}
+              >
+                <Text
                   style={{
-                    borderRadius: 24,
-                    padding: 24,
-                    backgroundColor: "rgba(59, 130, 246, 0.08)",
-                    borderWidth: 1,
-                    borderColor: "rgba(59, 130, 246, 0.15)",
-                    marginTop: 24,
+                    color: "rgba(255,255,255,0.6)",
+                    fontSize: 14,
+                    marginBottom: 16,
                   }}
                 >
-                  <Text
-                    style={{
-                      color: "rgba(255,255,255,0.6)",
-                      fontSize: 14,
-                      marginBottom: 16,
-                    }}
-                  >
-                    "{selectedStandard.lme_type}" 관련 종료된 경매 목록
-                  </Text>
+                  "{selectedStandard.lme_type}" 관련 종료된 경매 목록
+                </Text>
 
-                  {isRelatedAuctionsLoading ? (
-                    <View style={{ alignItems: "center", padding: 20 }}>
-                      <ActivityIndicator size="small" color="#60A5FA" />
-                      <Text
-                        style={{ color: "rgba(255,255,255,0.6)", marginTop: 8 }}
-                      >
-                        관련 경매를 찾는 중...
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={{ gap: 12 }}>
-                      {relatedAuctions.slice(0, 3).map((auction, index) => (
+                {isRelatedAuctionsLoading ? (
+                  <View style={{ alignItems: "center", padding: 20 }}>
+                    <ActivityIndicator size="small" color="#60A5FA" />
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.6)", marginTop: 8 }}
+                    >
+                      관련 경매를 찾는 중...
+                    </Text>
+                  </View>
+                ) : !relatedAuctions || relatedAuctions.length === 0 ? (
+                  <View style={{ alignItems: "center", padding: 20 }}>
+                    <Text
+                      style={{ color: "rgba(255,255,255,0.6)", marginTop: 8 }}
+                    >
+                      관련 경매가 없습니다.
+                    </Text>
+                    <Text
+                      style={{
+                        color: "rgba(255,255,255,0.4)",
+                        marginTop: 4,
+                        fontSize: 12,
+                      }}
+                    >
+                      검색 조건: {selectedStandard.lme_type}
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: 12 }}>
+                    {relatedAuctions.slice(0, 3).map((auction, index) => {
+                      // 디버깅을 위한 로그
+                      console.log(`🏷️ 경매 ${index + 1} 전체 데이터:`, auction);
+                      console.log(`🏷️ 경매 ${index + 1} 상세 정보:`, {
+                        id: auction.id,
+                        title: auction.title,
+                        category: auction.auction_category,
+                        pricePerUnit: auction.category_details?.pricePerUnit,
+                        weightUnit: auction.category_details?.weightUnit,
+                        categoryDetails: auction.category_details,
+                      });
+
+                      return (
                         <TouchableOpacity
                           key={auction.id}
                           onPress={() =>
@@ -914,59 +951,129 @@ export const Calculator = () => {
                               color: "white",
                               fontSize: 16,
                               fontWeight: "600",
-                              marginBottom: 8,
+                              marginBottom: 4,
                             }}
-                            numberOfLines={2}
+                            numberOfLines={1}
                           >
                             {auction.title}
                           </Text>
 
-                          {/* 설명 */}
-                          <Text
-                            style={{
-                              color: "rgba(255,255,255,0.6)",
-                              fontSize: 13,
-                              marginBottom: 12,
-                            }}
-                            numberOfLines={2}
-                          >
-                            {auction.description}
-                          </Text>
+                          {/* 고철 이름 (서브 텍스트) */}
+                          {auction.category_details?.productType?.name && (
+                            <Text
+                              style={{
+                                color: "rgba(255,255,255,0.6)",
+                                fontSize: 13,
+                                marginBottom: 8,
+                              }}
+                              numberOfLines={1}
+                            >
+                              {auction.category_details.productType.name}
+                            </Text>
+                          )}
 
-                          {/* 낙찰 가격 */}
+                          {/* 가격 정보 */}
                           <View
                             style={{
-                              flexDirection: "row",
-                              justifyContent: "space-between",
-                              alignItems: "center",
+                              alignItems: "flex-end",
                             }}
                           >
-                            <Text
-                              style={{
-                                color: "rgba(255,255,255,0.8)",
-                                fontSize: 14,
-                              }}
-                            >
-                              낙찰가:
-                            </Text>
-                            <Text
-                              style={{
-                                color: "#FCD34D",
-                                fontSize: 16,
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {formatAuctionPrice(
-                                auction.current_bid || auction.starting_price
-                              )}
-                            </Text>
+                            {(() => {
+                              // 단위 결정 (카테고리별로 다른 단위 사용)
+                              let unit = "";
+                              let quantity = 0;
+
+                              if (auction.auction_category === "scrap") {
+                                unit =
+                                  auction.category_details?.weightUnit || "kg";
+                                quantity =
+                                  auction.category_details?.weightKg ||
+                                  auction.category_details?.quantity
+                                    ?.quantity ||
+                                  0;
+                              } else if (
+                                auction.auction_category === "demolition"
+                              ) {
+                                unit =
+                                  auction.category_details?.areaUnit || "평";
+                                quantity =
+                                  auction.category_details?.demolitionArea ||
+                                  auction.category_details?.quantity
+                                    ?.quantity ||
+                                  0;
+                              } else {
+                                // 기타 카테고리는 quantity의 unit 사용
+                                unit =
+                                  auction.category_details?.quantity?.unit ||
+                                  "개";
+                                quantity =
+                                  auction.category_details?.quantity
+                                    ?.quantity || 0;
+                              }
+
+                              // 단위가격 계산: 총 낙찰가 / 수량
+                              const totalPrice =
+                                auction.current_bid ||
+                                auction.starting_price ||
+                                0;
+                              const calculatedPricePerUnit =
+                                quantity > 0 ? totalPrice / quantity : 0;
+
+                              // 저장된 단위가격이 있으면 사용, 없으면 계산된 값 사용
+                              const displayPricePerUnit =
+                                auction.category_details?.pricePerUnit &&
+                                auction.category_details.pricePerUnit > 0
+                                  ? auction.category_details.pricePerUnit
+                                  : calculatedPricePerUnit;
+
+                              console.log(
+                                `💰 경매 ${auction.id} 단위가격 조건 체크:`,
+                                {
+                                  category: auction.auction_category,
+                                  storedPricePerUnit:
+                                    auction.category_details?.pricePerUnit,
+                                  totalPrice,
+                                  quantity,
+                                  calculatedPricePerUnit,
+                                  displayPricePerUnit,
+                                  unit,
+                                  shouldShow: displayPricePerUnit > 0 && unit,
+                                }
+                              );
+
+                              return (
+                                <Text
+                                  style={{
+                                    color: "#FCD34D",
+                                    fontSize: 16,
+                                    fontWeight: "bold",
+                                  }}
+                                >
+                                  {formatAuctionPrice(totalPrice)}
+                                  {displayPricePerUnit > 0 && unit && (
+                                    <Text
+                                      style={{
+                                        color: "#00E5B8",
+                                        fontSize: 12,
+                                        fontWeight: "500",
+                                      }}
+                                    >
+                                      {" "}
+                                      ({formatAuctionPrice(displayPricePerUnit)}
+                                      /{unit})
+                                    </Text>
+                                  )}
+                                </Text>
+                              );
+                            })()}
                           </View>
                         </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              )}
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            )}
           </View>
         </KeyboardAwareScrollView>
       </SafeAreaView>

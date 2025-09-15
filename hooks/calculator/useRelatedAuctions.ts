@@ -18,6 +18,23 @@ export interface RelatedAuction {
         addressType: string;
         detailAddress: string;
       };
+  auction_category: string;
+  category_details: {
+    pricePerUnit?: number;
+    weightKg?: number;
+    weightUnit?: string;
+    areaUnit?: string;
+    demolitionArea?: number;
+    productType?: {
+      name?: string;
+      category?: string;
+      description?: string;
+    };
+    quantity?: {
+      quantity: number;
+      unit: string;
+    };
+  };
 }
 
 /**
@@ -49,7 +66,9 @@ export const useRelatedAuctionsByMetalType = (metalType: string) => {
           end_time,
           status,
           seller_name,
-          address_info
+          address_info,
+          auction_category,
+          category_details
         `
         )
         .eq("approval_status", "approved") // 승인된 경매만
@@ -142,8 +161,13 @@ function getLmeTypeToProductCategory(lmeType: string): string[] {
 /**
  * 경매 가격 포맷팅 (원 단위)
  */
-export const formatAuctionPrice = (price: number): string => {
-  return `${price.toLocaleString()}원`;
+export const formatAuctionPrice = (
+  price: number | null | undefined
+): string => {
+  if (price === null || price === undefined || isNaN(price)) {
+    return "0원";
+  }
+  return `${Math.round(price).toLocaleString()}원`;
 };
 
 /**
