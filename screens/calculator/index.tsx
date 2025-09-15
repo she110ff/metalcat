@@ -799,12 +799,18 @@ export const Calculator = () => {
                         }}
                       >
                         {typeof result.priceRange.min === "number"
-                          ? result.priceRange.min.toLocaleString()
-                          : "0"}{" "}
+                          ? result.priceRange.min.toLocaleString("ko-KR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : "0.00"}{" "}
                         ~{" "}
                         {typeof result.priceRange.max === "number"
-                          ? result.priceRange.max.toLocaleString()
-                          : "0"}
+                          ? result.priceRange.max.toLocaleString("ko-KR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })
+                          : "0.00"}
                         원/kg
                       </Text>
                     </View>

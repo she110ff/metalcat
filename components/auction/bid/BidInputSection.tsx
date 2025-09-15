@@ -244,8 +244,8 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
     return null;
   }
 
-  // 🚫 자신의 경매인 경우 입찰 폼 대신 안내 메시지 표시
-  if (isOwner) {
+  // 🚫 자신의 경매인 경우 - 관리자가 아니면 입찰 폼 대신 안내 메시지 표시
+  if (isOwner && !isAdmin) {
     return (
       <VStack space="lg" className="px-6">
         <Text className="text-yellow-300 text-xl font-black tracking-[2px] uppercase">
@@ -339,60 +339,77 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
             </Text>
           )}
 
-          {/* 일반 사용자 입찰 버튼 */}
-          <Button
-            onPress={handleBid}
-            disabled={createBidMutation.isPending}
-            className={`rounded-2xl border-2 min-h-14 ${
-              createBidMutation.isPending
-                ? "bg-gray-500/30 border-gray-500/30"
-                : "bg-green-500/15 border-green-500/30"
-            } shadow-xl ${
-              createBidMutation.isPending
-                ? "shadow-gray-500/40"
-                : "shadow-green-500/40"
-            }`}
-          >
-            <ButtonText
-              className={`font-bold tracking-wide text-base ${
-                createBidMutation.isPending ? "text-gray-400" : "text-green-300"
-              }`}
-            >
-              {createBidMutation.isPending ? "입찰 중..." : "입찰하기"}
-            </ButtonText>
-          </Button>
-
-          {/* 관리자 전용 슬레이브 유저 입찰 버튼 */}
-          {isAdmin && (
+          {/* 일반 사용자 입찰 버튼 - 관리자가 자신의 경매인 경우 비활성화 */}
+          {!(isOwner && isAdmin) && (
             <Button
-              onPress={handleAdminSlaveUserBid}
+              onPress={handleBid}
               disabled={createBidMutation.isPending}
-              className={`rounded-2xl border-2 min-h-14 mt-3 ${
+              className={`rounded-2xl border-2 min-h-14 ${
                 createBidMutation.isPending
                   ? "bg-gray-500/30 border-gray-500/30"
-                  : "bg-blue-500/15 border-blue-500/30"
+                  : "bg-green-500/15 border-green-500/30"
               } shadow-xl ${
                 createBidMutation.isPending
                   ? "shadow-gray-500/40"
-                  : "shadow-blue-500/40"
+                  : "shadow-green-500/40"
               }`}
             >
-              <HStack className="items-center" space="sm">
-                <Users
-                  size={20}
-                  color={createBidMutation.isPending ? "#9CA3AF" : "#60A5FA"}
-                />
-                <ButtonText
-                  className={`font-bold tracking-wide text-base ${
-                    createBidMutation.isPending
-                      ? "text-gray-400"
-                      : "text-blue-300"
-                  }`}
-                >
-                  슬레이브 유저로 입찰
-                </ButtonText>
-              </HStack>
+              <ButtonText
+                className={`font-bold tracking-wide text-base ${
+                  createBidMutation.isPending
+                    ? "text-gray-400"
+                    : "text-green-300"
+                }`}
+              >
+                {createBidMutation.isPending ? "입찰 중..." : "입찰하기"}
+              </ButtonText>
             </Button>
+          )}
+
+          {/* 관리자 전용 슬레이브 유저 입찰 버튼 */}
+          {isAdmin && (
+            <VStack space="sm">
+              {/* 자신의 경매인 경우 안내 메시지 */}
+              {isOwner && (
+                <Box className="rounded-xl p-3 bg-blue-500/10 border border-blue-500/20">
+                  <Text className="text-blue-300 text-xs font-medium text-center">
+                    관리자 권한으로 슬레이브 유저를 통해 입찰 가능합니다
+                  </Text>
+                </Box>
+              )}
+
+              <Button
+                onPress={handleAdminSlaveUserBid}
+                disabled={createBidMutation.isPending}
+                className={`rounded-2xl border-2 min-h-14 ${
+                  isOwner ? "" : "mt-3"
+                } ${
+                  createBidMutation.isPending
+                    ? "bg-gray-500/30 border-gray-500/30"
+                    : "bg-blue-500/15 border-blue-500/30"
+                } shadow-xl ${
+                  createBidMutation.isPending
+                    ? "shadow-gray-500/40"
+                    : "shadow-blue-500/40"
+                }`}
+              >
+                <HStack className="items-center" space="sm">
+                  <Users
+                    size={20}
+                    color={createBidMutation.isPending ? "#9CA3AF" : "#60A5FA"}
+                  />
+                  <ButtonText
+                    className={`font-bold tracking-wide text-base ${
+                      createBidMutation.isPending
+                        ? "text-gray-400"
+                        : "text-blue-300"
+                    }`}
+                  >
+                    슬레이브 유저로 입찰
+                  </ButtonText>
+                </HStack>
+              </Button>
+            </VStack>
           )}
         </VStack>
       </Box>
