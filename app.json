@@ -61,7 +61,7 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/metalcat_logo.png",
+          "icon": "./assets/images/metalcat_logo_96.png",
           "color": "#ffffff"
         }
       ]
