@@ -288,17 +288,18 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
         <VStack space="md" className="mb-6">
           {/* 고철 경매인 경우 단위가격 입력 필드 추가 */}
           {isScrapAuction && (
-            <VStack space="md">
+            <VStack space="lg" className="mb-6">
               <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
                 단위가격 (원/kg)
               </Text>
-              <Input className="bg-white/5 border-white/10 rounded-2xl">
+              <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
                 <InputField
                   placeholder="kg당 가격을 입력하세요"
                   placeholderTextColor="rgba(255, 255, 255, 0.4)"
                   value={pricePerUnit}
                   onChangeText={handlePricePerUnitChange}
-                  className="text-white text-base px-4 py-3"
+                  className="text-white text-base px-5 py-4"
+                  style={{ fontFamily: "NanumGothic" }}
                   keyboardType="numeric"
                 />
               </Input>
@@ -313,7 +314,7 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
           <Text className="text-white/80 text-sm font-semibold uppercase tracking-[1px]">
             입찰 금액
           </Text>
-          <Input className="bg-white/5 border-white/10 rounded-2xl">
+          <Input className="bg-white/5 border-white/10 rounded-2xl min-h-14">
             <InputField
               placeholder={
                 isScrapAuction ? "자동 계산됩니다" : "입찰 금액을 입력하세요"
@@ -321,10 +322,11 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
               placeholderTextColor="rgba(255, 255, 255, 0.4)"
               value={bidAmount}
               onChangeText={isScrapAuction ? undefined : handleBidAmountChange}
-              className="text-white text-base px-4 py-3"
+              className="text-white text-base px-5 py-4"
               keyboardType="numeric"
               editable={!isScrapAuction}
               style={{
+                fontFamily: "NanumGothic",
                 opacity: isScrapAuction ? 0.7 : 1,
                 backgroundColor: isScrapAuction
                   ? "rgba(255, 255, 255, 0.02)"
@@ -334,7 +336,7 @@ export const BidInputSection: React.FC<BidInputSectionProps> = ({
           </Input>
 
           {currentTopBid > 0 && (
-            <Text className="text-yellow-300 text-xs font-medium">
+            <Text className="text-yellow-300 text-xs font-medium mb-6">
               최소 입찰가: {formatAuctionPrice(currentTopBid + 10000)}
             </Text>
           )}
